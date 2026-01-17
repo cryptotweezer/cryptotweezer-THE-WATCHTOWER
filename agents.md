@@ -1,6 +1,15 @@
 # AI Instruction Manual (`agents.md`)
 
-> **Context**: This file guides AI agents (Copilot, Claude, etc.) on project standards and context.
+> **Context**: This file guides AI agents (Copilot, Claude, etc.) on project standards.
+> **⚠️ MANDATORY**: Before starting, READ `workflow.md` to know *what* to do. This file only tells you *how* to do it.
+
+## 🚨 PROTOCOL: Start of Every Session
+**You must perform these checks before writing a single line of code:**
+1.  **🔄 Sync with Reality**: Run `git checkout main && git pull origin main`. *Never work on stale code.*
+2.  **📍 Check Location**: Read `workflow.md` to see the "Current Focus".
+3.  **🗺️ Consult Map**: Read `docs/ROADMAP.md` to verify the big picture.
+    *   *Rule*: You cannot jump to Phase 3 if Phase 2 is incomplete.
+4.  **🚧 Branch Out**: Create a new feature branch for your task (`feature/xyz`).
 
 ## 🛠️ Technology Stack
 *   **Framework**: Next.js 16+ (App Router)
