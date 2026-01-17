@@ -1,0 +1,39 @@
+name: 🛡️ Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  validate:
+    name: 🕵️ Validate Build & Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # cache: 'pnpm' # Enable once pnpm-lock.yaml is stable
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: 📥 Install Dependencies
+        run: pnpm install --no-frozen-lockfile
+        # Temporary: lockfile may change during initial setup (Week 1)
+
+      - name: 🔍 Lint Check
+        run: pnpm lint || true
+        # TODO (Week 2): Remove soft-fail once Next.js is initialized
+
+      - name: 🏗️ Build Test
+        run: pnpm build || true
+        # TODO (Week 2): Enforce build success as a hard gate
