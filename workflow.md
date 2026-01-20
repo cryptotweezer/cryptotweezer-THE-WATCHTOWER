@@ -17,6 +17,10 @@
     *   `README.md` (Human Entry Point)
     *   `docs/prd.md` (Product Requirements)
     *   `agents.md` (Static AI Rules)
+    *   ✅ **Agent Skills Architecture**:
+        *   `.claude/skills/` (Modular context: Protocol, Git, Tech Stack, Project Context).
+        *   `archivist.md` & `docs/DEVELOPMENT_LOG.md` (Session tracking).
+        *   Universal AI compatibility (Cursor, Copilot, etc.).
 
 ## 🚧 Current Focus (Active Work)
 *   **Context**: We are preparing for Week 2 deliverables. We need to convert our PRD into a concrete technical design before writing more code.

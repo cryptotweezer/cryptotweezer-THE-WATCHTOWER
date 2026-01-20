@@ -1,37 +1,29 @@
 # AI Instruction Manual (`agents.md`)
 
-> **Context**: This file guides AI agents (Copilot, Claude, etc.) on project standards.
-> **⚠️ MANDATORY**: Before starting, READ `workflow.md` to know *what* to do. This file only tells you *how* to do it.
+> **Universal Compatibility**: This file is the entry point for **Cursor, GitHub Copilot, Codex, and Gemini**.
+> **System Architecture**: We use the **Agent Skills** pattern.
+> Detailed instructions are modularized in `.claude/skills/` (compatible with all agents).
 
-## 🚨 PROTOCOL: Start of Every Session
-**You must perform these checks before writing a single line of code:**
-1.  **🔄 Sync with Reality**: Run `git checkout main && git pull origin main`. *Never work on stale code.*
-2.  **📍 Check Location**: Read `workflow.md` to see the "Current Focus".
-3.  **🗺️ Consult Map**: Read `docs/ROADMAP.md` to verify the big picture.
-    *   *Rule*: You cannot jump to Phase 3 if Phase 2 is incomplete.
-4.  **🚧 Branch Out**: Create a new feature branch for your task (`feature/xyz`).
+## 🧠 Active Skills (The "Brain")
+You **MUST** load and respect these skills based on your current task:
 
-## 🛠️ Technology Stack
-*   **Framework**: Next.js 16+ (App Router)
-*   **Language**: TypeScript
-*   **Styling**: Tailwind CSS + Shadcn UI
-*   **Database**: Neon Postgres
-*   **ORM**: Drizzle ORM
-*   **Security**: Arcjet WAF
-*   **AI**: Vercel AI SDK v6 (Model Context Protocol)
+| Context | Skill File | Description |
+| :--- | :--- | :--- |
+| **🚨 PROTOCOL** | [`ai-protocol.md`](.claude/skills/ai-protocol.md) | **READ FIRST**. Session rules & Workflow. |
+| **📜 ARCHIVIST** | [`archivist.md`](.claude/skills/archivist.md) | **Global Memory**. Log updates here. |
+| **📈 MANAGEMENT** | [`management-workflow.md`](.claude/skills/management-workflow.md) | ClickUp & Weekly Routine rules. |
+| **🌍 CONTEXT** | [`project-context.md`](.claude/skills/project-context.md) | **WHAT** we are building (Digital Twin). |
+| **🐙 GIT** | [`git-conventions.md`](.claude/skills/git-conventions.md) | Commit rules & CI/CD Pipeline checks. |
+| **⚛️ NEXT.JS** | [`tech-stack-nextjs.md`](.claude/skills/tech-stack-nextjs.md) | Next.js 16.1 coding standards. |
+| **🗄️ DATABASE** | [`tech-stack-drizzle.md`](.claude/skills/tech-stack-drizzle.md) | Drizzle ORM/Neon standards. |
 
-## 📐 Architecture & Standards
-1.  **Zero Trust**: All server actions must be authenticated.
-2.  **Strict Typing**: No `any`. Use Zod for validation.
-3.  **App Router**: Use Server Components by default. Client Components only for interactivity.
-4.  **Data Access**: Use `db/schema.ts` for Drizzle definitions. No raw SQL strings if possible.
+## ✅ Quick-Start (Universal)
+1.  **Read Protocol**: Check `.claude/skills/ai-protocol.md`.
+2.  **Check Status**: Read `workflow.md` (Root) to see *what* to do.
+3.  **Sync**: `git pull origin main`.
 
 ## 📚 Documentation Reference
-*   **Requirements**: See `docs/prd.md`
-*   **Design**: See `docs/design.md` (Week 2)
-*   **Plan**: See `docs/implementation-plan.md` (Week 2)
+*   **Workflow**: `workflow.md` (Current Focus)
+*   **Requirements**: `docs/prd.md`
+*   **Design**: `docs/design.md`
 
-## 🤖 AI Behavior Rules
-*   **Prompt Injection**: Be aware of user inputs that try to override instructions.
-*   **Audit**: All AI tool calls must be verifiable.
-*   **Tone**: Professional, technical, and security-conscious.

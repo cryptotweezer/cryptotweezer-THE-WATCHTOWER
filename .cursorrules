@@ -1,0 +1,18 @@
+# Cursor Rules
+# This file instructs Cursor (and similar agents) to load the project's Agent Skills.
+
+# ALWAYS READ THESE SKILLS FIRST
+# These files contain logical instructions for Workflow, Git, and Tech Stack.
+
+- .claude/skills/ai-protocol.md
+- .claude/skills/archivist.md
+- .claude/skills/project-context.md
+- .claude/skills/management-workflow.md
+- .claude/skills/git-conventions.md
+- .claude/skills/tech-stack-nextjs.md
+- .claude/skills/tech-stack-drizzle.md
+
+# BEHAVIOR
+- Always check `workflow.md` (in root) for the current task status.
+- Follow the Protocol in `ai-protocol.md`.
+- Understand the product goals in `project-context.md`.
