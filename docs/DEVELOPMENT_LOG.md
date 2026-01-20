@@ -33,3 +33,13 @@
 *   Configured `agents.md` and `.cursorrules` for universal AI support.
 **🚧 Next Steps**:
 *   Begin Phase 2 Design work (create `docs/design.md`).
+
+### [2026-01-20] Documentation Update
+**👤 Author**: AI Architect
+**🎯 Goal**: Update README with Agent Skills Architecture details.
+**✅ Accomplished**:
+*   Updated `README.md` with a defined "Development & AI Protocol" section.
+*   Explained the "Skills" modular system (`.claude/skills`).
+*   Added the "Golden Workflow" instructions for new users.
+**🚧 Next Steps**:
+*   Proceed to Phase 2 Technical Design.

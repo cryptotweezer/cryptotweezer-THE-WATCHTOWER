@@ -17,6 +17,24 @@ Digital Twin III is not just a portfolio—it is a live cyber lab. It represents
     *   `presentation-outline.md`: Script for final demo.
 *   **`project-management/`**: ClickUp screenshots and evidence of velocity.
 
+## 🤖 Development & AI Protocol ("Agent Skills")
+We use a **Context-Aware Modular Architecture** to ensure all AI agents (Cursor, Copilot, Gemini) and team members are aligned.
+
+### 1. The "Skills" (`.claude/skills/`)
+Instead of a single prompt, we use modular "skills":
+*   **🧠 `project-context.md` (The Brain)**: Explains *Active Cyber Resilience*, 6-Layer Defense, and the Vision.
+*   **🚨 `ai-protocol.md` (The Protocol)**: Start/End of session rules. **Crucial for consistency**.
+*   **📜 `archivist.md` (The Memory)**: Enforces the "Log Before Commit" rule using `DEVELOPMENT_LOG.md`.
+*   **🐙 `git-conventions.md` (The Law)**: Enforces branch naming (`feature/...`) and Conventional Commits.
+*   **🏗️ `tech-stack-*.md` (The Mechanics)**: Standards for Next.js 16, Drizzle, and Arcjet.
+
+### 2. The Golden Workflow
+1.  **Start With**: "Read `ai-protocol.md` and `workflow.md` to begin."
+2.  **During Work**: The AI automatically follows rules in `.cursorrules` or imported skills.
+3.  **Before Commit**:
+    *   **MUST** update `docs/DEVELOPMENT_LOG.md` (The Archivist).
+    *   **MUST** run `pnpm build` (The Gatekeeper).
+
 ## 🛡️ Six Layers of Defense
 Our architecture implements defense-in-depth:
 1.  **Public Interface**: Next.js + Shadcn (Secure UX)
