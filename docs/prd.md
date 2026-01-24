@@ -1,36 +1,29 @@
 # Product Requirements Document (PRD)
 
-> **Status**: Initial Draft (Week 1)
+> **Status**: Living Document (Pivot to SecOps Platform)
 
 ## 1. Project Overview
-**Digital Twin III** is a cyber-hardened personal portfolio designed to be an active target for ethical hacking. It demonstrates professional identity, active defense capabilities, and real-time threat intelligence.
+**Digital Twin III** is a **SecOps & Active Defense Platform**. It acts as a defensive teacher, offering a dual experience: mentoring "Apprentices" and challenging "Adversaries" via a self-defending infrastructure.
 
 ## 2. Core Objectives
-1.  **Represent**: Interactive AI Chatbot & MCP Content.
-2.  **Defend**: Active perimeter against SQLi, Bots, Injection.
-3.  **Learn**: Threat telemetry dashboard (SOC Panel).
+1.  **Teach**: Explain security concepts to novices (The Apprentice).
+2.  **Challenge**: Gamify hacking for experts (The Adversary).
+3.  **Defend**: Active perimeter blocking realtime attacks.
+4.  **Analyze**: Forensic AI identifying attack patterns.
 
 ## 3. Functional Requirements
-### 3.1 Public Interface
-*   Responsive Next.js UI (Shadcn).
-*   "Test My Cybersecurity" Zone (Prompt Injection, SQLi Sandbox).
-*   Live Threat Dashboard (Red/Yellow/Green status).
+### 3.1 Modules
+*   **The Watchtower**: Telemetry Dashboard (Live Feed, Heatmap).
+*   **Session Intel**: Fingerprinting & Risk Scoring.
+*   **Attack Lab**: Ethical Sandboxes (SQLi, Prompt Injection, IDOR).
+*   **Hall of Fame**: Gamification Leaderboard.
 
 ### 3.2 Security Features
-*   **Arcjet WAF Integration**: Block malicious requests at edge.
-*   **Agentic AI Guardrails**: Prevent unauthorized tool execution.
-*   **Role-Based Access Control (RBAC)**: Secure admin routes.
+*   **Arcjet WAF**: Bot Detection, Rate Limiting, Tarpitting.
+*   **Immutable Logs**: Drizzle/Neon auditing.
+*   **Zero-Trust AI**: Vercel AI SDK PII filters.
 
-### 3.3 Data & AI
-*   **Neon Postgres**: Secure storage for logs and content.
-*   **Vercel AI SDK**: Chatbot with MCP tools ("Interview Me").
-
-## 4. Non-Functional Requirements
-*   **Performance**: Core Web Vitals < 2.5s LCP.
-*   **Security**: OWASP Top 10 mitigation.
-*   **Compliance**: No PII leaks in logs.
-
-## 5. User Stories
-*   *As a Recruiter*, I want to ask the chatbot about the candidate's skills so I can evaluate fit.
-*   *As an Attacker*, I want to try SQL injection on the contact form so I can test the WAF.
-*   *As the Admin*, I want to see a live dashboard of attacks so I can respond to threats.
+## 4. User Stories
+*   *As an Apprentice*, I want the AI to explain why my SQL injection failed so I can learn.
+*   *As an Adversary*, I want to bypass the simple WAF rules to earn "Research Points".
+*   *As the Architect*, I want to see a live heatmap of blocked attacks in The Watchtower.

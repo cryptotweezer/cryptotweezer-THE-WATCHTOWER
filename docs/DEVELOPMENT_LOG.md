@@ -41,5 +41,14 @@
 *   Updated `README.md` with a defined "Development & AI Protocol" section.
 *   Explained the "Skills" modular system (`.claude/skills`).
 *   Added the "Golden Workflow" instructions for new users.
+
+### [2026-01-25] SecOps Pivot Documentation
+**👤 Author**: Antigravity (AI Agent)
+**🎯 Goal**: Re-structure documentation for "SecOps & Active Defense" pivot.
+**✅ Accomplished**:
+*   Updated `README.md` and `PROJECT_OVERVIEW.md` with new "Defensive Teacher" vision.
+*   Defined 4 Modules: Watchtower, Session Intel, Attack Lab, Hall of Fame.
+*   Updated `docs/prd.md` and `.claude/skills/project-context.md` to align with new requirements.
 **🚧 Next Steps**:
-*   Proceed to Phase 2 Technical Design.
+*   Begin implementation of "The Watchtower" (Telemetry Dashboard).
+

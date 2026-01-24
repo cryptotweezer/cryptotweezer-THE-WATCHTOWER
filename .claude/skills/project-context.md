@@ -4,14 +4,18 @@ description: The Comprehensive Source of Truth for Digital Twin III (Goals, Arch
 
 # 🌍 Project Context: Digital Twin III
 
-> **The Mission**: "Hack me if you can."
-> We are building a **Cyber-Hardened Portfolio** that actively defends itself, logs attacks, and demonstrates professional security maturity in real-time.
+> **The Mission**: "Defensive Teacher: Learn by Attacking."
+> We are building a **SecOps & Active Defense Platform** that serves as a self-defending infrastructure node. It collects real-time attack telemetry and gamifies the experience for both visiting learners and adversaries.
 
-## 🏛️ Core Vision
-This is not just a website; it is a **Live Cyber Lab**.
-*   **Represent**: Interactive Identity via Vercel AI SDK Chatbot.
-*   **Defend**: Active Perimeter (Arcjet WAF) preventing SQLi/XSS/Bots.
-*   **Learn**: Threat Intelligence Dashboard (SOC Panel) showing real-time telemetry.
+## 🏛️ Core Vision: A Dual Experience
+*   **The Apprentice (Novice)**: The AI acts as a mentor, explaining security concepts.
+*   **The Adversary (Expert)**: The system acts as a hardened target, blocking attacks and logging payloads.
+
+## 🛡️ Functional Modules (Active Defense)
+1.  **The Watchtower**: Threat Telemetry Dashboard (Live Feed, Defcon Level, Heatmap).
+2.  **Session Intel**: Identity Awareness via fingerprinting & Risk Scores.
+3.  **Attack Lab**: Ethical Sandboxes for SQLi, Prompt Injection, and IDOR.
+4.  **Hall of Fame**: Gamified leaderboard for security researchers.
 
 ## 🛡️ Six-Layer Defense Architecture
 This project **MUST** implement the following 6 layers of defense:
@@ -36,21 +40,16 @@ This project **MUST** implement the following 6 layers of defense:
     *   Dynamic Threat Levels (🟢 Green -> 🔴 Red).
 
 ## 🚀 Mandatory Features to Build
-### 1. Ethical Hacking Zones ("Test My Cybersecurity")
-You must build pages specifically for users to try and break the system safely:
-*   **🧪 Prompt Injection Sandbox**: Users try to trick the AI. (System must log & block).
-*   **🧪 SQL Injection Field**: Users try `OR 1=1`. (System must sanitize & explain).
-*   **🧪 Access Control**: Users try to bypass login. (System must warn).
+### 1. Functional Modules
+*   **Watchtower**: Visualizes live attacks and changes Global Defcon Level.
+*   **Session Intel**: Assigns "Risk Scores" to visitors based on behavior.
+*   **Attack Lab**: controlled environments for SQLi and Prompt Injection training.
+*   **Hall of Fame**: Ranking system for successful exploits (in sandboxes).
 
-### 2. Threat Telemetry Dashboard (SOC Panel)
-A live dashboard showing:
-*   **Status**: Current Threat Level (Low/Elevated/Critical).
-*   **Live Feed**: "SQLi blocked from IP X", "Prompt Injection prevented", etc.
-*   **Metrics**: Graphs of attacks over time.
-
-### 3. Agentic AI & Content
-*   **AI Chatbot**: Answers queries about the User's resume/skills.
-*   **MCP Tools**: The AI needs tools to "Fetch Blog Posts", "Summarize Security Logs", "Update Threat Level".
+### 2. Security Architecture (Under the Hood)
+*   **Active Response**: Tarpitting and dynamic blocking for high-risk scores.
+*   **Forensic AI**: Vercel AI SDK analyzes patterns to generate natural language reports.
+*   **Immutable Logs**: Neon/Drizzle ensures security events cannot be tampered with.
 
 ## 📅 Weekly Submission Requirements (Success Criteria)
 **Source**: Digital Twin III - Chapters 16-21.

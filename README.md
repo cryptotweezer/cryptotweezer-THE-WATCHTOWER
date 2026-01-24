@@ -1,9 +1,13 @@
 # Digital Twin III - The Cyber-Hardened Portfolio
 
 ## 🎓 Project Vision
-> **"Hack me if you can."**
+> **"Defensive Teacher: Learn by Attacking."**
 
-Digital Twin III is not just a portfolio—it is a live cyber lab. It represents a professional identity that is aware of threats, designed to be attacked, and capable of monitoring its own defense in real-time. This project moves beyond static web pages to demonstrate **active cyber resilience**.
+**Digital Twin III** has evolved from a static portfolio into a **SecOps & Active Defense Platform**. It serves as a cyber-resilient infrastructure node that doesn't just display work—it actively defends itself, collects real-time attack telemetery, and offers a dual experience:
+- **For Learners**: A mentor explaining security concepts.
+- **For Adversaries**: A hardened target that gamifies the hacking experience.
+
+This project demonstrates **Active Cyber Defense** using Arcjet (WAF), **Immutable Auditing** with Neon/Drizzle, and **Forensic AI Analysis** via Vercel AI SDK.
 
 [Detailed Project Overview & Requirements](./PROJECT_OVERVIEW.md)
 
@@ -35,14 +39,21 @@ Instead of a single prompt, we use modular "skills":
     *   **MUST** update `docs/DEVELOPMENT_LOG.md` (The Archivist).
     *   **MUST** run `pnpm build` (The Gatekeeper).
 
-## 🛡️ Six Layers of Defense
-Our architecture implements defense-in-depth:
+## 🛡️ Active Defense & Functional Modules
+
+### Core Modules
+1.  **The Watchtower (Telemetry Dashboard)**: Visualizes live attacks, Global Defcon Level, and Threat Heatmaps.
+2.  **Session Intel (Identity Awareness)**: Fingerprints users without login, assigning "Risk Scores" based on behavior.
+3.  **Ethical Sandboxes (Attack Lab)**: Controlled environments to practice SQLi, Prompt Injection, and IDOR.
+4.  **Hall of Fame (Gamification)**: Ranks researchers based on discovered vulnerabilities and "Easter Eggs".
+
+### Security Architecture (Under the Hood)
 1.  **Public Interface**: Next.js + Shadcn (Secure UX)
 2.  **App Logic**: Server Actions (Zero Trust Auth)
-3.  **AI Governance**: MCP + Guardrails (Inside Threat Protection)
-4.  **Data Integrity**: Neon Postgres + Drizzle (Schema Validation)
-5.  **Network Defense**: Arcjet WAF (Edge Protection)
-6.  **Observability**: Real-time Threat Dashboard (SOC Panel)
+3.  **AI Governance**: Vercel AI SDK + Filters (Zero-Trust AI)
+4.  **Data Integrity**: Neon Postgres + Drizzle (Immutable Logs)
+5.  **Network Defense**: Arcjet WAF (Bot Detection & Rate Limiting)
+6.  **Active Response**: Tarpitting & Dynamic Blocking
 
 ## 🚀 Getting Started
 

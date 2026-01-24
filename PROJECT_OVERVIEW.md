@@ -1,41 +1,49 @@
-# Digital Twin III – “The Cyber-Hardened Portfolio”
+# Digital Twin III – "SecOps & Active Defense Platform"
 
-> **"Hack me if you can."**
+> **"Defensive Teacher: Learn by Attacking."**
 
-## Project Vision
-**Digital Twin III** challenges you to transform your personal portfolio into a cyber-secured, intelligence-driven digital asset. It is no longer just a showcase of work; it is an active target and a live cyber lab.
+## 1. Vision Overview
+The project evolves from a static portfolio to a **SecOps Operations Platform** and **Threat Learning Lab**. The system not only showcases achievements but acts as a "Defensive Teacher": a self-defending infrastructure that collects real-time attack telemetry and offers a dual experience (Learning for novices / Challenge for experts).
 
-## The Three Central Roles
-1.  **Represent You**: Interactive Identity with AI Chatbot and MCP-driven content.
-2.  **Defend You**: Active Perimeter detecting and blocking attacks (SQLi, Bots).
-3.  **Learn For You**: Threat Intelligence collecting real-time attack telemetry.
+## 2. User Profiles
+The platform detects visitor behavior to classify them:
 
-## System Architecture: Six Layers of Defense
-| Layer | Component | Responsibility |
-| :--- | :--- | :--- |
-| **1. Public Interface** | Next.js + Shadcn | Trust no input. Funnel to server actions. |
-| **2. App Logic** | Server Actions | Zero-trust. Authenticate & validate everything. |
-| **3. AI Governance** | MCP + Vercel AI | Prevent malicious prompts. Verify tool calls. |
-| **4. Data Integrity** | Neon + Drizzle | Schema validation. Encryption. |
-| **5. Network Defense** | Arcjet WAF | Block bots and anomalies at the edge. |
-| **6. Observability** | Monitoring | Continuous threat intelligence. |
+1.  **The Apprentice (Novice)**: Users without technical knowledge. The AI acts as a mentor, explaining security concepts.
+2.  **The Adversary (Expert)**: Users with hacking tools. The system acts as a challenge, blocking attacks and logging payloads.
 
-## Feature Specification: The Cyber Battleground
-### 1. Threat Telemetry Dashboard (SOC Panel)
-*   **Live Metrics**: Recent attacks, attack types, and triggered defense layers.
-*   **Dynamic Threat Levels**: 🟢 Green, 🟡 Yellow, 🔴 Red, ⚫ Black.
-*   **AI Analyst**: Automatically classifies attacks and generates summary reports.
+## 3. Functional Modules
 
-### 2. Ethical Hacking Zone ("Test My Cybersecurity")
-*   **🧪 Prompt Injection Sandbox**: Visitors try to break AI rules.
-*   **🧪 SQL Injection Learning Field**: Visitors try SQL payloads.
-*   **🧪 Auth & Access Abuse**: Visitors try to bypass login or escalate roles.
+### A. The Watchtower (Live Telemetry Dashboard)
+*   **Live Threat Feed**: Visual log of attack attempts processed by Arcjet (SQLi, XSS, Bots).
+*   **Global Defcon Level**: Dynamic status indicator changing based on attack frequency.
+*   **Threat Heatmap**: Geographic visualization of blocked origins.
+
+### B. Session Intel (Personalized Dashboard)
+*   **Fingerprinting**: Tracking users without login/registration.
+*   **Risk Score (0-100)**: Individual score based on hostile actions.
+*   **Forensic Activity Log**: AI translates technical logs into a narrative (e.g., "Detected specific auth bypass attempt").
+
+### C. Ethical Sandboxes (Attack Lab)
+*   **SQL Injection**: Vulnerable search simulation to demonstrate Drizzle protection.
+*   **Prompt Injection**: AI Chatbot with governance directives to break.
+*   **IDOR & Broken Access**: API routes protected by session logic.
+*   **AI Sidekick**: Assistant providing hints to novices.
+
+### D. Hall of Fame (Gamification)
+*   **Research Points**: Awarded for discovering "Easter Eggs" or completing tutorials.
+*   **Leaderboard**: Public ranking using AI-generated aliases for privacy.
+
+## 4. Active Defense Strategy (Under the Hood)
+*   **Tarpitting**: Slowing responses for high-risk users.
+*   **Immutable Logs**: Secure database schemas preventing user alteration of security events.
+*   **Zero-Trust AI**: Output filters preventing sensitive data leakage.
 
 ## Technical Standards
-*   **Framework**: Next.js 16+ (App Router).
-*   **WAF**: Arcjet Web Application Firewall.
-*   **Database**: Neon Postgres with Drizzle ORM.
-*   **AI**: Vercel AI SDK v6 (Model Context Protocol).
+*   **Framework**: Next.js (App Router) - Scalable Production.
+*   **App Security**: Arcjet (WAF, Bot Detection, Rate Limiting).
+*   **Database & ORM**: Neon (PostgreSQL) + Drizzle ORM (Immutable Audit).
+*   **Intelligence Engine**: Vercel AI SDK (Forensic Analysis & Mentorship).
+*   **Infrastructure**: Vercel (Optimized for $0 Cost).
 *   **Email**: Resend API (SPF/DKIM/DMARC).
 
 ## Project Management & Collaboration (ClickUp)
