@@ -49,6 +49,53 @@
 *   Updated `README.md` and `PROJECT_OVERVIEW.md` with new "Defensive Teacher" vision.
 *   Defined 4 Modules: Watchtower, Session Intel, Attack Lab, Hall of Fame.
 *   Updated `docs/prd.md` and `.claude/skills/project-context.md` to align with new requirements.
+
+### [2026-01-25] Data Core Configuration
+**👤 Author**: Antigravity
+**🎯 Goal**: Implement Drizzle ORM + Neon schema for SecOps telemetry.
+**✅ Accomplished**:
+*   Installed `drizzle-orm`, `drizzle-kit`, `@neondatabase/serverless`.
+*   Created `src/db/schema.ts` with `security_events`, `user_sessions`, and `research_leaderboard`.
+*   Configured `drizzle.config.ts` and `src/db/index.ts`.
+*   Added database management scripts to `package.json`.
 **🚧 Next Steps**:
-*   Begin implementation of "The Watchtower" (Telemetry Dashboard).
+*   User needs to add `DATABASE_URL` to `.env`.
+*   Start Task 3: The Watchtower Dashboard.
+
+### [2026-01-25] The Watchtower & Arcjet (Active Defense)
+**👤 Author**: Antigravity
+**🎯 Goal**: Implement Arcjet middleware blocking and Watchtower Dashboard.
+**✅ Accomplished**:
+*   Installed `@arcjet/next` and `@arcjet/node`.
+*   Implemented `src/proxy.ts` (formerly middleware) with Shield, Bot Detection, and Rate Limiting.
+*   Implemented `src/lib/security.ts` to log attacks to `security_events` table.
+*   Built `src/app/page.tsx` displaying specific "Active Defense" metrics (Threat Counter, Live Feed).
+**⚠️ Notes**:
+*   Renamed `middleware.ts` to `src/proxy.ts` to resolve deprecation warning.
+*   Build requires valid `ARCJET_KEY` and `DATABASE_URL` in `.env` to succeed.
+**🚧 Next Steps**:
+*   User must add real keys to `.env`.
+*   Proceed to Task 4: Session Intel.
+
+### [2026-01-25] Middleware Sync & Validation
+**👤 Author**: Antigravity
+**🎯 Goal**: Synchronize with manual `middleware.ts` update and validate dependencies.
+**✅ Accomplished**:
+*   Verified `src/middleware.ts` uses correct `@arcjet/next` configuration.
+*   Confirmed `src/proxy.ts` is deleted/ignored.
+*   Validated schema alignment in `src/lib/security.ts`.
+*   Dependencies verified: `@arcjet/next`, `@arcjet/node`, `@neondatabase/serverless`.
+**🚧 Next Steps**:
+*   Proceed to Task 4: Session Intel.
+
+### [2026-01-25] Session Intel & Alias Generator
+**👤 Author**: Antigravity
+**🎯 Goal**: Implement Alias, Risk Score tracking, and Identity UI.
+**✅ Accomplished**:
+*   Implemented `src/lib/session.ts` with `generateCyberAlias`.
+*   Updated `src/middleware.ts` to pass `x-arcjet-fingerprint`.
+*   Refactored `logSecurityEvent` (risk score logic).
+*   Added `<IdentityCard />` to Watchtower.
+**🚧 Next Steps**:
+*   Proceed to Task 5: Ethical Sandboxes.
 
