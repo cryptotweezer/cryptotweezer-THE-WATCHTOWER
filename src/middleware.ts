@@ -59,7 +59,7 @@ export default createMiddleware(aj, async (req: NextRequest, ctx: NextFetchEvent
                 eventType,
                 riskScore,
                 action: "Blocked",
-                ip: decision.ip,
+                ip: (decision.ip as any)?.toString() || "unknown",
                 location: "Unknown",
                 payload: req.url,
             });
