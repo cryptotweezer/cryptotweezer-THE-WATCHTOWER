@@ -1,6 +1,6 @@
 
 import { headers } from "next/headers";
-import { getOrCreateSession, getSession } from "@/lib/session";
+import { getOrCreateSession } from "@/lib/session";
 
 export async function IdentityCard() {
     // 1. Get header set by middleware
