@@ -8,7 +8,7 @@ export const config = {
     matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
 
-export async function middleware(req: NextRequest, ctx: NextFetchEvent) {
+export async function middleware(req: NextRequest, _ctx: NextFetchEvent) {
     try {
         // 1. Extreme Key Validation & Bypass
         const ajKey = process.env.ARCJET_KEY;

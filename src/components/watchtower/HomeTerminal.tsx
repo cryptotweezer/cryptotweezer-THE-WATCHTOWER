@@ -6,9 +6,17 @@ import IdentityHUD from "@/components/watchtower/IdentityHUD";
 import Briefing from "@/components/watchtower/Briefing";
 import Footer from "@/components/watchtower/Footer";
 
+interface SecurityEvent {
+    id: string;
+    eventType: string;
+    ipAddress: string;
+    actionTaken: string;
+    timestamp: string;
+}
+
 interface HomeTerminalProps {
     threatCount: number;
-    recentEvents: any[];
+    recentEvents: SecurityEvent[];
     identity: {
         alias: string;
         fingerprint: string;
@@ -81,7 +89,7 @@ export default function HomeTerminal({ threatCount, recentEvents, identity }: Ho
                             {recentEvents.length === 0 ? (
                                 <p className="text-neutral-500 italic">No threats detecting... yet.</p>
                             ) : (
-                                recentEvents.map((event: any) => (
+                                recentEvents.map((event) => (
                                     <div key={event.id} className="flex justify-between items-start border-l-2 border-red-500 pl-4 py-1">
                                         <div>
                                             <p className="font-mono text-red-400 text-sm font-bold">{event.eventType}</p>
