@@ -1,7 +1,7 @@
 
 import arcjet, { detectBot, shield, slidingWindow } from "@arcjet/next";
 import { NextResponse } from "next/server";
-import type { NextRequest, NextFetchEvent } from "next/server";
+import type { NextRequest } from "next/server";
 
 export const config = {
     // Matcher ignoring _next/static, _next/image, favicon.ico, etc.
@@ -9,7 +9,7 @@ export const config = {
 };
 
 // Next.js 16 Proxy Export Convention
-export default async function proxy(req: NextRequest, _ctx: NextFetchEvent) {
+export default async function proxy(req: NextRequest) {
     try {
         // 1. Extreme Key Validation & Bypass
         const ajKey = process.env.ARCJET_KEY;

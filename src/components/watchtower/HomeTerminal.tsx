@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 import Gatekeeper from "@/components/watchtower/Gatekeeper";
 import IdentityHUD from "@/components/watchtower/IdentityHUD";
@@ -32,8 +32,9 @@ export default function HomeTerminal({ threatCount, recentEvents, identity }: Ho
     const [aiResponse, setAiResponse] = useState("");
 
     // Manual Stream Implementation (Plan C)
-    const startSentinel = async () => {
+    const startSentinel = useCallback(async () => {
         setAiResponse("");
+
         try {
             const response = await fetch('/api/sentinel', {
                 method: 'POST',
@@ -61,18 +62,18 @@ export default function HomeTerminal({ threatCount, recentEvents, identity }: Ho
             console.error("Sentinel Downlink Failed:", err);
             setAiResponse(">> CONNECTION LOST <<");
         }
-    };
+    }, [identity]);
 
-    // Trigger AI Welcome on Handshake
-    useEffect(() => {
-        if (accessGranted) {
+    const handleAccess = (granted: boolean) => {
+        setAccessGranted(granted);
+        if (granted) {
             startSentinel();
         }
-    }, [accessGranted]);
+    };
 
     return (
         <>
-            {!accessGranted && <Gatekeeper onAccess={setAccessGranted} />}
+            {!accessGranted && <Gatekeeper onAccess={handleAccess} />}
 
             <main className={`flex min-h-screen flex-col items-center justify-between p-24 bg-neutral-950 text-neutral-200 transition-all duration-1000 ${accessGranted ? "blur-none opacity-100 scale-100" : "blur-lg opacity-50 scale-95 overflow-hidden h-screen"}`}>
 
