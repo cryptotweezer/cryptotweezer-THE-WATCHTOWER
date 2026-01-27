@@ -59,7 +59,7 @@ This repository is optimized for **AI-Human Collaboration**. We use a modular co
 ### Installation
 
 ```bash
-git clone https://github.com/cryptotweezer/THE-WATCHTOWER.git
+git clone https://github.com/cryptotweezer/cryptotweezer-THE-WATCHTOWER.git
 cd Digital-Twin-III
 pnpm install
 pnpm dev
@@ -75,16 +75,5 @@ pnpm dev
 - [ ] **Week 4**: Production Deployment & Performance Tuning.
 - [ ] **Week 5**: Final Bug Bash & Presentation Outline.
 - [ ] **Week 6**: LIVE DEFENSE DEMO.
-
----
-
-## 👥 TEAM
-
-*   Andres Henao
-*   Ayush K.
-*   Anchal
-*   Gitaumoureen
-*   Sonal Kadiyan
-*   Pjanx Andrei
 
 > *This project is an educational cyber lab. Every interaction is monitored for intelligence gathering.*
