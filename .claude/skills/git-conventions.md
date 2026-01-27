@@ -1,66 +1,60 @@
----
-description: Git conventions, CI/CD pipeline, and verification standards.
----
+🐙 THE COMMANDER PROTOCOL: GIT & CI/CD CONVENTIONS (v1.1)
+Role: Infrastructure & Version Control Enforcer. Mission: Maintain a pristine 'main' branch and ensure 100% deployment success in Vercel.
 
-# 🐙 Git & CI/CD Conventions
+1. THE QUALITY GATE (CI/CD)
+The project uses GitHub Actions and Vercel Deployment Checks.
 
-## 🚦 The Pipeline (Quality Gate)
-We use **GitHub Actions** (`quality.yml`) to enforce code quality.
-*   **Trigger**: Pushes to `main` and Pull Requests.
-*   **Checks**: Linting (`next lint`), Building (`next build`), and Type Checking.
+Trigger: Every Push or Pull Request.
 
-> **⛔ CRITICAL RULE**: You cannot merge code that fails the pipeline. If a check fails, your PRIORITY is to fix it immediately.
+Mandatory Checks: pnpm lint, pnpm build, and Type Checking.
 
-## Commit Messages
-Use the **Conventional Commits** format **PLUS Team Member Name**.
-This helps us track who (or which AI agent + Team Member) created the commit.
+CRITICAL RULE: Never merge or push code that fails local build. If the Vercel build fails, the agent must treat it as a Severity: High incident and fix it immediately.
 
-**Format**: `type(scope): description / Team Member Name`
+2. COMMIT MESSAGE STANDARDS
+We use Conventional Commits + Attribution. This is non-negotiable for tracking AI vs. Human contributions.
 
-*   `feat`: New feature (e.g., `feat(ui): add 3d robot model / [Team Member Name]`)
-*   `fix`: Bug fix (e.g., `fix(auth): resolve token expiration / [Team Member Name]`)
-*   `chore`: Maintenance (e.g., `chore(deps): update next.js / [Team Member Name]`)
-*   `docs`: Documentation (e.g., `docs(api): update swagger / [Team Member Name]`)
-*   `refactor`: Code restructuring without checking behavior.
+Format: type(scope): description / [Team Member Name]
 
-## Branching Strategy
-**Source**: Digital Twin III - Chapter 14.
+feat: New feature (e.g., feat(hud): add vpn detection / Antigravity)
 
-We use a strict Feature Branch workflow. **NEVER commit directly to `main`**.
+fix: Bug fix (e.g., fix(auth): fix session timeout / Antigravity)
 
-### Branch Prefixes
-*   `feature/...`: New functionality (e.g., `feature/chat-ui`).
-*   `bugfix/...`: Non-critical bug fixes (e.g., `bugfix/typo-in-footer`).
-*   `hotfix/...`: **Urgent** production fixes (e.g., `hotfix/db-connection-down`).
-*   `chore/...`: Cleanup, deps, docs (e.g., `chore/update-readme`).
-*   `test/...`: Experiments or prototyping (do not merge to main).
+chore: Maintenance (e.g., chore(deps): update arcjet / Andres)
 
-### Pull Request (PR) Process
-1.  **Create PR**: Link the ClickUp Task ID in the description.
-2.  **Review**: Wait for CI checks (`quality.yml`) to pass ✅.
-3.  **Merge**: Squash and Merge is preferred to keep history clean.
+docs: Documentation updates.
 
+refactor: Code changes that neither fix a bug nor add a feature.
 
-## Workflow Integration
-1.  **Branching**: Always use `feature/name` or `fix/name`.
-2.  **Archivist**: **MANDATORY**. Update `docs/DEVELOPMENT_LOG.md` before committing.
-3.  **Verification**:
-    *   Before you claim "Done", run `pnpm build` locally to simulate the CI pipeline.
-    *   If the local build fails, do NOT push.
-4.  **Attribution**: Always ask the user for their **Team Member Name** if you don't know it.
+3. BRANCHING STRATEGY: THE PERIMETER
+Source: Digital Twin III - Architecture Standards. Rule: No direct commits to main. All work happens in isolated sectors.
 
-## Finalización de Tarea
-Cada vez que termines un cambio:
-1.  Haz push a tu rama de característica (`git push origin feature/nombre-tarea`).
-2.  **Informa al usuario**: "He subido los cambios a la rama [nombre]. Ya puedes ver la solicitud en la pestaña de Pull Requests de GitHub para tu revisión y aprobación".
-3.  **Sin links**: No generes links externos, el flujo nativo de GitHub notificará al usuario.
+Branch Prefixes:
+feature/[name]: New functionality (e.g., feature/alpha-phases).
 
-## Example Scenario
-*   *Task*: Add a new button.
-*   *Team Member*: Andres
-*   *Action*:
-    1.  `git checkout -b feature/new-button`
-    2.  Write code.
-    3.  `pnpm build` (Pass ✅)
-    4.  `git commit -m "feat(ui): add contact button / Andres"`
-    5.  `git push origin feature/new-button`
+bugfix/[name]: Fixing broken logic.
+
+hotfix/[name]: Urgent production fixes (e.g., hotfix/vercel-deploy-error).
+
+test/[name]: Experimental features (not for merging).
+
+4. EXECUTION WORKFLOW
+Synchronization: git pull origin main.
+
+Isolation: git checkout -b feature/task-name.
+
+Development: Follow the active Master Plan (e.g., homepage.md).
+
+Pre-Flight Check: You MUST run pnpm build locally. If it fails, do NOT commit.
+
+The Archivist: Update docs/DEVELOPMENT_LOG.md with the session details.
+
+Commit & Push: git commit -m "..." then git push origin [branch].
+
+5. TASK COMPLETION PROTOCOL
+When a micro-task is finished:
+
+Inform the user: "Task [X] is complete. Code pushed to branch [name]."
+
+Deployment Status: Wait for Vercel to confirm the build. If successful, notify: "Vercel Build: SUCCESSFUL. Ready for review."
+
+No External Links: Do not generate links; use GitHub's native flow.

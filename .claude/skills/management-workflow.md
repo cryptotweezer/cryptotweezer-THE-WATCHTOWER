@@ -1,44 +1,60 @@
----
-description: Project management standards (ClickUp) and Weekly Engineering Workflow.
----
+📅 THE COMMAND CENTER: PROJECT MANAGEMENT & WORKFLOW (v1.1)
+Role: Project Governance & Strategic Delivery. Mission: Ensure 100% transparency in task execution and maintain a predictable delivery "heartbeat."
 
-# 📅 Project Management & Workflow
+1. CLICKUP DISCIPLINE: THE SOURCE OF TRUTH
+Mandatory: No work is performed unless it is backed by a ClickUp Task.
 
-This skill ensures we work like a professional engineering team, not just coders.
-**Source**: Digital Twin III - Chapters 10, 12, 15.
+Task States:
+TODO: Planned features in the Backlog.
 
-## 🛠️ ClickUp Discipline
-**Mandatory Requirement**: All work must be tracked in ClickUp.
+IN PROGRESS: The agent is currently coding this specific task.
 
-1.  **Task States**:
-    *   `TODO`: Planned but not started.
-    *   `IN PROGRESS`: Actively being worked on (Assignee required).
-    *   `IN TEST`: Code committed, PR created, waiting for review/verification.
-    *   `DONE`: Merged and verified in production.
-    *   `BLOCKED`: Cannot proceed (Discuss in Stand-up).
+IN TEST: Code is pushed to a feature branch; Vercel build is being verified.
 
-2.  **Task Rules**:
-    *   **No Ghost Work**: If it's not in ClickUp, it doesn't exist.
-    *   **Linkage**: Every GitHub PR must link to a ClickUp Task ID.
-    *   **Status Updates**: Move tickets actively. Don't leave things in "IN PROGRESS" for weeks.
+DONE: Code merged to main, verified in production, and marked in DEVELOPMENT_LOG.md.
 
-## 🗓️ Weekly Routine (The "Heartbeat")
-We follow a strict weekly cadence to ensure delivery.
+BLOCKED: Technical debt or missing environment variables preventing progress.
 
-1.  **Monday: Planning**
-    *   Review previous week.
-    *   Move tasks from Backlog -> READY.
-    *   Assign owners for the week.
+Rules of Engagement:
+No Ghost Work: If a feature isn't in ClickUp, it doesn't get built.
 
-2.  **Tue-Thu: Development (Stand-ups)**
-    *   **Daily Question**: "What did I do? What am I doing? Am I blocked?"
-    *   Update ClickUp *during* the stand-up.
+Micro-Tasking: Break large features (e.g., "The War Room") into smaller, testable sub-tasks.
 
-3.  **Friday: Review & Test**
-    *   Stop new feature work.
-    *   Focus on **Testing** and **Merging**.
-    *   Run the "Weekly Calibration" check (Architecture review).
+ID Linking: Every GitHub Pull Request must reference the ClickUp Task ID in the description.
 
-## ⚠️ Collaboration Rules
-*   **PR Reviews**: You cannot merge your own critical code without a second set of eyes (human or AI review).
-*   **Documentation**: If you change the logic, update `agents.md` or the relevant `docs/*.md`.
+2. THE WEEKLY "HEARTBEAT" (ROUTINE)
+We follow a strict cadence to ensure the Cyber-Hardened Portfolio is delivered on time.
+
+Monday: Tactical Planning
+
+Review the previous week's logs.
+
+Move tasks from Backlog to 'Ready for Sprint'.
+
+Tue-Thu: Aggressive Development
+
+Focus on executing the active Master Plan (e.g., homepage.md).
+
+Daily Updates: "What was achieved? What is next? Any blockers?"
+
+Friday: Hardening & Calibration
+
+Cease new feature development.
+
+Focus on Bug Squashing, Security Audits (Arcjet testing), and Documentation sync.
+
+3. SOCIO-AI SYNERGY RULES
+PR Reviews: Critical security logic (WAF rules/Database queries) requires a "Human-in-the-loop" approval before merging to main.
+
+Master Plan Updates: If the implementation changes the original design, the AI MUST propose an update to the corresponding .md in .claude/skills/.
+
+Documentation First: Logic changes must be reflected in security-manifesto.md or infamy-engine.md immediately.
+
+4. VERIFICATION STANDARDS
+A task is only DONE when:
+
+It passes pnpm build and pnpm lint.
+
+It is deployed and visible in the Vercel production URL.
+
+The Archivist has recorded the successful deployment.

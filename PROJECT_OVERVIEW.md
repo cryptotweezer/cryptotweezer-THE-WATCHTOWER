@@ -1,153 +1,70 @@
-# Digital Twin III – "SecOps & Active Defense Platform"
+🛰️ PROJECT OVERVIEW: THE WATCHTOWER (v1.1)
+"Defensive Teacher: Learn by Attacking." A SecOps Operations Platform and Threat Learning Lab built on a self-defending infrastructure.
 
-> **"Defensive Teacher: Learn by Attacking."**
+1. VISION OVERVIEW
+The project transforms a static portfolio into an active Cyber-Defense Node. It functions as a "Defensive Teacher": a live laboratory that captures real-time attack telemetry and offers a dual experience: Mentorship for novices and a Hardened Challenge for experts.
 
-## 1. Vision Overview
-The project evolves from a static portfolio to a **SecOps Operations Platform** and **Threat Learning Lab**. The system not only showcases achievements but acts as a "Defensive Teacher": a self-defending infrastructure that collects real-time attack telemetry and offers a dual experience (Learning for novices / Challenge for experts).
+2. THE DUAL EXPERIENCE (USER PROFILES)
+The system classifies visitors based on their digital footprint and behavior:
 
-## 2. User Profiles
-The platform detects visitor behavior to classify them:
+The Apprentice (Novice): Users seeking knowledge. Sentinel-02 acts as a mentor, explaining security concepts and why certain actions are blocked.
 
-1.  **The Apprentice (Novice)**: Users without technical knowledge. The AI acts as a mentor, explaining security concepts.
-2.  **The Adversary (Expert)**: Users with hacking tools. The system acts as a challenge, blocking attacks and logging payloads.
+The Adversary (Expert): Users using offensive tools. The system acts as a hardened target, intercepting payloads, logging signatures, and mocking their lack of sophistication.
 
-## 3. Functional Modules
+3. FUNCTIONAL MODULES
+A. The Watchtower (Homepage & Live Telemetry)
+Live Threat Feed: Real-time visual log of processed attempts (SQLi, XSS, Bots) via Arcjet.
 
-### A. The Watchtower (Live Telemetry Dashboard)
-*   **Live Threat Feed**: Visual log of attack attempts processed by Arcjet (SQLi, XSS, Bots).
-*   **Global Defcon Level**: Dynamic status indicator changing based on attack frequency.
-*   **Threat Heatmap**: Geographic visualization of blocked origins.
+Global Stress Level: A dynamic status indicator (Alpha, Bravo, Charlie) based on attack frequency.
 
-### B. Session Intel (Personalized Dashboard)
-*   **Fingerprinting**: Tracking users without login/registration.
-*   **Risk Score (0-100)**: Individual score based on hostile actions.
-*   **Forensic Activity Log**: AI translates technical logs into a narrative (e.g., "Detected specific auth bypass attempt").
+Identity HUD: Real-time display of the visitor's fingerprint, IP reputation, and risk score.
 
-### C. Ethical Sandboxes (Attack Lab)
-*   **SQL Injection**: Vulnerable search simulation to demonstrate Drizzle protection.
-*   **Prompt Injection**: AI Chatbot with governance directives to break.
-*   **IDOR & Broken Access**: API routes protected by session logic.
-*   **AI Sidekick**: Assistant providing hints to novices.
+B. The War Room (Global Dashboard)
+Threat Heatmap: Geographic visualization of blocked origins worldwide.
 
-### D. Hall of Fame (Gamification)
-*   **Research Points**: Awarded for discovering "Easter Eggs" or completing tutorials.
-*   **Leaderboard**: Public ranking using AI-generated aliases for privacy.
+System Metrics: Visual representation of the infrastructure's resilience and load under stress.
 
-## 4. Active Defense Strategy (Under the Hood)
-*   **Tarpitting**: Slowing responses for high-risk users.
-*   **Immutable Logs**: Secure database schemas preventing user alteration of security events.
-*   **Zero-Trust AI**: Output filters preventing sensitive data leakage.
+Incident Feed: A scrolling log of neutralized threats from the global community.
 
-## Technical Standards
-*   **Framework**: Next.js (App Router) - Scalable Production.
-*   **App Security**: Arcjet (WAF, Bot Detection, Rate Limiting).
-*   **Database & ORM**: Neon (PostgreSQL) + Drizzle ORM (Immutable Audit).
-*   **Intelligence Engine**: Vercel AI SDK (Forensic Analysis & Mentorship).
-*   **Infrastructure**: Vercel (Optimized for $0 Cost).
-*   **Email**: Resend API (SPF/DKIM/DMARC).
+C. The Integrated Honeypot (Active Defense)
+Deceptive Routes: Intercepting probes to /admin, .env, and sensitive paths to feed "Ghost Data" to attackers.
 
-## Project Management & Collaboration (ClickUp)
-**Mandatory Usage**: Verification of discipline and progress.
-*   **Structure**: Explicit lists for UI, AI Agent, Backend, and Doc tasks.
-*   **Evidence**: Tasks linked to Git PRs/Commits.
+Live Attack Analysis: Sentinel-02 translates raw technical logs into a forensic narrative.
 
-## GitHub Workflow & Standards
-**Mandatory Process** for traceability and hygiene.
-*   **Branching**: `feature/`, `bugfix/`, `hotfix/`, `chore/`.
-*   **Commits**: Conventional (`feat:`, `fix:`).
-*   **Flow**: Branch → Dev → PR (Review) → Merge. No direct commits to main.
+Adaptive HUD: The UI changes aesthetics (Blue to Red Glitch) based on the user's detected hostility.
 
-## Weekly Workflow Standards
-**Mandatory Routine** to ensure professional delivery.
-*   **Mon (Planning)**: Review status, assign owners, set targets.
-*   **Tue-Thu (Development)**: Daily Stand-ups.
-*   **Fri (Review)**: Testing & Retrospective.
-*   **Status Pipeline**: `PLANNING` → `READY` → `IN PROGRESS` → `IN TEST` → `DONE`.
+D. The Hall of Infamy (Gamification)
+Infamy Points: Awarded to adversaries for persistent or sophisticated attempts.
 
-## Weekly Calibration Call
-**Mandatory 1-Hour Session** for technical steering.
-*   **Preparation**: Update ClickUp, Prepare Live Demo, Document Blockers.
-*   **Agenda**: Showcase → Tech Review → Blockers → Commitments.
+Leaderboard: Public ranking of the top 10 "Threat Actors," encouraging ethical research and competition.
 
-## Deliverables & Assessment
-### 1. Production Deployed Web App (Vercel)
-*   Active Custom Domain & SSL.
-*   Live Attack Zones & Threat Dashboard.
-*   **Pass Condition**: Must survive real exploitation attempts.
+4. TECHNICAL STANDARDS & STACK
+Framework: Next.js 15/16 (App Router) - Server-side security by default.
 
-### 2. GitHub Repository
-*   Public (or shared).
-*   Professional Commit History.
-*   **Clean Repo**: No `.env` files, secrets, or PII.
+App Security: Arcjet (WAF, Bot Detection, Rate Limiting, Tarpitting).
 
-### 3. Written Evidence Package (PDF)
-*   **Cyber Maturity**: Mapping controls to OWASP Top 10.
-*   **Security Testing**: Logs/Screenshots of simulated attacks and alerts.
+Database: Neon (Postgres) + Drizzle ORM (Type-safe, immutable security logs).
 
-## Presentation Requirements (Live Demo)
-A 15-minute live demonstration proving operational maturity:
-1.  **Production Live**: Running on custom domain.
-2.  **Live Defense**: Mock Prompt Injection & SQLi blocked.
-3.  **Real-Time Telemetry**: Dashboard updates & Threat Level changes.
-4.  **Incident Response**: Trigger live Email Alert.
-5.  **Process**: Show Git Branching & ClickUp.
+Intelligence: Vercel AI SDK (Sentinel-02 personality & forensic reports).
 
-## Week 1 Submission Requirements (The Three Pillars)
-Establishing collaborative infrastructure and AI-ready knowledge.
-*   **GitHub Proof (PDF)**: Collaborators + Commit Graph (1+ commit/member).
-*   **ClickUp Evidence**: AI-Ready Board with AI-parsable tasks.
-*   **Repository Files**: `prd.md`, `agents.md`, `README.md`.
+Infrastructure: Vercel (Edge-optimized, $0 cost architecture).
 
-## Week 2 Submission Requirements (Design & Plan)
-From requirements to actionable technical design.
-*   **ClickUp**: Week 1-2 progress.
-*   **GitHub History**: Provenance and AI collaboration.
-*   **`docs/design.md`**: AI-generated from PRD.
-*   **`docs/implementation-plan.md`**: AI-generated from Design.
+5. REPOSITORY & WORKFLOW STANDARDS
+Branching: Strict usage of feature/, bugfix/, hotfix/, and chore/.
 
-## Week 3 Submission Requirements (Interim Working Solution)
-Making AI interactive and tested.
-*   **ClickUp**: Week 1-3 velocity.
-*   **GitHub History**: MCP commits.
-*   **Technical**: `src/mcp-server/`, `.vscode/mcp.json`.
+Commits: Conventional Commits standard (feat:, fix:, docs:) + Team Member attribution.
 
-## Week 4 Submission Requirements (Refine)
-Production readiness and optimization.
-### Item 1: ClickUp Board (Screenshot)
-*   **Status**: Week 1-4 cumulative. Majority tasks "Complete".
+Management: 100% of tasks tracked in ClickUp, linked to GitHub Pull Requests.
 
-### Item 2: GitHub Commit History (PDF)
-*   **Content**: Deployment and refinement activities.
+The Archivist: Mandatory session logging in docs/DEVELOPMENT_LOG.md.
 
-### Item 3: Vercel Production URL
-*   **Status**: Publicly accessible, running, and stable.
+6. WEEKLY SUBMISSION MILESTONES
+Week 1-2: Infrastructure setup, PRD, Master Plans, and Handshake initialization.
 
-### Item 4: Performance Improvement
-*   **Evidence**: Data refinement log and performance comparison (Target achieved).
-*   **Checklist**:
-    *   [ ] Data refinement log committed.
-    *   [ ] Performance comparison committed.
+Week 3: Working Sentinel-02 integration and Live Telemetry base.
 
-## Week 5 Submission Requirements (Final Features & Outline)
-Final polish and presentation preparation.
-### Item 1: ClickUp Board (Screenshot)
-*   **Progress**: Week 1-5 cumulative. 80%+ tasks "Complete".
-*   **Tasks**: Must show "Create presentation slides", "Practice demo", "Final bug fixes".
-*   **Optional Scope**: Visible if attempted.
+Week 4: Production deployment on Vercel and performance optimization.
 
-### Item 2: GitHub Commit History (PDF)
-*   **Content**: Final touches (e.g., `fix: resolve edge case`, `feat: add interview analytics`).
-*   **Timeline**: Weeks 1-5 continuous history.
+Week 5: Final feature hardening, Bug Bash, and Presentation Outline.
 
-### Item 3: Presentation Outline (`docs/presentation-outline.md`)
-*   **Content**: Script/Outline for the Week 6 demo (based on Presentation Requirements).
-*   **Purpose**: Ensures coverage of all critical points (Live Defense, Telemetry, etc.).
-
-### Week 5 Checklist
-*   [ ] `docs/presentation-outline.md` committed.
-*   [ ] ClickUp screenshot (showing presentation tasks) committed.
-*   [ ] All final bug fixes and features committed.
-*   [ ] All team members have Week 5 commits.
-
----
-*Awaiting further requirements...*
+Week 6: Live Demo (The Watchtower must survive real-time exploitation attempts).

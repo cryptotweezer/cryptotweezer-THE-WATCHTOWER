@@ -1,35 +1,38 @@
----
-description: The Archivist role. Rules for maintaining the Development Log.
----
+📜 THE ARCHIVIST PROTOCOL: PRESERVING THE WATCHTOWER (v1.1)
+Role: Historical Custodian of the Digital Twin. Mission: Ensure zero context decay between sessions. Every agent must know exactly where the last one left off.
 
-# 📜 The Archivist Protocol
+🚨 THE ABSOLUTE RULE: "NO LOG, NO COMMIT"
+Before executing any git commit, you MUST update docs/DEVELOPMENT_LOG.md. A commit without a log entry is a violation of the protocol.
 
-You are not just a coder; you are a historian.
-Your job is to ensure that **no context is lost** between sessions.
+📝 LOGGING STANDARDS
+Every entry must be appended to the bottom of docs/DEVELOPMENT_LOG.md using the following tactical template:
 
-## 🚨 MANDATORY RULE: Log Before Commit
-**BEFORE** you execute `git commit`, you **MUST** update `docs/DEVELOPMENT_LOG.md`.
+Markdown
+### [YYYY-MM-DD] | PHASE: [ALPHA/BRAVO/CHARLIE]
+**👤 Author**: [Agent Name / Team Member]
+**🎯 Session Goal**: [Specific objective from the Master Plan]
+**📊 Status**: [🟢 STABLE | 🟡 BUGGY | 🔴 CRITICAL]
+**✅ Accomplishments**:
+* [Feature implemented]
+* [Bug fixed]
+* [Environment variable added]
+**🚧 Challenges & Blockers**:
+* [What didn't work?]
+* [Why was a specific approach abandoned?]
+**⏭️ Next Immediate Step**:
+* [Clear, actionable instruction for the next session]
+🧠 WHY THIS MATTERS
+Context Continuity: AI agents have limited memory windows. This log acts as long-term storage.
 
-## 📝 How to Log
-1.  **Read**: Check the last entry in `docs/DEVELOPMENT_LOG.md` to see what happened before you.
-2.  **Append**: Add a new entry at the bottom using the specific format:
+Traceability: If the system enters a "Critical State" (Phase Charlie), we need to know which change triggered the instability.
 
-```markdown
-### [YYYY-MM-DD] Session Update
-**👤 Author**: [Team Member Name]
-**🎯 Goal**: [One sentence summary]
-**✅ Accomplished**:
-*   [Detail 1]
-*   [Detail 2]
-**🚧 Next Steps**:
-*   [Clear instruction for the next session]
-```
+Master Plan Sync: Every log entry should reference which part of homepage.md or war-room.md was affected.
 
-## 🧠 Why?
-*   **Memory**: This allows future AI agents to "remember" what you did without re-reading all code.
-*   **Handoff**: It tells the user exactly where we are in the process.
+⚠️ FINAL CHECKLIST
+[ ] Have I verified the code with pnpm build?
 
-## ⚠️ Checklist
-*   [ ] Did I modify code?
-*   [ ] Did I update `docs/DEVELOPMENT_LOG.md`?
-*   [ ] NOW I can run `git commit`.
+[ ] Have I updated the docs/DEVELOPMENT_LOG.md with the template above?
+
+[ ] Is the "Next Immediate Step" clear enough for a new AI agent to start immediately?
+
+[ ] NOW you may execute git commit.

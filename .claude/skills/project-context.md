@@ -1,86 +1,60 @@
----
-description: The Comprehensive Source of Truth for Digital Twin III (Goals, Architecture, Features).
----
+Socio, este es el documento más importante de todos. Es el "GPS" del proyecto. Si el contexto está desactualizado, la IA empezará a construir cosas que ya no queremos (como los sandboxes aburridos) en lugar de la experiencia de "Honeypot" real que definimos hoy.
 
-# 🌍 Project Context: Digital Twin III
+He reescrito el project-context.md para que refleje la nueva visión: The Watchtower, el Sentinel-02, y la transición de un "sitio de aprendizaje" a un "Activo de Defensa Activa".
 
-> **The Mission**: "Defensive Teacher: Learn by Attacking."
-> We are building a **SecOps & Active Defense Platform** that serves as a self-defending infrastructure node. It collects real-time attack telemetry and gamifies the experience for both visiting learners and adversaries.
+Aquí tienes la versión Ultra-Clean y actualizada:
 
-## 🏛️ Core Vision: A Dual Experience
-*   **The Apprentice (Novice)**: The AI acts as a mentor, explaining security concepts.
-*   **The Adversary (Expert)**: The system acts as a hardened target, blocking attacks and logging payloads.
+🌍 PROJECT CONTEXT: DIGITAL TWIN III - THE WATCHTOWER (v1.1)
+The Mission: "Active Defense & Intelligence Gathering." We are transforming a professional portfolio into a Cyber-Hardened Infrastructure Node. The system is not just a showcase; it is a live laboratory that detects, logs, and mocks adversaries in real-time.
 
-## 🛡️ Functional Modules (Active Defense)
-1.  **The Watchtower**: Threat Telemetry Dashboard (Live Feed, Defcon Level, Heatmap).
-2.  **Session Intel**: Identity Awareness via fingerprinting & Risk Scores.
-3.  **Attack Lab**: Ethical Sandboxes for SQLi, Prompt Injection, and IDOR.
-4.  **Hall of Fame**: Gamified leaderboard for security researchers.
+🏛️ CORE VISION: THE SENTINEL'S PERIMETER
+The Experience: The site acts as a "living" entity (Sentinel-02).
 
-## 🛡️ Six-Layer Defense Architecture
-This project **MUST** implement the following 6 layers of defense:
+The Hook: Every visitor is analyzed. "Normal" users see a high-end tech portfolio; "Adversaries" trigger a system-wide defensive reaction.
 
-1.  **Public Interface** (Next.js 16 + Shadcn):
-    *   Trust NO input.
-    *   Fail safely (no stack traces).
-2.  **App Logic** (Server Actions):
-    *   **Zero Trust**: Authenticate & Validate EVERY action.
-    *   No direct DB access from client.
-3.  **AI Governance** (MCP + Vercel AI SDK):
-    *   **Least Privilege**: AI agents cannot write to DB without validation.
-    *   **Guardrails**: Sanitize all MCP tool inputs.
-4.  **Data Integrity** (Neon Postgres + Drizzle):
-    *   Strict Schema Validation.
-    *   Separate Public vs. Private data.
-5.  **Network Defense** (Arcjet WAF + Vercel Firewall):
-    *   Block Automations/Bots.
-    *   Rate Limiting (DDOS protection).
-6.  **Observability** (Monitoring):
-    *   Real-time "Attacker Telemetry".
-    *   Dynamic Threat Levels (🟢 Green -> 🔴 Red).
+The Twist: We don't use boring sandboxes. The entire application is a Honeypot. Every attack attempt is fuel for the Global Telemetry.
 
-## 🚀 Mandatory Features to Build
-### 1. Functional Modules
-*   **Watchtower**: Visualizes live attacks and changes Global Defcon Level.
-*   **Session Intel**: Assigns "Risk Scores" to visitors based on behavior.
-*   **Attack Lab**: controlled environments for SQLi and Prompt Injection training.
-*   **Hall of Fame**: Ranking system for successful exploits (in sandboxes).
+🛡️ FUNCTIONAL MODULES (THE ECOSYSTEM)
+The Watchtower (Homepage): The entry point. Features the "Gatekeeper" handshake and real-time identity scanning (IP, Fingerprint, Geolocation).
 
-### 2. Security Architecture (Under the Hood)
-*   **Active Response**: Tarpitting and dynamic blocking for high-risk scores.
-*   **Forensic AI**: Vercel AI SDK analyzes patterns to generate natural language reports.
-*   **Immutable Logs**: Neon/Drizzle ensures security events cannot be tampered with.
+The War Room (Global Dashboard): A command center showing the "Global Stress Level," real-time attack maps, and a live feed of neutralized threats.
 
-## 📅 Weekly Submission Requirements (Success Criteria)
-**Source**: Digital Twin III - Chapters 16-21.
+The Hall of Infamy (Leaderboard): A gamified ranking of the most persistent "Criminals" (attackers), ranked by their Infamy Score.
 
-The AI must help the team meet these concrete deliverables:
+The Ghost Layer: Deceptive logic that intercepts suspicious routes (/admin, .env) to feed attackers fake data while logging their behavior.
 
-*   **Week 2 (Design)**:
-    *   [ ] `docs/design.md` (AI-Generated from PRD).
-    *   [ ] `docs/implementation-plan.md` (AI-Generated from Design).
-    *   [ ] PDF: Commit History + PR Review Evidence.
+🕹️ THREAT PHASES (REACTION SYSTEM)
+PHASE ALPHA (Stable): Standard operation. Cyan aesthetics. Sentinel is observant.
 
-*   **Week 3 (Interim Build)**:
-    *   [ ] Working Chatbot with MCP.
-    *   [ ] `src/mcp-server/` implemented.
-    *   [ ] Live Vercel Deployment (Beta).
+PHASE BRAVO (Suspicious): Triggered by DevTools or probing. Amber aesthetics. Sentinel becomes sarcastic.
 
-*   **Week 4 (Refine)**:
-    *   [ ] Production Deployment (Custom Domain).
-    *   [ ] **Performance**: LCP < 2.5s.
-    *   [ ] Evidence of Data Refinement.
+PHASE CHARLIE (Combat): Triggered by SQLi, XSS, or Rate Limiting. Red Glitch aesthetics. Sentinel becomes aggressive and tactical.
 
-*   **Week 5 (Polish)**:
-    *   [ ] `docs/presentation-outline.md`.
-    *   [ ] Final Bug Bash (Zero P0/P1 issues).
-    *   [ ] 80%+ ClickUp Tasks marked DONE.
+🛡️ SIX-LAYER DEFENSE ARCHITECTURE
+Public Interface: Next.js 15+ (App Router). Zero-trust input handling.
 
-## 🛠️ Tech Stack Constraints
-*   **Framework**: Next.js 16.1+ (App Router).
-*   **DB**: Neon Postgres (Serverless).
-*   **ORM**: Drizzle ORM (Type-safe queries).
-*   **AI**: Vercel AI SDK v6 (Model Context Protocol).
-*   **Security**: Arcjet WAF (Mandatory).
-*   **Email**: Resend API.
+App Logic: Server Actions with strict validation. No client-side DB exposure.
 
+Sentinel AI: GPT-4o-mini via Vercel AI SDK. Manual streaming for a "terminal" feel. Personality: Cold, authoritative, and cynical.
+
+Data Integrity: Neon Postgres + Drizzle ORM. Immutable logs for security events.
+
+Network Defense: Arcjet WAF is the primary enforcer (Bot detection, Rate Limiting, SQLi/XSS protection).
+
+Observability: Real-time telemetry visualized in "The War Room."
+
+🛠️ TECH STACK CONSTRAINTS (FREE TIER OPTIMIZED)
+Framework: Next.js 15.1+ (App Router).
+
+Database: Neon Postgres (Serverless/Free Tier).
+
+Security: Arcjet (WAF & Shield).
+
+AI: OpenAI (GPT-4o-mini) + Vercel AI SDK.
+
+Deployment: Vercel (Edge Functions).
+
+🕵️‍♂️ SOCIO-AI SYNERGY: HOW TO USE THIS CONTEXT
+Antigravity must use this document as the Ultimate Source of Truth. Any feature request must be cross-referenced with the "Threat Phases" and "Free Tier Optimization" sections.
+
+Current Focus: Completion of The Watchtower (Homepage) including the transition logic for Phase Bravo and Charlie.

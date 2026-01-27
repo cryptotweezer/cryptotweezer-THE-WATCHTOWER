@@ -1,91 +1,74 @@
-# Digital Twin III - The Cyber-Hardened Portfolio
+🛰️ THE WATCHTOWER: DIGITAL TWIN III
+"Defensive Teacher: Learn by Attacking."
 
-## 🎓 Project Vision
-> **"Defensive Teacher: Learn by Attacking."**
+The Watchtower is a next-generation SecOps & Active Defense Platform. It is not just a portfolio; it is a self-defending infrastructure node that captures real-time attack telemetry, analyzes threat patterns with AI, and gamifies the experience for both security researchers and adversaries.
 
-**Digital Twin III** has evolved from a static portfolio into a **SecOps & Active Defense Platform**. It serves as a cyber-resilient infrastructure node that doesn't just display work—it actively defends itself, collects real-time attack telemetery, and offers a dual experience:
-- **For Learners**: A mentor explaining security concepts.
-- **For Adversaries**: A hardened target that gamifies the hacking experience.
+🏛️ CORE VISION
+The project implements a Live Honeypot architecture. It classifies visitors into two profiles:
 
-This project demonstrates **Active Cyber Defense** using Arcjet (WAF), **Immutable Auditing** with Neon/Drizzle, and **Forensic AI Analysis** via Vercel AI SDK.
+The Apprentice: Receives AI-driven mentorship and forensic reports on security vulnerabilities.
 
-[Detailed Project Overview & Requirements](./PROJECT_OVERVIEW.md)
+The Adversary: Faces a hardened perimeter that logs every payload, fingerprints their identity, and assigns "Infamy Points" for their attempts.
 
-## 📁 Directory Structure
-*   **`PROJECT_OVERVIEW.md`**: Detailed requirements, threat model, and week-by-week deliverables.
-*   **`agents.md`**: AI instruction manual (Context for Copilot/Claude compatibility).
-*   **`docs/`**
-    *   `prd.md`: Product Requirements Document (AI Curriculum).
-    *   `design.md`: Technical Design (AI Generated & Team Reviewed).
-    *   `implementation-plan.md`: Execution Roadmap.
-    *   `presentation-outline.md`: Script for final demo.
-*   **`project-management/`**: ClickUp screenshots and evidence of velocity.
+🛡️ ACTIVE DEFENSE MODULES
+The Watchtower (Homepage): Real-time HUD showing the visitor's risk score, fingerprint metadata, and the current system threat level (Alpha/Bravo/Charlie).
 
-## 🤖 Development & AI Protocol ("Agent Skills")
-We use a **Context-Aware Modular Architecture** to ensure all AI agents (Cursor, Copilot, Gemini) and team members are aligned.
+The War Room (Global Dashboard): A command center visualizing global attack heatmaps and live incident feeds across the infrastructure.
 
-### 1. The "Skills" (`.claude/skills/`)
-Instead of a single prompt, we use modular "skills":
-*   **🧠 `project-context.md` (The Brain)**: Explains *Active Cyber Resilience*, 6-Layer Defense, and the Vision.
-*   **🚨 `ai-protocol.md` (The Protocol)**: Start/End of session rules. **Crucial for consistency**.
-*   **📜 `archivist.md` (The Memory)**: Enforces the "Log Before Commit" rule using `DEVELOPMENT_LOG.md`.
-*   **🐙 `git-conventions.md` (The Law)**: Enforces branch naming (`feature/...`) and Conventional Commits.
-*   **🏗️ `tech-stack-*.md` (The Mechanics)**: Standards for Next.js 16, Drizzle, and Arcjet.
+The Ghost Layer (Deceptive Logic): Intercepts probes to sensitive routes (/admin, .env) to feed attackers fake data while silently logging their signatures.
 
-### 2. The Golden Workflow
-1.  **Start With**: "Read `ai-protocol.md` and `workflow.md` to begin."
-2.  **During Work**: The AI automatically follows rules in `.cursorrules` or imported skills.
-3.  **Before Commit**:
-    *   **MUST** update `docs/DEVELOPMENT_LOG.md` (The Archivist).
-    *   **MUST** run `pnpm build` (The Gatekeeper).
+The Hall of Infamy (Gamification): A competitive leaderboard ranking the most persistent "Threat Actors" based on their detected activities.
 
-## 🛡️ Active Defense & Functional Modules
+🤖 AI-FIRST ARCHITECTURE ("AGENT SKILLS")
+This repository is optimized for AI-Human Collaboration. We use a modular context system located in .claude/skills/ to ensure all agents (Cursor, Copilot, Gemini) act with perfect consistency.
 
-### Core Modules
-1.  **The Watchtower (Telemetry Dashboard)**: Visualizes live attacks, Global Defcon Level, and Threat Heatmaps.
-2.  **Session Intel (Identity Awareness)**: Fingerprints users without login, assigning "Risk Scores" based on behavior.
-3.  **Ethical Sandboxes (Attack Lab)**: Controlled environments to practice SQLi, Prompt Injection, and IDOR.
-4.  **Hall of Fame (Gamification)**: Ranks researchers based on discovered vulnerabilities and "Easter Eggs".
+Key Skills:
+🧠 project-context.md: The "Vision Engine" and Sentinel-02 persona.
 
-### Security Architecture (Under the Hood)
-1.  **Public Interface**: Next.js + Shadcn (Secure UX)
-2.  **App Logic**: Server Actions (Zero Trust Auth)
-3.  **AI Governance**: Vercel AI SDK + Filters (Zero-Trust AI)
-4.  **Data Integrity**: Neon Postgres + Drizzle (Immutable Logs)
-5.  **Network Defense**: Arcjet WAF (Bot Detection & Rate Limiting)
-6.  **Active Response**: Tarpitting & Dynamic Blocking
+🚨 ai-protocol.md: Strict session management and quality gates.
 
-## 🚀 Getting Started
+📜 archivist.md: Mandatory history logging in DEVELOPMENT_LOG.md.
 
-### Prerequisites
-*   Node.js 20+
-*   pnpm
-*   Neon Database URL
-*   Arcjet Key
+🏗️ tech-stack-*.md: Standards for Next.js 15+, Drizzle, and Arcjet WAF.
 
-### Installation
-```bash
+🛠️ THE SECURITY STACK
+Framework: Next.js 15+ (App Router / Server Actions).
+
+Perimeter: Arcjet WAF (Bot Detection, Rate Limiting, SQLi/XSS Protection).
+
+Database: Neon Postgres (Serverless) + Drizzle ORM (Type-safe, immutable logs).
+
+Intelligence: Vercel AI SDK (Sentinel-02 Forensic Analysis).
+
+Infrastructure: Vercel (Optimized for high performance and zero cost).
+
+🚀 GETTING STARTED
+Prerequisites
+Node.js 20+ & pnpm
+
+Neon Database URL
+
+Arcjet Key & OpenAI API Key
+
+Installation
+Bash
 git clone https://github.com/cryptotweezer/Digital-Twin-III.git
 cd Digital-Twin-III
 pnpm install
 pnpm dev
-```
+📅 PROJECT MILESTONES
+[x] Week 1: Infrastructure & Documentation (The Pillars).
 
-## 👥 Team
-*   **Andres Henao** (`cryptotweezer@gmail.com`)
-*   **Ayush K.** (`ayushk566@gmail.com`)
-*   **Anchal** (`anchal1234asr@gmail.com`)
-*   **Gitaumoureen** (`gitaumoureen@yahoo.co.uk`)
-*   **Sonal Kadiyan** (`sonalkadiyan@gmail.com`)
-*   **Pjanx Andrei** (`pjanxandrei@gmail.com`)
+[ ] Week 2: Technical Design & Master Plan Hardening.
 
-## 📅 Project Status
-- [x] **Week 1**: Infrastructure & Pillars (Repo, ClickUp, PRD)
-- [ ] **Week 2**: Design & Implementation Plan
-- [ ] **Week 3**: Interactive System (Chat, MCP, WAF)
-- [ ] **Week 4**: Refinement & Production Deployment
-- [ ] **Week 5**: Final Polish & Presentation Prep
-- [ ] **Week 6**: **Live Defense Demo**
+[ ] Week 3: Interactive Sentinel-02 & Threat Phase Engine.
 
----
-*This project is an educational cyber lab. Ethical hacking is encouraged within the designated "Attack Zones" only.*
+[ ] Week 4: Production Deployment & Performance Tuning.
+
+[ ] Week 5: Final Bug Bash & Presentation Outline.
+
+[ ] Week 6: LIVE DEFENSE DEMO.
+
+Team: Andres Henao, Ayush K., Anchal, Gitaumoureen, Sonal Kadiyan, Pjanx Andrei.
+
+This project is an educational cyber lab. Every interaction is monitored for intelligence gathering.
