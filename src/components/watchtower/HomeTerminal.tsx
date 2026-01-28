@@ -1,75 +1,161 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 import Gatekeeper from "@/components/watchtower/Gatekeeper";
 import IdentityHUD from "@/components/watchtower/IdentityHUD";
 import Briefing from "@/components/watchtower/Briefing";
 import Footer from "@/components/watchtower/Footer";
 
-interface SecurityEvent {
-    id: string;
-    eventType: string;
-    ipAddress: string | null;
-    actionTaken: string;
-    timestamp: Date | string;
-}
-
 interface HomeTerminalProps {
     threatCount: number;
-    recentEvents: SecurityEvent[];
     identity: {
         alias: string;
         fingerprint: string | null;
         riskScore: number;
         ip: string | null;
     };
+    invokePath?: string;
 }
 
-export default function HomeTerminal({ threatCount, recentEvents, identity }: HomeTerminalProps) {
+export default function HomeTerminal({ threatCount, identity, invokePath }: HomeTerminalProps) {
+    // MOUNT GUARD: Prevent hydration mismatch
+    const [isMounted, setIsMounted] = useState(false);
     const [accessGranted, setAccessGranted] = useState(false);
+    const [history, setHistory] = useState<string[]>([]);
+    const [streamText, setStreamText] = useState("");
 
-    const [aiResponse, setAiResponse] = useState("");
+    // REFS for Logic (Non-rendering state)
+    const isStreamingRef = useRef(false);
+    // GUARD: Prevent infinite loops and double-firing in StrictMode
+    const hasInitialized = useRef(false);
 
-    // Manual Stream Implementation (Plan C)
-    const startSentinel = useCallback(async () => {
-        setAiResponse("");
+    // Mount Effect: Check localStorage AFTER mount & Restore Session
+    useEffect(() => {
+        setIsMounted(true);
+        const storedAccess = localStorage.getItem("watchtower_access");
+        if (storedAccess === "granted") {
+            setAccessGranted(true);
+        }
+
+        // RESTORE SESSION (Persistence Layer)
+        // Checks sessionStorage for existing history to prevent loss on refresh
+        const storedHistory = sessionStorage.getItem("sentinel_chat_history");
+        if (storedHistory) {
+            try {
+                setHistory(JSON.parse(storedHistory));
+            } catch (e) {
+                console.error("Failed to parse history", e);
+            }
+        }
+    }, []);
+
+    const triggerSentinel = useCallback(async (prompt: string, eventType: string) => {
+        // Double check checks using REF to avoid dependency cycles
+        if (isStreamingRef.current) return;
+
+        isStreamingRef.current = true;
+        setStreamText(""); // Clear previous stream if any (though logic handles this)
 
         try {
             const response = await fetch('/api/sentinel', {
                 method: 'POST',
                 body: JSON.stringify({
-                    prompt: "Initialize system. Report status.",
-                    eventType: 'System Handshake',
+                    prompt,
+                    eventType,
                     fingerprint: identity.fingerprint,
                     ipAddress: identity.ip,
+                    alias: identity.alias,
                     location: "Australia/Sydney",
                     threatLevel: identity.riskScore > 50 ? "High" : "Low"
                 })
             });
 
-            if (!response.body) return;
+            if (!response.body) {
+                throw new Error("No response body");
+            }
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
+            let accumulated = "";
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                setAiResponse((prev) => prev + decoder.decode(value, { stream: true }));
+                const chunk = decoder.decode(value, { stream: true });
+                accumulated += chunk;
+                setStreamText((prev) => prev + chunk);
             }
+
+            // ATOMIC COMMIT TO HISTORY & SESSION
+            // 1. Clear Active Stream
+            // 2. Add Accumulated to History (Top of History Stack)
+            // 3. Trim History to max 2 items
+            // 4. Save to SessionStorage
+            setStreamText("");
+            setHistory(prev => {
+                const newHistory = [accumulated, ...prev].slice(0, 3);
+                sessionStorage.setItem("sentinel_chat_history", JSON.stringify(newHistory));
+                return newHistory;
+            });
+
         } catch (err) {
             console.error("Sentinel Downlink Failed:", err);
-            setAiResponse(">> CONNECTION LOST <<");
+            setStreamText("");
+            setHistory(prev => {
+                const newHistory = [">> CONNECTION LOST <<", ...prev].slice(0, 3);
+                sessionStorage.setItem("sentinel_chat_history", JSON.stringify(newHistory));
+                return newHistory;
+            });
+        } finally {
+            isStreamingRef.current = false;
         }
     }, [identity]);
+    // ^ Removed isStreaming from dependency to prevent function recreation during stream
+
+    // Initial Handshake Trigger - Protected by Ref & Session Check
+    useEffect(() => {
+        if (accessGranted && !hasInitialized.current) {
+            hasInitialized.current = true;
+
+            // Check if we already greeted this session
+            const alreadyGreeted = sessionStorage.getItem("sentinel_greeted");
+
+            // Attack Detection: Any path that is NOT root and NOT unknown is considered suspicious if hitting the Home Terminal directly
+            // Note: This relies on middleware passing x-invoke-path. 
+            // If user goes to /admin and middleware rewrites to / (showing Home), invokePath will be /admin.
+            const isSuspicious = invokePath && invokePath !== "/" && invokePath !== "/unknown";
+
+            if (!alreadyGreeted) {
+                // First time -> Trigger Handshake
+                sessionStorage.setItem("sentinel_greeted", "true");
+
+                if (isSuspicious) {
+                    // Immediate Hostility for suspicious first entry
+                    triggerSentinel("Security Alert: Unauthorized Access Attempt detected on restricted route.", "Protocol Violation");
+                } else {
+                    triggerSentinel("System Initialization", "System Handshake");
+                }
+            } else {
+                // Already greeted (Page Refresh or Navigation back)
+                // Sentinel remains silent UNLESS there is an active new threat (Suspicious Path)
+                if (isSuspicious) {
+                    // Attack Logic: Add insult to injury (history) without wiping previous context
+                    triggerSentinel("Security Alert: Persistent unauthorized access attempt.", "Protocol Violation");
+                }
+            }
+        }
+    }, [accessGranted, triggerSentinel, invokePath]);
 
     const handleAccess = (granted: boolean) => {
-        setAccessGranted(granted);
-        if (granted) {
-            startSentinel();
-        }
+        localStorage.setItem("watchtower_access", "granted");
+        setAccessGranted(true);
     };
+
+    // Wait for client-side mount to prevent hydration mismatch
+    if (!isMounted) {
+        return null;
+    }
 
     return (
         <>
@@ -123,31 +209,41 @@ export default function HomeTerminal({ threatCount, recentEvents, identity }: Ho
                         <p className="text-sm text-neutral-500 mt-2">All-time blocked attempts</p>
                     </div>
 
-                    {/* Live Feed */}
-                    <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors border-neutral-800 bg-neutral-900/50">
-                        <h2 className={`mb-3 text-2xl font-semibold animate-pulse text-blue-500`}>
+                    {/* Live Feed - Reverse Cascade */}
+                    <div className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 flex flex-col h-64 overflow-hidden relative">
+                        <h2 className={`mb-3 text-2xl font-semibold animate-pulse text-blue-500 sticky top-0 z-10 w-full`}>
                             LIVE CONNECTION
                         </h2>
-                        <div className="space-y-4">
-                            {recentEvents.length === 0 ? (
-                                <p className="text-neutral-200 font-mono text-sm leading-relaxed whitespace-pre-wrap">
-                                    {aiResponse || "Awaiting Sentinel downlink..."}
+
+                        {/* Terminal Window
+                            Layout: Flex Column Normal (Top Down)
+                            We want:
+                            1. Title (Already sticky above)
+                            2. Active Stream (White) - Immediately below title
+                            3. History (Gray) - Below Active Stream
+                        */}
+                        <div className="flex flex-col gap-1 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent pr-2 font-mono text-sm leading-relaxed h-full">
+
+                            {/* 1. Active Stream (White) - Visual Top */}
+                            {streamText && (
+                                <p className="text-[#FFFFFF] animate-pulse whitespace-pre-wrap shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                    {streamText}<span className="inline-block w-2 h-4 bg-white ml-1 animate-blink">|</span>
                                 </p>
-                            ) : (
-                                recentEvents.map((event) => (
-                                    <div key={event.id} className="flex justify-between items-start border-l-2 border-red-500 pl-4 py-1">
-                                        <div>
-                                            <p className="font-mono text-red-400 text-sm font-bold">{event.eventType}</p>
-                                            <p className="text-xs text-neutral-500">{event.ipAddress || "Unknown IP"}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-xs font-mono px-2 py-1 rounded bg-neutral-800 text-neutral-300">{event.actionTaken}</span>
-                                            <p className="text-[10px] text-neutral-600 mt-1">
-                                                {new Date(event.timestamp).toLocaleTimeString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))
+                            )}
+
+                            {/* 2. History (Gray) - Visual Bottom */}
+                            {/* History is [Newest, Older]. Map normally to show Newest right under Stream */}
+                            {history.map((msg, idx) => (
+                                <p key={idx} className={`${idx === 0 ? "text-[#FFFFFF]" : "text-[#666666]"} whitespace-pre-wrap`}>
+                                    {msg}
+                                </p>
+                            ))}
+
+                            {/* Empty State */}
+                            {history.length === 0 && !streamText && (
+                                <p className="text-neutral-600 italic">
+                                    [ Waiting for Sentinel... ]
+                                </p>
                             )}
                         </div>
                     </div>

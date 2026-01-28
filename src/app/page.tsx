@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { getRecentThreats, getThreatCount } from "@/lib/security";
+import { getThreatCount } from "@/lib/security";
 import { getOrCreateSession } from "@/lib/session";
 import HomeTerminal from "@/components/watchtower/HomeTerminal";
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const threatCount = await getThreatCount();
-  const recentEvents = await getRecentThreats(5);
+
 
   // Data Hoisting: Identify User on Server
   const headersList = await headers();
@@ -29,11 +29,26 @@ export default async function Home() {
     ip: ip
   };
 
+  // Check for Sentinel Trap (Ghost Routes)
+  // const sentinelTrap = headersList.get("x-sentinel-trap");
+  // CRITICAL FIX: Capture the actual path the user tried to access
+  const rawPath = headersList.get("x-invoke-path") || "/unknown";
+
+  /*
+  const initialAlert = sentinelTrap
+    ? { type: "protocol_violation", source: "network_intercept", payload: rawPath }
+    : undefined;
+  */
+
+  // Session Persistence
+  // const cookieStore = await cookies();
+  // const isSessionActive = cookieStore.has("access_granted");
+
   return (
     <HomeTerminal
       threatCount={threatCount}
-      recentEvents={recentEvents}
       identity={identity}
+      invokePath={rawPath}
     />
   );
 }

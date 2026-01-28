@@ -31,28 +31,86 @@ export default async function proxy(req: NextRequest) {
             ],
         });
 
-        // 3. Execution
-        const decision = await aj.protect(req);
+        // 3. PRIORITY 1: Universal Ghost Route (Reconnaissance Defense)
+        // Intercept ANY route that isn't explicity allowed and rewrite to root.
 
-        // 4. Decision Handling
-        if (decision.isDenied()) {
-            return NextResponse.json(
-                { error: "Active Defense Triggered", reason: decision.reason },
-                { status: 403 }
-            );
+        const path = req.nextUrl.pathname;
+        const validRoutes = [
+            "/",
+            "/favicon.ico",
+            "/cookies",
+            "/legal",
+            "/privacy",
+            "/terms"
+        ];
+
+        // Allowed API Routes (Sentinel + Logging)
+        const allowedApiRoutes = ["/api/sentinel", "/api/security/log"];
+
+        // Helper to check if route is valid
+        const isStatic = path.startsWith("/_next") || path.startsWith("/static");
+        const isAllowedApi = allowedApiRoutes.some(route => path.startsWith(route));
+        const isValidPage = validRoutes.includes(path);
+
+        const isValid = isValidPage || isStatic || isAllowedApi;
+
+        let baseResponse = NextResponse.next();
+        let isGhostRoute = false;
+
+        if (!isValid) {
+            // It's a Wildcard Ghost Route!
+            baseResponse = NextResponse.rewrite(new URL("/", req.url));
+            baseResponse.headers.set("x-invoke-path", path); // RAW PATH CAPTURE
+            // Distinct trap for API snooping vs Random browsing
+            if (path.startsWith("/api")) {
+                baseResponse.headers.set("x-sentinel-trap", "api_probe");
+            } else {
+                baseResponse.headers.set("x-sentinel-trap", "universal_wildcard");
+            }
+            isGhostRoute = true;
+        } else {
+            // Specific check for known "Honey" routes even if they look like APIs (optional, but keeping original logic partially)
+            const explicitTraps = ["/admin", "/wp-admin", "/.env", "/config", "/dashboard"];
+            if (explicitTraps.some(route => path.startsWith(route))) {
+                baseResponse = NextResponse.rewrite(new URL("/", req.url));
+                baseResponse.headers.set("x-invoke-path", path); // RAW PATH CAPTURE
+                baseResponse.headers.set("x-sentinel-trap", "reconnaissance");
+                isGhostRoute = true;
+            }
         }
 
-        // 5. Allowed - Inject Fingerprint
-        const res = NextResponse.next();
+        // 4. Execution (Arcjet protection applied to the Base Response)
+        const decision = await aj.protect(req);
+
+        // 5. Decision Handling: DETECTION-ONLY MODE
+        // We never block the request. We only tag it for the UI/Sentinel to react.
+        if (decision.isDenied()) {
+            console.warn("🛡️ THREAT DETECTED (NON-BLOCKING):", decision.reason);
+
+            // Inject Threat Telemetry Headers
+            baseResponse.headers.set("x-arcjet-threat-detected", "true");
+            if (decision.reason.isBot()) {
+                baseResponse.headers.set("x-arcjet-threat-type", "BOT_ARMY");
+            } else if (decision.reason.isRateLimit()) {
+                baseResponse.headers.set("x-arcjet-threat-type", "DDoS_ATTEMPT");
+            } else if (decision.reason.isShield()) {
+                baseResponse.headers.set("x-arcjet-threat-type", "INJECTION_ATTACK");
+            } else {
+                baseResponse.headers.set("x-arcjet-threat-type", "ANOMALY");
+            }
+        }
+
+        // 6. Identity Injection (Fingerprint)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if ((decision as any).fingerprint) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            res.headers.set("x-arcjet-fingerprint", (decision as any).fingerprint);
+            baseResponse.headers.set("x-arcjet-fingerprint", (decision as any).fingerprint);
         }
-        return res;
+
+        return baseResponse;
 
     } catch (error) {
-        // 6. Fail-Safe: Absolute crash prevention
+        // 7. Fail-Safe: Absolute crash prevention
         console.error("Critical Middleware Failure:", error);
         return NextResponse.next();
     }

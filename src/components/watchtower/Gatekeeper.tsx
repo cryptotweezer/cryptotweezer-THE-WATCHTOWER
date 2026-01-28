@@ -12,10 +12,7 @@ export default function Gatekeeper({ onAccess }: GatekeeperProps) {
 
     const handleHandshake = () => {
         setIsUnlocking(true);
-        // Simulate handshake mechanism
-        setTimeout(() => {
-            onAccess(true);
-        }, 1500);
+        onAccess(true);
     };
 
     return (
