@@ -60,7 +60,7 @@ export default function IdentityHUD({ alias, fingerprint, riskScore, ip }: Ident
     const glow = riskScore > 50 ? "shadow-[0_0_30px_rgba(239,68,68,0.2)]" : "shadow-[0_0_30px_rgba(59,130,246,0.15)]";
 
     return (
-        <div className={`rounded-xl border ${borderColor} ${bgColor} ${glow} p-6 mt-8 max-w-3xl mx-auto backdrop-blur-md transition-all duration-500`}>
+        <div className={`rounded-xl border ${borderColor} ${bgColor} ${glow} p-6 max-w-3xl mx-auto backdrop-blur-md transition-all duration-500`}>
             {/* Header */}
             <div className="flex justify-between items-center mb-6 border-b border-gray-800/50 pb-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">

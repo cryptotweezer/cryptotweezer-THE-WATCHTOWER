@@ -10,10 +10,10 @@ export default function Footer() {
                 {/* Left Side: Brand & Context */}
                 <div className="flex flex-col justify-center space-y-4">
                     <h4 className="text-gray-400 text-xs tracking-wider uppercase font-mono">
-                        Industry Project Internship - Week 5 to Week 10 - Cybersecurity
+                        Andrés Henao Cybersecurity Specialist
                     </h4>
                     <h2 className="text-white font-bold text-xl tracking-tight">
-                        Digital Twin III <span className="text-blue-500">THE WATCHTOWER</span>
+                        SecOps | SOC | <span className="text-blue-500">THE WATCHTOWER</span>
                     </h2>
                 </div>
 
@@ -37,7 +37,7 @@ export default function Footer() {
             {/* Bottom Center: Copyright */}
             <div className="w-full text-center mt-12 pt-8 border-t border-gray-900/50">
                 <p className="text-[10px] text-gray-600 font-mono">
-                    © 2026 <a href="https://github.com/cryptotweezer/Digital-Twin-III" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 hover:underline transition-colors">Team 02</a>. All rights reserved.
+                    © 2026 <a href="https://github.com/cryptotweezer/cryptotweezer-THE-WATCHTOWER.git" target="_blank" rel="noopener noreferrer" className="hover:text-blue-500 hover:underline transition-colors">Andres Henao</a>. All rights reserved.
                 </p>
             </div>
         </footer>

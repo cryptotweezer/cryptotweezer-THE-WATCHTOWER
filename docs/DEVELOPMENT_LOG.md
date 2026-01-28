@@ -241,3 +241,38 @@
 **🚧 Next Steps**:
 *   Begin **Task 5: Attack Lab** (Simulating SQLi and XSS to test Sentinel's reaction).
 
+### [2026-01-27] Sentinel-02 Overhaul: The Warden Awakening
+**👤 Author**: Antigravity
+**🎯 Goal**: Deep restructure of Sentinel-02 from a generic bot to a cynical, elite "Warden" personality.
+**✅ Accomplished**:
+*   **Universal Proxy**: Implemented `x-invoke-path` injection in `proxy.ts` to allow Sentinel to see the *real* attack path (`/etc/passwd`), not just the rewrite.
+*   **Malicious Empathy**: Overhauled `route.ts`. The AI now mocks the *intent* (Credential Mining, Path Traversal) rather than just reporting access.
+*   **Forensic Vision**: Replaced brittle `useDevTools` with a robust Console Diff detector. Opening F12 now triggers "Source Code Espionage".
+*   **Deep Restructure**:
+    *   **Brain**: Strict 20-word limit. "Elite/Cynical" tone. No "Ah..." or "Detecting...".
+    *   **UI**: Removed "Sentinel-02 //" prefixes. Cleaned up spacing. Pure white text.
+    *   **History**: Fixed visual duplication bugs.
+**🚧 Next Steps (Pending Refinement)**:
+*   [FIX] Sync Delay: Terminal history lags behind the live stream.
+*   [FIX] DevTools Trigger: Ensure `FORENSIC_INSPECTION` reliably hits the Sentinel API.
+*   [CLEAN] Echo Removal: Strip raw tags (Path: /...) from AI output, integrating them organically.
+*   [CLEAN] Legacy Purge: Auto-clear old cookies with "Attempt #" formats.
+
+### [2026-01-28] Sentinel-02 Stability & Visual Audit
+** Author**: Antigravity
+** Goal**: Finalize system stability, session persistence, and strict visual hierarchy compliance.
+** Accomplished**:
+*   **Persistence Architecture**:
+    *   Implemented sessionStorage strategy for sentinel_chat_history (survives refreshes) and sentinel_greeted (prevents loops).
+    *   Integrated x-invoke-path header passing from proxy.ts -> page.tsx -> HomeTerminal to separate legitimate rewrites from attacks.
+*   **Interface Specification**:
+    *   Enforced **Strict Color Hierarchy**: Active Stream (White) -> Recent History (White) -> Older History (Grey).
+    *   Implemented **3-Level Buffer**: slice(0, 3) logic ensures exact retention of context (1 Active + 2 Archived).
+    *   Removed 	ransition-colors to eliminate visual artifacts.
+*   **Hitos de Estabilidad**:
+    *   **Hydration Mismatch**: Solved via isMounted guard pattern.
+    *   **Loop Prevention**: Implemented useRef circuit breakers (hasInitialized, isStreaming) to cut React StrictMode double-invocations.
+    *   **Atomic Updates**: Centralized state mutations for History + Storage to guarantee consistency.
+** Next Steps**:
+*   Begin Task 5: Attack Lab (Simulated Security Incidents).
+

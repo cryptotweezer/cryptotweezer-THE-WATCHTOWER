@@ -76,4 +76,4 @@ pnpm dev
 - [ ] **Week 5**: Final Bug Bash & Presentation Outline.
 - [ ] **Week 6**: LIVE DEFENSE DEMO.
 
-> *This project is an educational cyber lab. Every interaction is monitored for intelligence gathering.*
+This project is an educational cyber lab. Every interaction is monitored for intelligence gathering.
