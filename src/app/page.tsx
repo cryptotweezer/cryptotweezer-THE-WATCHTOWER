@@ -14,9 +14,10 @@ export default async function Home() {
   let fingerprint = headersList.get("x-arcjet-fingerprint");
   const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
 
-  // Fallback for Dev/Bypass Mode if fingerprint is missing
+  // Fallback for Dev/Bypass Mode (Privacy: Random Hash, no IP leak)
   if (!fingerprint || fingerprint === "unknown") {
-    fingerprint = "dev_" + Buffer.from(ip).toString('hex').substring(0, 12);
+    const randomHash = Buffer.from(Math.random().toString()).toString('hex').substring(0, 8);
+    fingerprint = "node_" + randomHash;
   }
 
   // Database Handshake

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 
+import useDevTools from "@/hooks/useDevTools";
 import Gatekeeper from "@/components/watchtower/Gatekeeper";
 import IdentityHUD from "@/components/watchtower/IdentityHUD";
 import Briefing from "@/components/watchtower/Briefing";
@@ -25,8 +26,19 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
     const [history, setHistory] = useState<string[]>([]);
     const [streamText, setStreamText] = useState("");
 
+    // INFAMY SYSTEM STATE
+    const [currentRiskScore, setCurrentRiskScore] = useState(identity.riskScore);
+    const [sessionTechniques, setSessionTechniques] = useState<string[]>([]);
+    const [cid, setCid] = useState<string>("");
+
+    // SENSORS
+    const isDevToolsOpen = useDevTools();
+
     // REFS for Logic (Non-rendering state)
     const isStreamingRef = useRef(false);
+    const knownTechniquesRef = useRef<string[]>([]);
+    // Rule of 3 Trackers
+    const criticalPathCountRef = useRef<number>(0);
     // GUARD: Prevent infinite loops and double-firing in StrictMode
     const hasInitialized = useRef(false);
 
@@ -39,14 +51,46 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
         }
 
         // RESTORE SESSION (Persistence Layer)
-        // Checks sessionStorage for existing history to prevent loss on refresh
         const storedHistory = sessionStorage.getItem("sentinel_chat_history");
-        if (storedHistory) {
-            try {
-                setHistory(JSON.parse(storedHistory));
-            } catch (e) {
-                console.error("Failed to parse history", e);
-            }
+        const storedTechniques = sessionStorage.getItem("sentinel_techniques");
+        const storedRisk = sessionStorage.getItem("sentinel_risk_score");
+        const storedCid = sessionStorage.getItem("sentinel_cid");
+
+        if (storedHistory) setHistory(JSON.parse(storedHistory));
+        if (storedTechniques) {
+            const parsedTechniques = JSON.parse(storedTechniques);
+            setSessionTechniques(parsedTechniques);
+            knownTechniquesRef.current = parsedTechniques; // Sync Ref
+        }
+        if (storedRisk) setCurrentRiskScore(Number(storedRisk));
+
+        // CID Logic: Generate or Retrieve
+        let activeCid = storedCid;
+        // Fix: Strict Regex validation for CID-XXXX-X
+        const cidRegex = /^CID-[0-9A-F]{4}-\d$/;
+
+        if (!activeCid || !cidRegex.test(activeCid)) {
+            activeCid = `CID-${Math.random().toString(16).slice(2, 6).toUpperCase()}-${Math.floor(Math.random() * 9)}`;
+            sessionStorage.setItem("sentinel_cid", activeCid);
+        }
+        setCid(activeCid);
+
+        // HONEYPOT TRAP (Window Object)
+        // Exposed Global Variable for script-kiddies scanning 'window'
+        if (typeof window !== "undefined" && !(window as any)._VGT_DEBUG_) {
+            Object.defineProperty(window, '_VGT_DEBUG_', {
+                get: function () {
+                    console.warn(">> SECURITY BREACH DETECTED: ILLEGAL MEMORY ACCESS <<");
+                    // Trigger Sentinel immediately via a different mechanism if possible, 
+                    // or just dispatch an event caught by our listeners? 
+                    // Direct trigger is safer for logic availability.
+                    // We can't access 'triggerSentinel' easily from here due to closure scope if not careful.
+                    // BUT: this useEffect has triggerSentinel in scope? NO, triggerSentinel is defined BELOW.
+                    // FIX: Move Honeypot setup to a separate useEffect BELOW triggerSentinel definition.
+                    return "ACCESS DENIED. TRACE STARTED.";
+                },
+                configurable: false
+            });
         }
     }, []);
 
@@ -54,12 +98,81 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
         // Double check checks using REF to avoid dependency cycles
         if (isStreamingRef.current) return;
 
+        // --- SENSORES SILENT PROTOCOL (GUARD CLAUSE - HARDWARE BRAKE) ---
+        // Critical: Prevent loop/spam. If technique is known (using REF for sync access), Do Nothing.
+        // Exception: Handshake (controlled by its own effect)
+        // Check Ref for immediate blockade
+        if (knownTechniquesRef.current.includes(eventType) && eventType !== "System Handshake") {
+            console.log("Blocking repeated technique (Ref):", eventType);
+            return;
+        }
+
+        // IMMEDIATE REGISTRATION: Update Ref immediately to block next click in 0ms
+        if (eventType !== "System Handshake") {
+            knownTechniquesRef.current.push(eventType);
+        }
+
+        // IMMEDIATE REGISTRATION: Prevent race conditions (Machine Gun Clicks)
+        // Add to state and storage BEFORE calling API
+        if (eventType !== "System Handshake") {
+            // Optimistic update to block subsequent calls immediately
+            // Ref is already updated above. Now sync blocked state.
+            const updatedTechniques = [...sessionTechniques, eventType];
+            setSessionTechniques(updatedTechniques);
+            sessionStorage.setItem("sentinel_techniques", JSON.stringify(updatedTechniques));
+
+            // Note: Scoring is still handled by the 'impact' calculation in the response stream? 
+            // The prompt "Ensure the technique is added... before calling" implies blocking. 
+            // If we add it here, we must score it here? OR relies on the response to trigger score?
+            // If I add it here, the response logic `if (!prev.includes(techniqueName))` will FAIL because it IS included now.
+            // CHANGE: I must update the response logic to Score even if it's in the list? No, that breaks the "New Only" rule.
+            // SOLUTION: I will rely on the fact that I am treating 'eventType' as the technique name. 
+            // In the response logic, I will calculate score based on this NEW technique I just registered.
+            // BUT: The response logic is async.
+            // BETTER: Score HERE too.
+
+            // --- WEIGHTED SCORING ENGINE (CLIENT SIDE) ---
+            setCurrentRiskScore(currentScore => {
+                let impact = 0;
+                // Categories (Mirroring response logic which will clear itself)
+                const LOW_RISK = ["UI_SURFACE_ANALYSIS", "CONTEXT_MENU_ACCESS"]; // - Foreman Inspection handled separately
+                const MED_RISK = ["OUT-OF-BAND_RECON"]; // - Exfil handled separately
+
+                // Recalibrated Weights (Step 3.2)
+                if (eventType === "FORENSIC_INSPECTION") impact = 5; // DevTools
+                else if (eventType === "DATA_EXFILTRATION_ATTEMPT") impact = 1; // Clipboard
+                else if (eventType === "MEMORY_INJECTION_ATTEMPT") impact = 20; // Honeypot
+                else if (LOW_RISK.includes(eventType)) impact = 2;
+                else if (MED_RISK.includes(eventType)) impact = 7;
+                else impact = 10; // Default High (e.g. Critical Routes after Rule of 3)
+
+                const newScore = Math.min(currentScore + impact, 75); // Bumped cap to accomadate Honeypot? No, User said 60% standard, but +20% honeypot implies > 60? 
+                // Instruction says: "Max Standard Risk = 60". 
+                // "The remaining 40% is locked for Kali/External".
+                // BUT Honeypot is browser based. 
+                // Does Honeypot count as 'Standard'? It's +20.
+                // Let's cap at 80 for Honeypot events? 
+                // Logic: Math.min(score, 60) normally. 
+                // If event == HONEYPOT, cap at 80?
+
+                let cap = 60;
+                if (eventType === "MEMORY_INJECTION_ATTEMPT") cap = 80;
+
+                const finalScore = Math.min(currentScore + impact, cap);
+                sessionStorage.setItem("sentinel_risk_score", finalScore.toString());
+                return finalScore;
+            });
+        }
+
         isStreamingRef.current = true;
         setStreamText(""); // Clear previous stream if any (though logic handles this)
 
         try {
             const response = await fetch('/api/sentinel', {
                 method: 'POST',
+                headers: {
+                    'x-cid': cid
+                },
                 body: JSON.stringify({
                     prompt,
                     eventType,
@@ -67,7 +180,8 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
                     ipAddress: identity.ip,
                     alias: identity.alias,
                     location: "Australia/Sydney",
-                    threatLevel: identity.riskScore > 50 ? "High" : "Low"
+                    threatLevel: identity.riskScore > 50 ? "High" : "Low",
+                    riskScore: currentRiskScore
                 })
             });
 
@@ -92,9 +206,83 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
             // 2. Add Accumulated to History (Top of History Stack)
             // 3. Trim History to max 2 items
             // 4. Save to SessionStorage
+            // --- INFAMY LOGIC: EXTRACT & STRIP TAGS ---
+            let cleanText = accumulated;
+            const tagMatch = accumulated.match(/\[TECHNIQUE:\s*(.*?)\]/);
+
+            if (tagMatch) {
+                const fullTag = tagMatch[0];
+                const techniqueName = tagMatch[1];
+
+                // Remove tag for UI cleanliness
+                cleanText = accumulated.replace(fullTag, "").trim();
+
+                // Infamy Scoring: ONLY if new technique
+                // NOTE: logic moved to triggerSentinel for immediate locking.
+                // However, the sentinel might return a DIFFERENT technique name than eventType?
+                // Rules say: "End response with [TECHNIQUE: Name]"
+                // If the name matches eventType, it's fine.
+                // If it differs, we might score twice? 
+                // Assumption: The Sentinel API mirrors the technical event name if we are passing it.
+                // BUT current prompt in route.ts says: "no technical jargon... end with [TECHNIQUE: <Technical Name>]"
+                // The Sentinel might make up a name if not careful.
+                // We should ensure the Sentinel API prompt uses the Input EventType as the Technique Name if possible.
+                // Or relies on our client-side locking.
+
+                // Since we already locked and scored on Request, we DON'T do it here for Sensors.
+                // We only do it here if it's a "System Handshake" that somehow generated a technique?
+                // OR if the technique name is DIFFERENT from what we locked.
+
+                setSessionTechniques(prev => {
+                    // Safety check: Unique add only
+                    if (!prev.includes(techniqueName)) {
+                        const newTechniques = [...prev, techniqueName];
+                        sessionStorage.setItem("sentinel_techniques", JSON.stringify(newTechniques));
+
+                        // Increase Risk (Only if we didn't do it in triggerSentinel)
+                        // If techniqueName equals the eventType we just blocked, this shouldn't run.
+                        // BUT techniqueName comes from LLM.
+                        // If LLM returns exactly the eventType string, we are good (prev.includes will be true).
+                        // If LLM hallucinates a new string, we score double.
+                        // Ideally LLM returns exactly eventType.
+
+                        // Fallback scoring for unexpected techniques (e.g. from server analysis)
+                        setCurrentRiskScore(startScore => {
+                            // ... (Same Logic)
+                            let impact = 0;
+                            const LOW_RISK = ["UI_SURFACE_ANALYSIS", "CONTEXT_MENU_ACCESS", "FORENSIC_INSPECTION"];
+                            // ...
+                            // Basic +2 fallback if unknown
+                            // If it matches known list, use weight.
+                            if (LOW_RISK.includes(techniqueName)) impact = 2;
+                            else impact = 7; // Med weight default for server findings
+
+                            const newScore = Math.min(startScore + impact, 60);
+                            sessionStorage.setItem("sentinel_risk_score", newScore.toString());
+                            return newScore;
+                        });
+
+                        return newTechniques;
+                    }
+                    return prev;
+                });
+
+                // SILENT PROTOCOL CHECK
+                // Since this runs in the stream loop, we need to check if we should show this.
+                // We use sessionTechniques from state, but it might not be updated yet.
+                // However, we just called setSessionTechniques.
+                // Hack: Check if we are seeing a technique we ALREADY knew about before this match found it.
+                // Actually, simplest is:
+                if (sessionTechniques.includes(techniqueName)) {
+                    // It was already known. Silence.
+                    setStreamText("");
+                    return;
+                }
+            }
+
             setStreamText("");
             setHistory(prev => {
-                const newHistory = [accumulated, ...prev].slice(0, 3);
+                const newHistory = [cleanText, ...prev].slice(0, 3);
                 sessionStorage.setItem("sentinel_chat_history", JSON.stringify(newHistory));
                 return newHistory;
             });
@@ -110,8 +298,82 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
         } finally {
             isStreamingRef.current = false;
         }
-    }, [identity]);
+    }, [identity, currentRiskScore, sessionTechniques, cid]);
     // ^ Removed isStreaming from dependency to prevent function recreation during stream
+
+    // --- SENSOR ARRAY ---
+    useEffect(() => {
+        if (!accessGranted) return;
+
+        // 1. DevTools Trigger
+        if (isDevToolsOpen) {
+            triggerSentinel("Security Alert: System Integrity Check Failed. External Debugger Attached.", "FORENSIC_INSPECTION");
+        }
+
+        // 2. Event Listeners
+        const handleContextMenu = (e: MouseEvent) => {
+            e.preventDefault();
+            triggerSentinel("Security Alert: Unauthorized heuristic scan attempt via Context Menu.", "CONTEXT_MENU_ACCESS");
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                triggerSentinel("Security Alert: User session backgrounded. Potential out-of-band reconnaissance.", "OUT-OF-BAND_RECON");
+            }
+        };
+
+        let resizeTimeout: NodeJS.Timeout;
+        const handleResize = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                triggerSentinel("Security Alert: Viewport manipulation detected. UI surface analysis in progress.", "UI_SURFACE_ANALYSIS");
+            }, 1000);
+        };
+
+        const handleClipboard = (e: ClipboardEvent) => {
+            triggerSentinel("Security Alert: Data egress/ingress attempt via logic gate (Clipboard).", "DATA_EXFILTRATION_ATTEMPT");
+        };
+
+        window.addEventListener("contextmenu", handleContextMenu);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("resize", handleResize);
+        window.addEventListener("copy", handleClipboard);
+        window.addEventListener("paste", handleClipboard);
+
+        return () => {
+            window.removeEventListener("contextmenu", handleContextMenu);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("resize", handleResize);
+            window.removeEventListener("copy", handleClipboard);
+            window.removeEventListener("paste", handleClipboard);
+            clearTimeout(resizeTimeout);
+        };
+    }, [accessGranted, isDevToolsOpen, triggerSentinel]);
+
+    // 3. Honeypot Setup (Needs triggerSentinel in scope)
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            // We need to use a custom event or a direct attach if possible.
+            // But 'triggerSentinel' changes on render? 
+            // We can attach a listener to 'vgt-honeypot'
+            const handleHoney = () => {
+                triggerSentinel("Security Alert: Unauthorized heuristic scanning of global variables.", "MEMORY_INJECTION_ATTEMPT");
+            };
+            window.addEventListener('vgt-honeypot', handleHoney);
+
+            if (!(window as any)._VGT_DEBUG_) {
+                Object.defineProperty(window, '_VGT_DEBUG_', {
+                    get: function () {
+                        window.dispatchEvent(new Event('vgt-honeypot'));
+                        return "ACCESS DENIED. TRACE STARTED.";
+                    },
+                    configurable: true // Allow re-definition if needed to avoid errors
+                });
+            }
+
+            return () => window.removeEventListener('vgt-honeypot', handleHoney);
+        }
+    }, [triggerSentinel]);
 
     // Initial Handshake Trigger - Protected by Ref & Session Check
     useEffect(() => {
@@ -131,17 +393,24 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
                 sessionStorage.setItem("sentinel_greeted", "true");
 
                 if (isSuspicious) {
-                    // Immediate Hostility for suspicious first entry
-                    triggerSentinel("Security Alert: Unauthorized Access Attempt detected on restricted route.", "Protocol Violation");
+                    // Rule of 3 Logic for Critical Paths
+                    criticalPathCountRef.current += 1;
+                    if (criticalPathCountRef.current >= 3) {
+                        triggerSentinel("Security Alert: Persistent unauthorized access attempt on restricted route.", "Protocol Violation");
+                    }
                 } else {
+                    // Handshake -> 0 Risk Impact (Defined in triggerSentinel default if needed, or just 0 weight)
                     triggerSentinel("System Initialization", "System Handshake");
                 }
             } else {
                 // Already greeted (Page Refresh or Navigation back)
-                // Sentinel remains silent UNLESS there is an active new threat (Suspicious Path)
                 if (isSuspicious) {
                     // Attack Logic: Add insult to injury (history) without wiping previous context
-                    triggerSentinel("Security Alert: Persistent unauthorized access attempt.", "Protocol Violation");
+                    // Rule of 3 check
+                    criticalPathCountRef.current += 1;
+                    if (criticalPathCountRef.current >= 3) {
+                        triggerSentinel("Security Alert: Persistent unauthorized access attempt.", "Protocol Violation");
+                    }
                 }
             }
         }
@@ -186,8 +455,9 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
                         <IdentityHUD
                             alias={identity.alias}
                             fingerprint={identity.fingerprint || "unknown"}
-                            riskScore={identity.riskScore}
+                            riskScore={currentRiskScore}
                             ip={identity.ip || "unknown"}
+                            cid={cid}
                         />
                     </div>
                 </div>

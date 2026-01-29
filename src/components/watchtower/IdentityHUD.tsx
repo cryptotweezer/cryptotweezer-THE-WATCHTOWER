@@ -8,6 +8,7 @@ interface IdentityHUDProps {
     fingerprint: string;
     riskScore: number;
     ip: string;
+    cid?: string;
 }
 
 interface DeepScanData {
@@ -17,7 +18,7 @@ interface DeepScanData {
     screen: string;
 }
 
-export default function IdentityHUD({ alias, fingerprint, riskScore, ip }: IdentityHUDProps) {
+export default function IdentityHUD({ alias, fingerprint, riskScore, ip, cid }: IdentityHUDProps) {
     const [deepScan, setDeepScan] = useState<DeepScanData | null>(null);
 
     useEffect(() => {
@@ -80,11 +81,20 @@ export default function IdentityHUD({ alias, fingerprint, riskScore, ip }: Ident
                         <span className="text-2xl font-mono font-bold text-white tracking-tighter truncate">{alias}</span>
                     </div>
 
+                    {/* CRIMINAL ID (CID) */}
                     <div className="grid grid-cols-[100px_1fr] items-baseline gap-2">
-                        <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Node ID</span>
-                        <span className="text-xs font-mono text-gray-400 break-all">{fingerprint}</span>
+                        <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Criminal ID</span>
+                        <div className="font-mono text-sm flex items-center gap-2">
+                            <span className={riskScore >= 60 ? "animate-pulse text-red-500 font-bold" : "text-gray-400"}>
+                                {cid || <span className="text-gray-600 animate-pulse text-xs">INITIALIZING...</span>}
+                            </span>
+                            {riskScore >= 60 && (
+                                <span className="text-[10px] text-red-500 border border-red-500 px-1 rounded animate-bounce">
+                                    FLAGGED
+                                </span>
+                            )}
+                        </div>
                     </div>
-
                     <div className="grid grid-cols-[100px_1fr] items-center gap-2 pt-2">
                         <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Net Address</span>
                         <span className="text-sm font-mono text-blue-300 flex items-center gap-2">
