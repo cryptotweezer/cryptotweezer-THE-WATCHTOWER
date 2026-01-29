@@ -273,6 +273,19 @@
     *   **Hydration Mismatch**: Solved via isMounted guard pattern.
     *   **Loop Prevention**: Implemented useRef circuit breakers (hasInitialized, isStreaming) to cut React StrictMode double-invocations.
     *   **Atomic Updates**: Centralized state mutations for History + Storage to guarantee consistency.
-** Next Steps**:
+**🚧 Next Steps**:
 *   Begin Task 5: Attack Lab (Simulated Security Incidents).
 
+### [2026-01-29] Sentinel Stabilization (CID, Silent Protocol, Visuals)
+**👤 Author**: Antigravity
+**🎯 Goal**: Fix critical logic flaws (CID duplication, Event Spam) and finalize Visual Identity.
+**✅ Accomplished**:
+*   **CID Integrity**: Implemented strict Regex `^CID-[0-9A-F]{4}-\d$` to prevent `CID-CID-` recursive duplication.
+*   **Silent Protocol (Hardware Brake)**: Implemented `useRef`-based Synchronous Blocking to stop machine-gun event spam (0ms latency).
+*   **Visual Identity (Forensic)**: Refined `IdentityHUD` to display 'Criminal ID' in strict forensic style (Gray/Zinc), triggering a **Red Glitch & Pulse** only when Risk > 60%.
+*   **Honeypot Trap**: Deployed `window._VGT_DEBUG_` global getter. Access triggers `MEMORY_INJECTION_ATTEMPT` (+20% Infamy).
+*   **Risk Calibration**: Adjusted weights (Clipboard +1, F12 +5) and implemented "Rule of 3" for critical route spam.
+**🚧 Next Steps (New Session Priorities)**:
+1.  **Honeypot Activation (The Detonator)**: Verify the `_VGT_DEBUG_` interactive getter triggers the specific "Memory Injection" Sentinel response.
+2.  **Infamy Audit**: Verify 0% Risk on clean load, test "Rule of 3" throttling for `/env` and `/admin`, and validate new weights.
+3.  **Technique Mapping**: Implement visualization of `sessionTechniques` in the **Briefing** panel so the user sees their "Crimes".
