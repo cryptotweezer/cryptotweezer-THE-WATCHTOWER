@@ -5,7 +5,6 @@ import { Monitor, Globe, Clock, Shield, Network } from "lucide-react";
 
 interface IdentityHUDProps {
     alias: string;
-    fingerprint: string;
     riskScore: number;
     ip: string;
     cid?: string;
@@ -18,7 +17,7 @@ interface DeepScanData {
     screen: string;
 }
 
-export default function IdentityHUD({ alias, fingerprint, riskScore, ip, cid }: IdentityHUDProps) {
+export default function IdentityHUD({ alias, riskScore, ip, cid }: IdentityHUDProps) {
     const [deepScan, setDeepScan] = useState<DeepScanData | null>(null);
 
     useEffect(() => {

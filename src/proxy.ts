@@ -55,8 +55,6 @@ export default async function proxy(req: NextRequest) {
         const isValid = isValidPage || isStatic || isAllowedApi;
 
         let baseResponse = NextResponse.next();
-        let isGhostRoute = false;
-
         if (!isValid) {
             // It's a Wildcard Ghost Route!
             baseResponse = NextResponse.rewrite(new URL("/", req.url));
@@ -67,7 +65,6 @@ export default async function proxy(req: NextRequest) {
             } else {
                 baseResponse.headers.set("x-sentinel-trap", "universal_wildcard");
             }
-            isGhostRoute = true;
         } else {
             // Specific check for known "Honey" routes even if they look like APIs (optional, but keeping original logic partially)
             const explicitTraps = ["/admin", "/wp-admin", "/.env", "/config", "/dashboard"];
@@ -75,7 +72,6 @@ export default async function proxy(req: NextRequest) {
                 baseResponse = NextResponse.rewrite(new URL("/", req.url));
                 baseResponse.headers.set("x-invoke-path", path); // RAW PATH CAPTURE
                 baseResponse.headers.set("x-sentinel-trap", "reconnaissance");
-                isGhostRoute = true;
             }
         }
 

@@ -16,7 +16,11 @@ export default async function Home() {
 
   // Fallback for Dev/Bypass Mode (Privacy: Random Hash, no IP leak)
   if (!fingerprint || fingerprint === "unknown") {
-    const randomHash = Buffer.from(Math.random().toString()).toString('hex').substring(0, 8);
+    // FIX: Use crypto.randomUUID() for stable node-side generation or just simple time-based?
+    // User asked to avoid Math.random().
+    const randomHash = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID().slice(0, 8)
+      : Date.now().toString(36).slice(-8);
     fingerprint = "node_" + randomHash;
   }
 

@@ -76,7 +76,9 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
 
         // HONEYPOT TRAP (Window Object)
         // Exposed Global Variable for script-kiddies scanning 'window'
-        if (typeof window !== "undefined" && !(window as any)._VGT_DEBUG_) {
+        // HONEYPOT TRAP (Window Object)
+        // Exposed Global Variable for script-kiddies scanning 'window'
+        if (typeof window !== "undefined" && !Object.prototype.hasOwnProperty.call(window, '_VGT_DEBUG_')) {
             Object.defineProperty(window, '_VGT_DEBUG_', {
                 get: function () {
                     console.warn(">> SECURITY BREACH DETECTED: ILLEGAL MEMORY ACCESS <<");
@@ -328,7 +330,7 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
             }, 1000);
         };
 
-        const handleClipboard = (e: ClipboardEvent) => {
+        const handleClipboard = () => {
             triggerSentinel("Security Alert: Data egress/ingress attempt via logic gate (Clipboard).", "DATA_EXFILTRATION_ATTEMPT");
         };
 
@@ -359,7 +361,7 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
             };
             window.addEventListener('vgt-honeypot', handleHoney);
 
-            if (!(window as any)._VGT_DEBUG_) {
+            if (!Object.prototype.hasOwnProperty.call(window, '_VGT_DEBUG_')) {
                 Object.defineProperty(window, '_VGT_DEBUG_', {
                     get: function () {
                         window.dispatchEvent(new Event('vgt-honeypot'));
@@ -413,7 +415,7 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
         }
     }, [accessGranted, triggerSentinel, invokePath]);
 
-    const handleAccess = (granted: boolean) => {
+    const handleAccess = () => {
         localStorage.setItem("watchtower_access", "granted");
         setAccessGranted(true);
     };
@@ -451,7 +453,6 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
                     <div className="w-full mt-4">
                         <IdentityHUD
                             alias={identity.alias}
-                            fingerprint={identity.fingerprint || "unknown"}
                             riskScore={currentRiskScore}
                             ip={identity.ip || "unknown"}
                             cid={cid}

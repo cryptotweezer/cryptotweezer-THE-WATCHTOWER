@@ -5,7 +5,7 @@ export const runtime = 'edge';
 
 export async function POST(req: Request) {
   console.log("Sentinel API triggered");
-  const { prompt, eventType, threatLevel, targetPath, riskScore, alias } = await req.json();
+  const { prompt, eventType, targetPath, riskScore, alias } = await req.json();
 
   // Normalize Risk Score (Cap at 100%)
   const currentRisk = Math.min(riskScore || 0, 100);
