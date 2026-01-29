@@ -14,14 +14,9 @@ export default async function Home() {
   let fingerprint = headersList.get("x-arcjet-fingerprint");
   const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
 
-  // Fallback for Dev/Bypass Mode (Privacy: Random Hash, no IP leak)
-  if (!fingerprint || fingerprint === "unknown") {
-    // FIX: Use crypto.randomUUID() for stable node-side generation or just simple time-based?
-    // User asked to avoid Math.random().
-    const randomHash = (typeof crypto !== 'undefined' && crypto.randomUUID)
-      ? crypto.randomUUID().slice(0, 8)
-      : Date.now().toString(36).slice(-8);
-    fingerprint = "node_" + randomHash;
+  // Fallback for Dev/Bypass Mode (Privacy: No server-side random generation)
+  if (!fingerprint) {
+    fingerprint = "unknown";
   }
 
   // Database Handshake

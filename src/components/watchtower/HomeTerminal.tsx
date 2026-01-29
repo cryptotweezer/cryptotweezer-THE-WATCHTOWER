@@ -29,6 +29,18 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
     // INFAMY SYSTEM STATE
     const [currentRiskScore, setCurrentRiskScore] = useState(identity.riskScore);
     const [sessionTechniques, setSessionTechniques] = useState<string[]>([]);
+
+    // --- CLIENT-SIDE IDENTITY STABILIZATION ---
+    // Solves Server-Side Purity/Hydration mismatch for random IDs
+    const [stableFingerprint, setStableFingerprint] = useState(identity.fingerprint);
+
+    useEffect(() => {
+        // If server couldn't identify (Dev Mode), generate a persistent session ID on client
+        if (stableFingerprint === "unknown" || !stableFingerprint) {
+            const randomHash = "node_" + Math.random().toString(36).slice(2, 10);
+            setStableFingerprint(randomHash);
+        }
+    }, [stableFingerprint]);
     const [cid, setCid] = useState<string>("");
 
     // SENSORS
@@ -147,7 +159,6 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
                 else if (MED_RISK.includes(eventType)) impact = 7;
                 else impact = 10; // Default High (e.g. Critical Routes after Rule of 3)
 
-                const newScore = Math.min(currentScore + impact, 75); // Bumped cap to accomadate Honeypot? No, User said 60% standard, but +20% honeypot implies > 60? 
                 // Instruction says: "Max Standard Risk = 60". 
                 // "The remaining 40% is locked for Kali/External".
                 // BUT Honeypot is browser based. 
@@ -424,6 +435,8 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
     if (!isMounted) {
         return null;
     }
+
+    /* Moved to top to satisfy Rules of Hook */
 
     return (
         <>
