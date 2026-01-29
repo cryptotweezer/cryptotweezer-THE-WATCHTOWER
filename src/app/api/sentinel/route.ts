@@ -42,7 +42,6 @@ export async function POST(req: Request) {
   `;
 
   console.log("Sentinel Brain Active. Risk:", currentRisk);
-
   const result = streamText({
     model: openai('gpt-4o-mini'),
     system: systemPrompt,

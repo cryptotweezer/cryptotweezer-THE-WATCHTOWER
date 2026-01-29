@@ -289,4 +289,3 @@
 1.  **Honeypot Activation (The Detonator)**: Verify the `_VGT_DEBUG_` interactive getter triggers the specific "Memory Injection" Sentinel response.
 2.  **Infamy Audit**: Verify 0% Risk on clean load, test "Rule of 3" throttling for `/env` and `/admin`, and validate new weights.
 3.  **Technique Mapping**: Implement visualization of `sessionTechniques` in the **Briefing** panel so the user sees their "Crimes".
-

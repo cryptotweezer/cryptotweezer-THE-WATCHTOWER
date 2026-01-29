@@ -41,7 +41,6 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
     const criticalPathCountRef = useRef<number>(0);
     // GUARD: Prevent infinite loops and double-firing in StrictMode
     const hasInitialized = useRef(false);
-
     // Mount Effect: Check localStorage AFTER mount & Restore Session
     useEffect(() => {
         setIsMounted(true);
@@ -163,7 +162,6 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
                 return finalScore;
             });
         }
-
         isStreamingRef.current = true;
         setStreamText(""); // Clear previous stream if any (though logic handles this)
 
@@ -374,7 +372,6 @@ export default function HomeTerminal({ threatCount, identity, invokePath }: Home
             return () => window.removeEventListener('vgt-honeypot', handleHoney);
         }
     }, [triggerSentinel]);
-
     // Initial Handshake Trigger - Protected by Ref & Session Check
     useEffect(() => {
         if (accessGranted && !hasInitialized.current) {
