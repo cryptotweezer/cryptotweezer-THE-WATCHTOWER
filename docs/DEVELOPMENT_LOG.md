@@ -289,3 +289,32 @@
 1.  **Honeypot Activation (The Detonator)**: Verify the `_VGT_DEBUG_` interactive getter triggers the specific "Memory Injection" Sentinel response.
 2.  **Infamy Audit**: Verify 0% Risk on clean load, test "Rule of 3" throttling for `/env` and `/admin`, and validate new weights.
 3.  **Technique Mapping**: Implement visualization of `sessionTechniques` in the **Briefing** panel so the user sees their "Crimes".
+### [2026-01-29 - UPDATE] Build Stabilization & Conflict Resolution
+**🔧 Context**: Following a `git pull origin main`, significant conflicts arose in the Sentinel Brain logic and Frontend components.
+**🚨 Issues & Resolutions**:
+1.  **Git Conflicts (`route.ts`, `HomeTerminal.tsx`)**:
+    *   **Conflict**: Incoming changes from `main` clashed with the V2.1 Sentinel Brain (Honeypot/Silent Protocol).
+    *   **Resolution**: Enforced **HEAD** versions to preserve the latest forensic logic, Honeypot trap, and client-side synchronous blocking. Merged `DEVELOPMENT_LOG.md` history manually.
+2.  **React Purity / Hydration Errors (`page.tsx`)**:
+    *   **Issue**: `Math.random()` used in Server Component caused purity warnings and potential hydration mismatches.
+    *   **Fix**: Removed server-side random generation. Implemented a client-side `useEffect` in `HomeTerminal.tsx` to generate a stable `node_XXXX` fingerprint if the server returns "unknown".
+3.  **Hooks & Linter Compliance**:
+    *   **Issue**: Conditional Hook execution error (`useEffect` after `if (!mounted) return`).
+    *   **Fix**: Moved all Hooks (State/Effect) to the top level of the component, ensuring they execute unconditionally before any return statements.
+4.  **Cleanup**:
+    *   Removed unused variables (`newScore`, `threatLevel`) and simplified types to achieve a **Clean Build (Exit Code 0)**.
+
+### [2026-02-01] Operation Mnemosyne: Persistence & Sensor Refinement
+**👤 Author**: Antigravity
+**🎯 Goal**: Resolve critical Session Loss (Rule of 3 failure) and refine Sentinel Sensor Logic.
+**✅ Accomplished**:
+*   **Persistence Diamante**: Migrated core state (History, Logs, Techniques, Risk) from `sessionStorage` to `localStorage`.
+*   **Ancla de Identidad**: Implemented `useStableIdentity` hook to generate and persist a unique Fingerprint/ID rooted in storage, solving "Ghost IDs".
+*   **Sensor Independence (Smart Blur)**: Decoupled `document.hidden` (Tab Switch) from `window.onblur` (Focus Loss).
+    *   *Tab Switch* -> "Searching for tutorials? Interesting..." (`CONTEXT_SWITCH_ANOMALY`)
+    *   *Focus Loss* -> "Multitasking? Focus on the terminal." (`FOCUS_LOSS_ANOMALY`)
+*   **UI Polish**: Refined Terminal Logs (No borders, fluid text, equal height column).
+*   **Risk Cap Shield**: Enforced strict 20% Risk Cap for basic browser events (F12, Clicks, Focus) on both Client (Logic) and Server (Validation).
+*   **Focus Filter V1**: Implemented `ignoreNextClick` on Window Focus to reduce false positives when clicking back into the terminal.
+**🚧 Next Steps**:
+*   **[PRIORITY] Return Click Resolution**: The Focus Filter V1 is partially effective but still registers some "Return Clicks" as "Surface Analysis". Need a more robust event interception architecture for the next session.

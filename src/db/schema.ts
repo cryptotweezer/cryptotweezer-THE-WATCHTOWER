@@ -2,7 +2,22 @@
 import { pgTable, text, timestamp, integer, uuid, pgEnum } from "drizzle-orm/pg-core";
 
 // Enums
-export const eventTypeEnum = pgEnum("event_type", ["SQLi", "XSS", "Bot", "RateLimit", "AccessControl", "PromptInjection"]);
+export const eventTypeEnum = pgEnum("event_type", [
+    "SQLi",
+    "XSS",
+    "Bot",
+    "RateLimit",
+    "AccessControl",
+    "PromptInjection",
+    "FORENSIC_INSPECTION_ACTIVITY",
+    "UI_SURFACE_ANALYSIS",
+    "DATA_EXFILTRATION_ATTEMPT",
+    "CONTEXT_SWITCH_ANOMALY",
+    "ROUTING_PROBE_HEURISTICS",
+    "System Handshake",
+    "PROTOCOL_VIOLATION",
+    "SECURITY_WARNING_PROTOCOL"
+]);
 export const actionTakenEnum = pgEnum("action_taken", ["Blocked", "Allowed", "Flagged", "Tarpit"]);
 
 // Tables
