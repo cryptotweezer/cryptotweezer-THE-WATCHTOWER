@@ -85,7 +85,8 @@ export default function IdentityHUD({ alias, riskScore, ip, cid }: IdentityHUDPr
                         <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Criminal ID</span>
                         <div className="font-mono text-sm flex items-center gap-2">
                             <span className={riskScore >= 60 ? "animate-pulse text-red-500 font-bold" : "text-gray-400"}>
-                                {cid || <span className="text-gray-600 animate-pulse text-xs">INITIALIZING...</span>}
+                                {/* Force cleanup of CID double-prefix bug on render */}
+                                {cid?.replace(/(CID-)+/g, "CID-") || <span className="text-gray-600 animate-pulse text-xs">INITIALIZING...</span>}
                             </span>
                             {riskScore >= 60 && (
                                 <span className="text-[10px] text-red-500 border border-red-500 px-1 rounded animate-bounce">
@@ -129,12 +130,31 @@ export default function IdentityHUD({ alias, riskScore, ip, cid }: IdentityHUDPr
                         <span className="text-gray-300 text-right">{deepScan ? deepScan.timezone : <span className="animate-pulse text-gray-600">[ TRIANGULATING ]</span>}</span>
                     </div>
 
-                    <div className="grid grid-cols-[24px_100px_1fr] items-center text-sm font-mono pb-2">
+                    <div className="grid grid-cols-[24px_100px_1fr] items-center text-sm font-mono pb-2 border-b border-gray-800/30 mb-3">
                         <Monitor size={14} className="text-gray-600" />
                         <span className="text-gray-500 text-xs uppercase tracking-wider">Display</span>
                         <span className="text-gray-300 text-right">{deepScan ? deepScan.screen : <span className="animate-pulse text-gray-600">[ MEASURING ]</span>}</span>
                     </div>
 
+                    {/* Status Indicator (Dynamic) - Moved into Grid */}
+                    {riskScore >= 20 && (
+                        <div className="grid grid-cols-[24px_100px_1fr] items-center text-sm font-mono pt-1">
+                            <Shield size={14} className={
+                                riskScore >= 100 ? "text-red-500 animate-pulse" :
+                                    riskScore >= 60 ? "text-orange-500" :
+                                        "text-cyan-400"
+                            } />
+                            <span className="text-gray-500 text-xs uppercase tracking-wider">Status</span>
+                            <span className={`text-right font-bold tracking-widest ${riskScore >= 100 ? "text-red-500 animate-glitch" :
+                                riskScore >= 60 ? "text-orange-500" :
+                                    "text-cyan-400"
+                                }`}>
+                                {riskScore >= 100 ? "ADVERSARY" :
+                                    riskScore >= 60 ? "THREAT ACTOR" :
+                                        "SCRIPT-KIDDIE"}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
