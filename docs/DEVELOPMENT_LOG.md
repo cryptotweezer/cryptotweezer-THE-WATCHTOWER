@@ -289,7 +289,6 @@
 1.  **Honeypot Activation (The Detonator)**: Verify the `_VGT_DEBUG_` interactive getter triggers the specific "Memory Injection" Sentinel response.
 2.  **Infamy Audit**: Verify 0% Risk on clean load, test "Rule of 3" throttling for `/env` and `/admin`, and validate new weights.
 3.  **Technique Mapping**: Implement visualization of `sessionTechniques` in the **Briefing** panel so the user sees their "Crimes".
-
 ### [2026-01-29 - UPDATE] Build Stabilization & Conflict Resolution
 **🔧 Context**: Following a `git pull origin main`, significant conflicts arose in the Sentinel Brain logic and Frontend components.
 **🚨 Issues & Resolutions**:
@@ -319,4 +318,3 @@
 *   **Focus Filter V1**: Implemented `ignoreNextClick` on Window Focus to reduce false positives when clicking back into the terminal.
 **🚧 Next Steps**:
 *   **[PRIORITY] Return Click Resolution**: The Focus Filter V1 is partially effective but still registers some "Return Clicks" as "Surface Analysis". Need a more robust event interception architecture for the next session.
-

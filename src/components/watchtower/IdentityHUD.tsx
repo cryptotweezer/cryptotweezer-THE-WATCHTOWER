@@ -85,7 +85,6 @@ export default function IdentityHUD({ alias, riskScore, ip, cid }: IdentityHUDPr
                         <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Criminal ID</span>
                         <div className="font-mono text-sm flex items-center gap-2">
                             <span className={riskScore >= 60 ? "animate-pulse text-red-500 font-bold" : "text-gray-400"}>
-                                {/* Force cleanup of CID double-prefix bug on render */}
                                 {cid?.replace(/(CID-)+/g, "CID-") || <span className="text-gray-600 animate-pulse text-xs">INITIALIZING...</span>}
                             </span>
                             {riskScore >= 60 && (
