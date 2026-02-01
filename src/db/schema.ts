@@ -16,7 +16,9 @@ export const eventTypeEnum = pgEnum("event_type", [
     "ROUTING_PROBE_HEURISTICS",
     "System Handshake",
     "PROTOCOL_VIOLATION",
-    "SECURITY_WARNING_PROTOCOL"
+    "SECURITY_WARNING_PROTOCOL",
+    "FOCUS_LOSS_ANOMALY",
+    "MEMORY_INJECTION_ATTEMPT"
 ]);
 export const actionTakenEnum = pgEnum("action_taken", ["Blocked", "Allowed", "Flagged", "Tarpit"]);
 

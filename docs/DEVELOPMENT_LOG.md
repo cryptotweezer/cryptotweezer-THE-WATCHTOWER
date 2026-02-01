@@ -317,4 +317,21 @@
 *   **Risk Cap Shield**: Enforced strict 20% Risk Cap for basic browser events (F12, Clicks, Focus) on both Client (Logic) and Server (Validation).
 *   **Focus Filter V1**: Implemented `ignoreNextClick` on Window Focus to reduce false positives when clicking back into the terminal.
 **🚧 Next Steps**:
-*   **[PRIORITY] Return Click Resolution**: The Focus Filter V1 is partially effective but still registers some "Return Clicks" as "Surface Analysis". Need a more robust event interception architecture for the next session.
+
+### [2026-02-01] Sentinel Logic Refinement (V30-V33)
+**👤 Author**: Antigravity
+**🎯 Goal**: Fix "Rule of 3" failure, prevent duplicate logging, and refine Sensor precision.
+**✅ Accomplished**:
+*   **Logic Repair (V30-V33)**:
+    *   Fixed `Invalid hook call` in `useSentinelSensors.ts` (moved `useRef` to top level).
+    *   Uncovered and wiped duplicate Routing Logic in `useSentinelManager.ts` (The "Zombie Block").
+    *   Implemented **Latch Mechanism** (`processedPathRef`) to solve React Strict Mode double-counting (The "Silence on 2nd Attempt" bug).
+*   **Precision Tuning**:
+    *   **Protocol of 3**: Enforced strict counting. Attempt 1-2 (Warn, 0 Pts), Attempt 3 (Strike, +10 Pts), Attempt 4+ (Silence).
+    *   **Global Cap**: Enforced 20% Hard Cap for Browser & Routing events combined.
+*   **Code Hygiene**:
+    *   Cleaned `useDevTools.ts` (Removed dead refs).
+    *   Verified `pnpm lint` (0 Errors).
+**🚧 Next Steps**:
+*   **AI Persona**: Refine Sentinel-02 responses for more varied "Cynical" outputs.
+*   **Attack Lab**: Simulate complex attacks to test the 20% Cap robustness.
