@@ -32,7 +32,8 @@ export default function HomeTerminal({ identity, invokePath }: HomeTerminalProps
     });
 
     const [isMounted, setIsMounted] = useState(false);
-    useEffect(() => setIsMounted(true), []);
+    // eslint-disable-next-line
+    useEffect(() => { setIsMounted(true); }, []);
 
     if (!isMounted) return null;
 

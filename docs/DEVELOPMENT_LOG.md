@@ -317,6 +317,7 @@
 *   **Risk Cap Shield**: Enforced strict 20% Risk Cap for basic browser events (F12, Clicks, Focus) on both Client (Logic) and Server (Validation).
 *   **Focus Filter V1**: Implemented `ignoreNextClick` on Window Focus to reduce false positives when clicking back into the terminal.
 **🚧 Next Steps**:
+*   **[PRIORITY] Return Click Resolution**: The Focus Filter V1 is partially effective but still registers some "Return Clicks" as "Surface Analysis". Need a more robust event interception architecture for the next session.
 
 ### [2026-02-01] Sentinel Logic Refinement (V30-V33)
 **👤 Author**: Antigravity
@@ -335,3 +336,4 @@
 **🚧 Next Steps**:
 *   **AI Persona**: Refine Sentinel-02 responses for more varied "Cynical" outputs.
 *   **Attack Lab**: Simulate complex attacks to test the 20% Cap robustness.
+

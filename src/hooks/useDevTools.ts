@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 
 export default function useDevTools() {
     const [isDevToolsOpen, setIsDevToolsOpen] = useState(false);
-    const lastPulseRef = useRef<number>(Date.now());
+    const lastPulseRef = useRef<number>(0);
 
 
     useEffect(() => {

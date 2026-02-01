@@ -51,6 +51,8 @@ export default function useSentinelSensors({ triggerSentinel, isSystemReadyRef, 
 
     // DOM LISTENERS
     useEffect(() => {
+        if (!accessGranted) return;
+
         // V30: Micro-Buffer for Blur to allow Resize to catch up (Cancellation Logic)
 
 
@@ -172,6 +174,6 @@ export default function useSentinelSensors({ triggerSentinel, isSystemReadyRef, 
             window.removeEventListener("focus", handleFocus);
             window.removeEventListener("click", handleClick);
         };
-    }, [triggerSentinel, isSystemReadyRef]); // Dependencies
+    }, [triggerSentinel, isSystemReadyRef, accessGranted]); // Dependencies
 
 }
