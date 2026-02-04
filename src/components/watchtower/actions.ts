@@ -5,7 +5,7 @@ import { userSessions, securityEvents } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 
-export async function performHandshake(fingerprint: string, currentAlias?: string) {
+export async function performHandshake(fingerprint: string) {
     if (!fingerprint) return { success: false, error: "No Fingerprint" };
 
     try {

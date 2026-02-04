@@ -30,7 +30,7 @@ export default async function Home() {
         fingerprint = middlewareId;
       } else {
         // Absolute fallback (should not happen if middleware works)
-        fingerprint = "node_temp_" + Math.random().toString(36).substring(2, 10);
+        fingerprint = "node_temp_" + crypto.randomUUID().substring(0, 8);
       }
     }
   }
