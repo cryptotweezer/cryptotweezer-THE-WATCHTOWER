@@ -110,7 +110,7 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
             const updated = Array.from(new Set([...currentStored, eventType]));
             localStorage.setItem("sentinel_techniques", JSON.stringify(updated));
             setSessionTechniques(updated as string[]);
-        } catch (e) { console.error("Storage Sync Error:", e); }
+        } catch (e: unknown) { console.error("Storage Sync Error:", e); }
 
         // Event Log
         const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
@@ -267,7 +267,6 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
         const storedEventLog = localStorage.getItem("sentinel_event_log");
         const storedTechniques = localStorage.getItem("sentinel_techniques");
         const storedRisk = localStorage.getItem("sentinel_risk_score");
-
 
         if (storedHistory) setHistory(JSON.parse(storedHistory).filter((msg: string) => !msg.includes("DETECTED:")));
         if (storedEventLog) setEventLog(JSON.parse(storedEventLog));

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   }
 
   // --- DATABASE LOGGING (PERSISTENCE LAYER) ---
-  let isFirstReveal = false;
+
 
   try {
     // 2. Calculate Server-Side Impact
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
 
     // Update local variable for the Brain response
     currentRisk = newScore;
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("DB Logging Failed:", err);
   }
 

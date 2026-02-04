@@ -146,7 +146,7 @@ export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint, on
             // This prevents "ghost threads" from trying to update state on an unmounted component.
             return () => clearInterval(typeInterval);
         }
-    }, [revealPhase, cid]);
+    }, [revealPhase, cid, onRevealComplete]);
 
     // Blinking Cursor Logic
     useEffect(() => {
