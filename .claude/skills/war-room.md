@@ -1,56 +1,66 @@
-THE WAR ROOM: GLOBAL THREAT DASHBOARD (v1.0)
-1. OVERVIEW
-The War Room is the "Command Center" of the Digital Twin. It transitions the user from a passive observer to a security analyst. It displays real-time telemetry from all users across the globe, creating a sense of a living, breathing security asset.
+🏛️ WAR ROOM: INTELLIGENCE & OPERATIONS CENTER
+"Where telemetry transforms into a forensic narrative."
 
-2. GLOBAL TELEMETRY (THE MACRO VIEW)
-This section fetches aggregated data from the Neon PostgreSQL database.
+The War Room is the operational heart of The Watchtower. It is not a static control panel; it is a real-time intelligence interface designed to manage adversary infamy while demonstrating infrastructure resilience to authorized observers.
 
-Global Threat Map: A simplified SVG or Canvas world map.
+🏛️ 1. DUAL ACCESS PROTOCOL (CLEARANCE)
+The Dashboard identifies user intent through two distinct entry paths:
 
-Visual: Pings/Pulses appearing on countries where attacks have been detected in the last 24 hours.
+Adversary Mode (Threat Actor): Requires a valid Criminal ID (CID) generated after passing the Gatekeeper handshake.
 
-System Stress Meter (Heat Map):
+Tone: Hostile, cynical, and challenging.
 
-Logic: Sum(Total_Attacks_24h).
+Goal: The user searches for Elite Honeypots to reach 100% risk.
 
-States: STABLE (Blue/Green), UNDER LOAD (Orange), CRITICAL (Red Glitch).
+Observer Mode (Recruiter): Activated via the ?clearance=RECRUITER URL parameter.
 
-Live Incident Feed: A scrolling list of the last 10 blocked attempts worldwide.
+Tone: Professional, technical, and analytical ("Briefing Mode").
 
-Format: [TIMESTAMP] - [THREAT_TYPE] - [ORIGIN_CITY] - [STATUS: NEUTRALIZED]
+Goal: Showcase the tech stack (Next.js, Arcjet, Neon) and the architect's monitoring capabilities.
 
-3. PERSONAL INFAMY TRACKER (THE MICRO VIEW)
-Specific stats for the current session/user.
+🏛️ 2. ACTIVE TELEMETRY COMPONENTS
+A. Global Threat Map (Powered by Neon)
+Function: Geo-spatial visualization of blocked attacks.
 
-Current Infamy Score: Points earned during this session.
+Logic: Consumes logs from the security_events table in Neon. Every entry with a valid IP generates a light pulse on the map based on the country code.
 
-Detected Crimes: A list of specific vulnerabilities the user has tried to exploit (e.g., "SQL Injection Attempt", "Directory Traversal").
+Visual Impact: Failed attacks from other users appear as "ghost pulses," creating the sensation of a live system under constant siege.
 
-Rank Progress: A visual bar showing how close they are to entering The Hall of Infamy (Top 10).
+B. System Stress Meter (Powered by Arcjet)
+Function: Dynamic indicator of infrastructure health and load.
 
-4. THE SENTINEL'S WAR ROOM PERSONA
-In this area, Sentinel-02 shifts from "Greeting Mode" to "Tactical Mode."
+Levels:
 
-Behavior: Instead of just reacting to the user, the AI comments on Global Trends.
+CYAN (Calm): Nominal traffic.
 
-Sample Dialogue: "The nodes in Eastern Europe are particularly aggressive tonight. Are you going to join them, or just keep staring at my charts?"
+ORANGE (Loaded): Bot detection or request bursts.
 
-5. DATABASE SCHEMA (NEON / LEAN STORAGE)
-To stay within free-tier limits, we use two optimized tables:
+RED GLITCH (Critical): Massive attack saturation or Fuzzing. The final 10% of the Infamy Score is unlocked by maintaining this state.
 
-global_stats: Stores daily aggregates (Total attacks per type, per country).
+C. Sentinel V2 Uplink (Forensic AI)
+Function: Advanced conversational terminal.
 
-session_crimes: Temporary storage for the current session's activity.
+Technical Memory: Unlike the Home terminal, the AI here has access to the user's last 20 security events.
 
-leaderboard: Stores only the Top 10 users (Username/Alias, Score, Primary Tool).
+Interrogation: Users can ask: "Why did my last JSON Injection attempt fail?" and the Sentinel will provide real technical details based on actual logs.
 
-🛡️ Technical Implementation Checklist for Antigravity:
-Database Initialization: Create the SQL schema in Neon to track global hits and user scores.
+🏛️ 3. THE TRIPLE LOCK (HONEYPOT TRACKER)
+The War Room tracks progress for the covert missions required to reach 100% infamy:
 
-War Room Layout: Build a grid-based dashboard using bento-box styling (Next.js components).
+Operation Shadow-Field: API manipulation detection.
 
-Live Fetching: Implement a SWR or React Query hook to refresh global stats every 30 seconds without page reloads.
+Operation Binary-Ghost: Memory tampering detection.
 
-"Claim Identity" Logic: Create a small modal/input for users to set an "Alias" so their crimes can be recorded in the Leaderboard.
+Operation Ghost-Key: Source code secret leak detection.
 
-Stress Level Logic: Connect the Global Stress Meter to the total count of the global_stats table.
+🏛️ 4. HIGH-PRIORITY ACTIONS
+Wall of Infamy (The Deface): A restricted area. Write access is only enabled if risk_score == 100. This allows the user to leave a persistent, signed message in the database.
+
+Identity Eraser (Digital Suicide): A "right to be forgotten" feature. It irreversibly wipes all records of the CID from Neon, reinforcing the narrative of "cleaning your tracks" after a successful operation.
+
+🏛️ 5. TECH STACK IMPLEMENTATION
+Frontend: React Context to manage terminal state and map pulses.
+
+Backend: Server Actions for identity erasure and optimized Neon queries.
+
+Security: Arcjet request counting to feed the Stress Meter.

@@ -14,6 +14,7 @@ interface HomeTerminalProps {
     identity: {
         alias: string;
         fingerprint: string | null;
+        cid?: string | null;
         riskScore: number;
         ip: string | null;
     };
@@ -67,7 +68,9 @@ export default function HomeTerminal({ identity, invokePath }: HomeTerminalProps
                             alias={identity.alias}
                             riskScore={state.currentRiskScore}
                             ip={identity.ip || "unknown"}
-                            cid={state.cid}
+                            cid={identity.cid || state.cid}
+                            fingerprint={identity.fingerprint || "Scanning..."}
+                            onRevealComplete={() => actions.triggerSentinel("IDENTITY REVEAL CONFIRMED. CASCADE INITIATED.", "IDENTITY_REVEAL_PROTOCOL")}
                         />
                     </div>
                 </div>

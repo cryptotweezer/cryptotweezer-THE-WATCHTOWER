@@ -27,6 +27,7 @@ export const actionTakenEnum = pgEnum("action_taken", ["Blocked", "Allowed", "Fl
 // 1. Session Intel (Identity)
 export const userSessions = pgTable("user_sessions", {
     fingerprint: text("fingerprint").primaryKey(), // Unique visitor ID
+    cid: text("cid").unique(), // Public Criminal ID (e.g., CID-442-X)
     alias: text("alias").notNull(), // AI-generated codename (e.g., "Neon Cipher")
     riskScore: integer("risk_score").default(0).notNull(),
     firstSeen: timestamp("first_seen").defaultNow().notNull(),
@@ -37,7 +38,7 @@ export const userSessions = pgTable("user_sessions", {
 export const securityEvents = pgTable("security_events", {
     id: uuid("id").defaultRandom().primaryKey(),
     fingerprint: text("fingerprint").references(() => userSessions.fingerprint),
-    eventType: eventTypeEnum("event_type").notNull(),
+    eventType: text("event_type").notNull(), // FREEDOM: Replaced Enum with Text
     payload: text("payload"), // Sanitized attack payload
     riskScoreImpact: integer("risk_score_impact").default(0).notNull(),
     actionTaken: actionTakenEnum("action_taken").notNull(),

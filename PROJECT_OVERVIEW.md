@@ -1,70 +1,61 @@
-🛰️ PROJECT OVERVIEW: THE WATCHTOWER (v1.1)
-"Defensive Teacher: Learn by Attacking." A SecOps Operations Platform and Threat Learning Lab built on a self-defending infrastructure.
+🛰️ PROJECT OVERVIEW: THE WATCHTOWER (v2.0)
+"The Boss Final of Cyber-Defense Portfolios." > A Total Surveillance Infrastructure and High-Fidelity Honeypot designed to dissect adversary persistence.
 
-1. VISION OVERVIEW
-The project transforms a static portfolio into an active Cyber-Defense Node. It functions as a "Defensive Teacher": a live laboratory that captures real-time attack telemetry and offers a dual experience: Mentorship for novices and a Hardened Challenge for experts.
+🏛️ 1. STRATEGIC VISION
+The Watchtower is an Active SecOps Operating System. Its objective is to capture real-time attack telemetry and transform every intrusion attempt into an infamy metric. The system utilizes Sentinel-02 (a hostile resident AI) to manage an "Escape Room" experience where only the most sophisticated players can leave their mark.
 
-2. THE DUAL EXPERIENCE (USER PROFILES)
-The system classifies visitors based on their digital footprint and behavior:
+🏛️ 2. IDENTITY PROTOCOL (CLEARANCE)
+The system classifies traffic through an intent-detection engine:
 
-The Apprentice (Novice): Users seeking knowledge. Sentinel-02 acts as a mentor, explaining security concepts and why certain actions are blocked.
+The Subject of Interest (Adversary): The standard flow. The Sentinel is cynical, hostile, and challenging. The user must "hack" their way to infamy by overcoming the 20% Hard Cap on routine actions.
 
-The Adversary (Expert): Users using offensive tools. The system acts as a hardened target, intercepting payloads, logging signatures, and mocking their lack of sophistication.
+The Authorized Observer (Recruiter): Activated via ?clearance=RECRUITER. The Sentinel switches to Briefing Mode, acting as a technical pre-sales agent explaining the stack, architecture, and the developer's engineering capabilities.
 
-3. FUNCTIONAL MODULES
-A. The Watchtower (Homepage & Live Telemetry)
-Live Threat Feed: Real-time visual log of processed attempts (SQLi, XSS, Bots) via Arcjet.
+🏛️ 3. OPERATIONAL MODULES
+A. The Terminal (Homepage) - Reconnaissance
+Deep Scan HUD: Forensic identification of the visitor (OS, Browser Engine, IP Reputation, Timezone).
 
-Global Stress Level: A dynamic status indicator (Alpha, Bravo, Charlie) based on attack frequency.
+Infamy Engine (Tier 1): Automated scoring system that rewards basic reconnaissance (F12, Clicks, Routing Probes) up to a strict limit of 20% (Status: SCRIPT-KIDDIE).
 
-Identity HUD: Real-time display of the visitor's fingerprint, IP reputation, and risk score.
+Criminal ID (CID): Persistent identifier linked to the server-side fingerprint (Arcjet) and the database (Neon).
 
-B. The War Room (Global Dashboard)
-Threat Heatmap: Geographic visualization of blocked origins worldwide.
+B. The War Room (Dashboard) - Command Center
+Global Threat Map: Geo-spatial visualization of blocked attacks in real-time worldwide.
 
-System Metrics: Visual representation of the infrastructure's resilience and load under stress.
+System Stress Meter: Dynamic load indicator based on request saturation detected by Arcjet (Cyan -> Orange -> Red Glitch).
 
-Incident Feed: A scrolling log of neutralized threats from the global community.
+Sentinel V2 (Uplink): Conversational terminal with security event memory. Allows the user to interrogate the AI about their own detected attacks.
 
-C. The Integrated Honeypot (Active Defense)
-Deceptive Routes: Intercepting probes to /admin, .env, and sensitive paths to feed "Ghost Data" to attackers.
+C. The Triple Lock (Elite Honeypots)
+To exceed 90% infamy, the attacker must trigger three logic traps:
 
-Live Attack Analysis: Sentinel-02 translates raw technical logs into a forensic narrative.
+Binary-Ghost: Client-side memory tampering (window._VGT_DEBUG_) detected via JS Proxy.
 
-Adaptive HUD: The UI changes aesthetics (Blue to Red Glitch) based on the user's detected hostility.
+Shadow-Field: Hidden attribute injection in JSON payloads (API Over-posting).
 
-D. The Hall of Infamy (Gamification)
-Infamy Points: Awarded to adversaries for persistent or sophisticated attempts.
+Ghost-Key: Exploitation of information "leaks" hidden within source code comments.
 
-Leaderboard: Public ranking of the top 10 "Threat Actors," encouraging ethical research and competition.
+D. The Wall of Infamy & Ghost Layer
+Wall of Infamy: A permanent "deface" wall where only those who reach 100% Risk (Status: ADVERSARY) can leave an immutable signed message in the DB.
 
-4. TECHNICAL STANDARDS & STACK
-Framework: Next.js 15/16 (App Router) - Server-side security by default.
+Ghost Layer: A UI Hijack system. There are no boring 404 errors; if the user accesses prohibited routes, the interface corrupts, and the Sentinel initiates a persistent visual counter-attack.
 
-App Security: Arcjet (WAF, Bot Detection, Rate Limiting, Tarpitting).
+🏛️ 4. TECH STACK & STANDARDS
+Framework: Next.js 15+ (App Router) with Server Component-oriented architecture.
 
-Database: Neon (Postgres) + Drizzle ORM (Type-safe, immutable security logs).
+Active Security: Arcjet (WAF, Bot Detection, Fingerprinting, Rate Limiting).
 
-Intelligence: Vercel AI SDK (Sentinel-02 personality & forensic reports).
+Persistence: Neon (Serverless Postgres) + Drizzle ORM (Immutable Event Logs).
 
-Infrastructure: Vercel (Edge-optimized, $0 cost architecture).
+Neural Layer: Vercel AI SDK (Sentinel-02 personality & forensic context).
 
-5. REPOSITORY & WORKFLOW STANDARDS
-Branching: Strict usage of feature/, bugfix/, hotfix/, and chore/.
+Infrastructure: Vercel Edge Runtime (Minimum latency, maximum security).
 
-Commits: Conventional Commits standard (feat:, fix:, docs:) + Team Member attribution.
+🏛️ 5. DEVELOPMENT STANDARDS
+Log Protocol: Mandatory updates to docs/DEVELOPMENT_LOG.md for every session.
 
-Management: 100% of tasks tracked in ClickUp, linked to GitHub Pull Requests.
+Conventional Commits: feat:, fix:, security:, docs:.
 
-The Archivist: Mandatory session logging in docs/DEVELOPMENT_LOG.md.
+Branching Strategy: feature/ based development with main validation.
 
-6. WEEKLY SUBMISSION MILESTONES
-Week 1-2: Infrastructure setup, PRD, Master Plans, and Handshake initialization.
-
-Week 3: Working Sentinel-02 integration and Live Telemetry base.
-
-Week 4: Production deployment on Vercel and performance optimization.
-
-Week 5: Final feature hardening, Bug Bash, and Presentation Outline.
-
-Week 6: Live Demo (The Watchtower must survive real-time exploitation attempts).
+Zero-Trust UI: The interface reacts to the riskScore stored in the DB, not just local state.

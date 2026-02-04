@@ -23,13 +23,19 @@ export async function getOrCreateSession(fingerprint: string) {
 
     // 2. Create new session
     const newAlias = generateCyberAlias();
+    const newCid = `CID-${Math.floor(100 + Math.random() * 900)}-${Math.random().toString(36).substring(2, 3).toUpperCase()}`;
+
     const newSession = await db.insert(userSessions).values({
         fingerprint,
         alias: newAlias,
+        cid: newCid,
         riskScore: 0,
     }).returning();
 
-    return newSession[0];
+    return {
+        ...newSession[0],
+        cid: newCid // Explicit return to guarantee availability immediately
+    };
 }
 
 export async function getSession(fingerprint: string) {

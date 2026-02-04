@@ -337,3 +337,84 @@
 *   **AI Persona**: Refine Sentinel-02 responses for more varied "Cynical" outputs.
 *   **Attack Lab**: Simulate complex attacks to test the 20% Cap robustness.
 
+
+### [2026-02-03] Sentinel Integrity & Narrative Refactor
+**👤 Author**: Antigravity
+**🎯 Goal**: Fix IdentityHUD animation corruption and refactor Sentinel Narrative Logic (Anti-Loop).
+**✅ Accomplished**:
+*   **IdentityHUD Integrity**:
+    *   Implemented "Real Atomic Slicing": Replaced `prev + char` with `slice(0, index)` to eliminate character duplication.
+    *   Added **2000ms Buffer** in `ASSIGNING` phase to stabilize backend CID before typing.
+    *   Added Strict Validation: Animation waits for `CID-` prefix and length > 5.
+*   **Sentinel Brain V2.1 (Dynamic Narrative)**:
+    *   **Refactored `route.ts`**: Implemented strict Cynical/Forensic tone (banned "Ah...", "So...").
+    *   **Smart Reveal Logic**: Implemented `isFirstReveal` flag (`dbScore < 20 && newScore >= 20`) to trigger the "Epic Reveal" ONLY once.
+    *   **Dynamic Knowledge Points**:
+        *   Rewrote System Prompt to generate unique speeches based on 4 points (Anonymity Collapse, Browser Weakness, Real Tools, Injection Challenge).
+        *   Prevents repetitive/robotic responses when stuck at 20% risk.
+**🚧 Next Steps**:
+*   **Verification**: Test the "First Reveal" moment in a fresh session.
+*   **Attack Lab**: Verify "X-Sentinel-CID" header injection logic (if implemented client-side).
+
+### [2026-02-04] Phase 0 Completion: Narrative Cascade & Timing
+**👤 Author**: Antigravity
+**🎯 Goal**: Refine Narrative Timing, prevent metaphor repetition, and seal Phase 0.
+**✅ Accomplished**:
+*   **Identity Cascade Protocol**:
+    *   **Logic**: Decoupled the "Epic Reveal" from the risk trigger. The Risk Event (20%) gets a short log. The *animation completion* triggers a separate `IDENTITY_REVEAL_PROTOCOL` event.
+    *   **Drama**: Added **4000ms (4s) Silence** after the CID is fully typed before the Sentinel speaks. This allows the user to absorb the "Identity Locked" state visually.
+*   **Narrative Hardening**:
+    *   **Persona**: Injected "Bored Elite SysAdmin" traits to the System Prompt.
+    *   **Variability Protocol**: Explicitly mandated rotation of specific metaphors ("Blink-engine prison", "Binary playground", "Glass cage") and capped usage of "sandbox".
+*   **Routing Silence**:
+    *   Implemented "3 Strikes And Out" logic for `ROUTING_PROBE`. After 3 unique paths, the Sentinel stops responding to routing noise to maintain high signal-to-noise ratio.
+**🚧 Next Steps**:
+*   **READY FOR PHASE 1**: The Attack Lab.
+*   Objective: SQL Injection, XSS, and real forensic challenges.
+
+### [2026-02-04] Sentinel Elite Brain Upgrade (Phase 0 Final)
+**👤 Author**: Antigravity
+**🎯 Goal**: Upgrade to GPT-4o and enforce Elite Persona standards.
+**✅ Accomplished**:
+*   **Brain Upgrade**:
+    *   Switched `route.ts` model from `gpt-4o-mini` to **`gpt-4o`** for superior reasoning and narrative variety.
+    *   **DB Integrity Fit**: Mapped `IDENTITY_REVEAL_PROTOCOL` -> `IDENTITY_REVEAL` internally to match Schema Constraints.
+*   **Narrative Refinement (Elite Standard)**:
+    *   **Persona**: "Bored Elite SysAdmin" (Unimpressed, Cold, Concise).
+    *   **Anti-Repetition**: Hard-coded protocol to rotate metaphors (Blink-engine prison, User-space toy, etc.).
+    *   **Status Tag**: Implemented `[STATUS: SCRIPT-KIDDIE_IDENTIFIED]` as the definitive closure for the Identity Reveal.
+*   **Signal-to-Noise Ratio**:
+    *   **Noise Filter**: `useSentinelManager.ts` now strictly ignores `.well-known`, `favicon`, and `_next/static` routes.
+
+### [2026-02-04] AAA Surgery: Logic & Infrastructure Stabilization
+**👤 Author**: Antigravity
+**🎯 Goal**: Resolve ECONNRESET errors, free DB schema, and maximize narrative creativity.
+**✅ Accomplished**:
+*   **Infrastructure**:
+    *   **AbortController**: Implemented in `useSentinelManager.ts`. New requests hard-abort previous ones to prevent race conditions and terminal errors.
+    *   **DB Schema Freedom**: Migrated `securityEvents.eventType` from strict `ENUM` to flexible `TEXT`. The Sentinel can now invent event names (e.g., `TAGGED: SCRIPT-KIDDIE`) without SQL errors.
+*   **Narrative Engine**:
+    *   **Example-Free Prompt**: Removed all canned responses from `route.ts`. The AI is now forced to generate unique, context-aware insults.
+    *   **Identity Pacing**: Increased `IdentityHUD` delay to **6000ms** (6s) for dramatic assimilation.
+    *   **Clean Logs**: Tags like `[TECHNIQUE: ...]` are now stripped from the chat UI via regex `replace(/\[.*?:.*?\]\s*$/, "")`.
+*   **Final AAA Polish**:
+    *   **Prioritized Flow**: `IDENTITY_REVEAL_PROTOCOL` does *not* abort previous streams. Technical insults flow *into* the reveal silence.
+    *   **Persona Hardening**: Explicitly banned "Pathetic" and "Cute". Enforced "Organic Insults".
+    *   **Identity Logic**: `TAGGED: SCRIPT-KIDDIE` is now the canonical display event.
+
+### [2026-02-04] Debugging: Solving the "Sentinel Silence" (Race Condition)
+**👤 Author**: Antigravity
+**🎯 Goal**: Fix "Mute" Sentinel on first trigger of Forensic/Context events.
+**✅ Root Cause**: The **Unique Technique Guard** was positioned *after* the `AbortController` logic.
+    *   Example: User triggers `FORENSIC` (New Event) -> `abortController` created.
+    *   User immediately triggers `FOCUS_LOSS` (Known Event).
+    *   Old Logic: `FOCUS_LOSS` (Known) hits `abortController` check -> ABORTS `FORENSIC`.
+    *   Then `FOCUS_LOSS` hits Guard -> "I am known" -> RETURNS.
+    *   Result: `FORENSIC` is dead. `FOCUS_LOSS` is dead. **Total Silence.**
+**✅ Fix**:
+    *   **Guard Positioning**: Moved the Unique Guard to the **TOP** of `triggerSentinel`.
+    *   **Result**: Known events return *immediately* before touching the connection. They can no longer kill active streams.
+    *   **Priority Drop**: Retained `LOW_PRIORITY` drop logic for cases where both events are *New/Unknown*.
+**🚧 Next Steps**:
+*   **Manual Verification**: Confirm the "Silence" and "Clean Chat" in a live session.
+*   **PHASE 1 START**: The Attack Lab (SQL, XSS, etc.).

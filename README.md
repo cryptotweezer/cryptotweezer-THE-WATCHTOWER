@@ -1,79 +1,64 @@
-# 🛰️ THE WATCHTOWER: DIGITAL TWIN III
+🛰️ THE WATCHTOWER: DIGITAL TWIN III
+"live threat-hunting node."
 
-> "Defensive Teacher: Learn by Attacking."
+The Watchtower is an Active Defense & SecOps Infrastructure designed to serve as the "Boss Final" for any attacker. Unlike static sites, this platform breathes, monitors, and reacts. It captures real-time attack telemetry, analyzes threat patterns with AI, and dissects adversary persistence through a high-fidelity deception system.
 
-The Watchtower is a next-generation **SecOps & Active Defense Platform**. It is not just a portfolio; it is a self-defending infrastructure node that captures real-time attack telemetry, analyzes threat patterns with AI, and gamifies the experience for both security researchers and adversaries.
+🏛️ THE VISION (RE-ENGINEERED)
+The project functions as an Infamy Laboratory. We don't just teach security; we enforce it. The system classifies visitors into two authorization levels based on their intent and footprint:
 
----
+The Adversary: Hackers, scripts, and the curious. They face a hostile perimeter managed by Sentinel-02 (the resident AI). They must earn their status by bypassing logic and memory traps to reach a 100% Risk Score.
 
-## 🏛️ CORE VISION
+The Authorized Observer (Recruiter): Activated via the ?clearance=RECRUITER parameter. The system enters Briefing Mode, revealing the underlying technical architecture, stack details, and engineering processes behind the shield.
 
-The project implements a **Live Honeypot** architecture. It classifies visitors into two profiles:
+🛡️ ACTIVE DEFENSE MODULES
+The Terminal (Home): Forensic HUD featuring Deep Scan metadata, DevTools detection, and the Infamy Engine.
 
-*   **The Apprentice**: Receives AI-driven mentorship and forensic reports on security vulnerabilities.
-*   **The Adversary**: Faces a hardened perimeter that logs every payload, fingerprints their identity, and assigns "Infamy Points" for their attempts.
+The War Room (Dashboard): Command center with global threat heatmaps, real-time traffic pulses, and a dynamic Stress Meter.
 
----
+The Triple Lock (Honeypots):
 
-## 🛡️ ACTIVE DEFENSE MODULES
+Binary-Ghost: Client-side memory tampering trap via JS Proxy.
 
-*   **The Watchtower (Homepage)**: Real-time HUD showing the visitor's risk score, fingerprint metadata, and the current system threat level (Alpha/Bravo/Charlie).
-*   **The War Room (Global Dashboard)**: A command center visualizing global attack heatmaps and live incident feeds across the infrastructure.
-*   **The Ghost Layer (Deceptive Logic)**: Intercepts probes to sensitive routes (`/admin`, `.env`) to feed attackers fake data while silently logging their signatures.
-*   **The Hall of Infamy (Gamification)**: A competitive leaderboard ranking the most persistent "Threat Actors" based on their detected activities.
+Shadow-Field: API Over-posting detection (JSON attribute injection).
 
----
+Ghost-Key: Social engineering bait hidden within source code comments.
 
-## 🤖 AI-FIRST ARCHITECTURE ("AGENT SKILLS")
+The Ghost Layer: A UI Hijack system triggered by critical intrusions. It replaces standard error pages (404s) with a corrupted interface and persistent visual counter-attacks.
 
-This repository is optimized for **AI-Human Collaboration**. We use a modular context system located in `.claude/skills/` to ensure all agents (Cursor, Copilot, Gemini) act with perfect consistency.
+Wall of Infamy: An immutable "deface" wall where only Adversaries who reach 100% Risk can leave their permanent signature.
 
-**Key Skills:**
+🤖 AI-HUMAN COLLABORATION (.claude/skills)
+This repository is optimized for AI-assisted development. We use a Modular Skills system to ensure that any agent (Sentinel-02, Cursor, or Gemini) maintains total project consistency.
 
-*   🧠 `project-context.md`: The "Vision Engine" and Sentinel-02 persona.
-*   🚨 `ai-protocol.md`: Strict session management and quality gates.
-*   📜 `archivist.md`: Mandatory history logging in `DEVELOPMENT_LOG.md`.
-*   🏗️ `tech-stack-*.md`: Standards for Next.js 15+, Drizzle, and Arcjet WAF.
+🧠 project-context.md: The "brain" of the Sentinel and product vision.
 
----
+🚨 ai-protocol.md: Security and quality gates for code generation.
 
-## 🛠️ THE SECURITY STACK
+📜 archivist.md: Immutable historical log maintained in DEVELOPMENT_LOG.md.
 
-*   **Framework**: Next.js 15+ (App Router / Server Actions).
-*   **Perimeter**: Arcjet WAF (Bot Detection, Rate Limiting, SQLi/XSS Protection).
-*   **Database**: Neon Postgres (Serverless) + Drizzle ORM (Type-safe, immutable logs).
-*   **Intelligence**: Vercel AI SDK (Sentinel-02 Forensic Analysis).
-*   **Infrastructure**: Vercel (Optimized for high performance and zero cost).
+🛠️ THE ELITE STACK
+Core: Next.js 15+ (App Router, Server Actions).
 
----
+Shield: Arcjet (WAF, Bot Detection, Fingerprinting, Rate Limiting).
 
-## 🚀 GETTING STARTED
+Data: Neon Postgres (Serverless) + Drizzle ORM (Type-safe Logs).
 
-### Prerequisites
+Intelligence: Vercel AI SDK (Sentinel-02 Personality Engine).
 
-*   Node.js 20+
-*   pnpm
-*   Neon Database URL
-*   Arcjet Key & OpenAI API Key
+Deployment: Vercel Edge Runtime (Low-latency Active Defense).
 
-### Installation
+🚀 IMPLEMENTATION STATUS (PHASE PROGRESSION)
+[x] Phase 1: Infrastructure & Handshake Protocol.
 
-```bash
-git clone https://github.com/cryptotweezer/cryptotweezer-THE-WATCHTOWER.git
-cd Digital-Twin-III
-pnpm install
-pnpm dev
-```
+[x] Phase 2: Terminal Home & Basic Sensors (20% Hard Cap).
 
----
+[ ] Phase 3: War Room Dashboard & Global Telemetry.
 
-## 📅 PROJECT MILESTONES
+[ ] Phase 4: Implementation of The Triple Lock (Honeypots).
 
-- [x] **Week 1**: Infrastructure & Documentation (The Pillars).
-- [ ] **Week 2**: Technical Design & Master Plan Hardening.
-- [ ] **Week 3**: Interactive Sentinel-02 & Threat Phase Engine.
-- [ ] **Week 4**: Production Deployment & Performance Tuning.
-- [ ] **Week 5**: Final Bug Bash & Presentation Outline.
-- [ ] **Week 6**: LIVE DEFENSE DEMO.
+[ ] Phase 5: Wall of Infamy & Ghost Layer Final Hardening.
 
-This project is an educational cyber lab. Every interaction is monitored for intelligence gathering.
+⚠️ LEGAL NOTICE
+This is a cybersecurity research environment. By interacting with this platform, you consent to the monitoring, analysis, and logging of your behavior, network signature, and metadata for security and educational purposes.
+
+"Every byte is a witness. Every click is a signature." — Sentinel-02.
