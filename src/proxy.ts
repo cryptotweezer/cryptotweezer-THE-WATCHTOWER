@@ -103,6 +103,29 @@ export default async function proxy(req: NextRequest) {
             baseResponse.headers.set("x-arcjet-fingerprint", (decision as any).fingerprint);
         }
 
+        // 7. Stable Identity Persistence (Dev/Incognito)
+        // If Arcjet didn't provide a fingerprint, we ensure a stable node ID cookie.
+        // CRITICAL FIX: To ensure the Page sees this ID on the FIRST load, we must inject it via Headers.
+        if (!req.cookies.get("watchtower_node_id") && !(decision as { fingerprint?: string }).fingerprint) {
+            const stableId = "node_dev_" + Math.random().toString(36).substring(2, 10);
+
+            // Inject into Request Headers for downstream Page to use immediately
+            const newHeaders = new Headers(req.headers);
+            newHeaders.set("x-watchtower-node-id", stableId);
+
+            // Re-create response with new headers
+            baseResponse = NextResponse.next({
+                request: { headers: newHeaders }
+            });
+
+            // Set Cookie for future requests
+            baseResponse.cookies.set("watchtower_node_id", stableId, {
+                path: "/",
+                sameSite: "strict",
+                secure: process.env.NODE_ENV === "production"
+            });
+        }
+
         return baseResponse;
 
     } catch (error) {

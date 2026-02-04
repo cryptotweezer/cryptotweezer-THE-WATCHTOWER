@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { getThreatCount } from "@/lib/security";
 import { getOrCreateSession } from "@/lib/session";
 import HomeTerminal from "@/components/watchtower/HomeTerminal";
@@ -10,13 +10,29 @@ export default async function Home() {
 
 
   // Data Hoisting: Identify User on Server
+  // Data Hoisting: Identify User on Server
   const headersList = await headers();
   let fingerprint = headersList.get("x-arcjet-fingerprint");
   const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
 
   // Fallback for Dev/Bypass Mode (Privacy: No server-side random generation)
+  // V33: Critical Persistence Fix -> Use Cookies for Stable Identity in Dev/Incognito
   if (!fingerprint) {
-    fingerprint = "unknown";
+    const cookieStore = await cookies();
+    const storedNodeId = cookieStore.get("watchtower_node_id");
+
+    if (storedNodeId) {
+      fingerprint = storedNodeId.value;
+    } else {
+      // Check for Middleware-injected header (First Load scenario)
+      const middlewareId = headersList.get("x-watchtower-node-id");
+      if (middlewareId) {
+        fingerprint = middlewareId;
+      } else {
+        // Absolute fallback (should not happen if middleware works)
+        fingerprint = "node_temp_" + crypto.randomUUID().substring(0, 8);
+      }
+    }
   }
 
   // Database Handshake
@@ -25,6 +41,7 @@ export default async function Home() {
   const identity = {
     alias: session.alias,
     fingerprint: session.fingerprint,
+    cid: session.cid,
     riskScore: session.riskScore,
     ip: ip
   };

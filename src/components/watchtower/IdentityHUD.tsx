@@ -8,6 +8,8 @@ interface IdentityHUDProps {
     riskScore: number;
     ip: string;
     cid?: string;
+    fingerprint?: string;
+    onRevealComplete?: () => void;
 }
 
 interface DeepScanData {
@@ -17,7 +19,7 @@ interface DeepScanData {
     screen: string;
 }
 
-export default function IdentityHUD({ alias, riskScore, ip, cid }: IdentityHUDProps) {
+export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint, onRevealComplete }: IdentityHUDProps) {
     const [deepScan, setDeepScan] = useState<DeepScanData | null>(null);
 
     useEffect(() => {
@@ -59,6 +61,103 @@ export default function IdentityHUD({ alias, riskScore, ip, cid }: IdentityHUDPr
     const bgColor = riskScore > 50 ? "bg-red-950/10" : "bg-blue-950/10";
     const glow = riskScore > 50 ? "shadow-[0_0_30px_rgba(239,68,68,0.2)]" : "shadow-[0_0_30px_rgba(59,130,246,0.15)]";
 
+    // CID Reveal Logic
+    const [displayCID, setDisplayCID] = useState("[SCANNING...]");
+    const [revealPhase, setRevealPhase] = useState<'IDLE' | 'ASSIGNING' | 'TYPING' | 'DONE'>('IDLE');
+    const [showCursor, setShowCursor] = useState(false);
+
+    // 0. INITIALIZATION & PERSISTENCE
+    useEffect(() => {
+        // Prevent layout shift/flash by checking persistence immediately if possible
+        const isRevealed = localStorage.getItem("sentinel_cid_revealed") === "true";
+        if (isRevealed && riskScore >= 20 && cid && cid !== "unknown") {
+            setRevealPhase('DONE');
+            setDisplayCID(cid);
+            setShowCursor(true);
+        }
+    }, [riskScore, cid]);
+
+    // 1. RISK TRIGGER (IDLE -> ASSIGNING)
+    useEffect(() => {
+        // Only trigger if NOT already done/revealed
+        if (riskScore >= 20 && revealPhase === 'IDLE') {
+            // Double check persistence to be safe
+            const isRevealed = localStorage.getItem("sentinel_cid_revealed") === "true";
+            if (!isRevealed) {
+                setRevealPhase('ASSIGNING');
+                setDisplayCID("ASSIGNING...");
+            }
+        }
+    }, [riskScore, revealPhase]);
+
+    // 2. ASSIGNING WAITING ROOM (ASSIGNING -> TYPING)
+    // We wait here until backend actually delivers the CID.
+    useEffect(() => {
+        if (revealPhase === 'ASSIGNING') {
+            // INTEGRITY FILTER: Must have valid CID format before starting
+            if (cid && cid !== "unknown" && cid.startsWith('CID-') && cid.length > 5) {
+                // Buffer: 2 seconds of stability
+                const timer = setTimeout(() => {
+                    setRevealPhase('TYPING');
+                    setDisplayCID(""); // Buffer Cleanup
+                }, 2000);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [revealPhase, cid]);
+
+    // 3. TYPING EFFECT (TYPING -> DONE)
+    useEffect(() => {
+        if (revealPhase === 'TYPING' && cid) {
+            const realCID = cid;
+            // Robustness: Ensure clean CID format
+            const formattedCID = realCID.replace(/(CID-)+/g, "CID-");
+
+            // Atomic Slicing State
+            let charCount = 0;
+            setShowCursor(true);
+
+            // Force initial clear to prevent ghost characters
+            setDisplayCID("");
+
+            const typeInterval = setInterval(() => {
+                charCount++;
+
+                // ATOMIC UPDATE: Always slice from the original constant string.
+                // This prevents race conditions or weird 'prev' state accumulations.
+                // We use charCount directly as the length slice.
+                const currentSlice = formattedCID.slice(0, charCount);
+                setDisplayCID(currentSlice);
+
+                // Stop Condition: When slice length equals full length
+                if (charCount >= formattedCID.length) {
+                    clearInterval(typeInterval);
+                    setRevealPhase('DONE');
+                    localStorage.setItem("sentinel_cid_revealed", "true");
+
+                    // CASCADE TRIGGER: 6000ms Delay for Simmering Silence (AAA Pacing)
+                    if (onRevealComplete) {
+                        setTimeout(() => onRevealComplete(), 6000);
+                    }
+                }
+            }, 75);
+
+            // CLEANUP: Kill the interval if component unmounts or deps change.
+            // This prevents "ghost threads" from trying to update state on an unmounted component.
+            return () => clearInterval(typeInterval);
+        }
+    }, [revealPhase, cid, onRevealComplete]);
+
+    // Blinking Cursor Logic
+    useEffect(() => {
+        if (revealPhase === 'TYPING' || revealPhase === 'DONE') {
+            const blinkId = setInterval(() => setShowCursor(c => !c), 500);
+            return () => clearInterval(blinkId);
+        } else {
+            setShowCursor(false);
+        }
+    }, [revealPhase]);
+
     return (
         <div className={`rounded-xl border ${borderColor} ${bgColor} ${glow} p-6 max-w-3xl mx-auto backdrop-blur-md transition-all duration-500`}>
             {/* Header */}
@@ -80,15 +179,30 @@ export default function IdentityHUD({ alias, riskScore, ip, cid }: IdentityHUDPr
                         <span className="text-2xl font-mono font-bold text-white tracking-tighter truncate">{alias}</span>
                     </div>
 
+                    {/* NODE ID (Fingerprint) - Static */}
+                    <div className="grid grid-cols-[100px_1fr] items-baseline gap-2">
+                        <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Node ID</span>
+                        <span className="font-mono text-xs text-gray-500 tracking-tight">
+                            {fingerprint || "UNKNOWN_NODE"}
+                        </span>
+                    </div>
+
                     {/* CRIMINAL ID (CID) */}
                     <div className="grid grid-cols-[100px_1fr] items-baseline gap-2">
                         <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Criminal ID</span>
-                        <div className="font-mono text-sm flex items-center gap-2">
-                            <span className={riskScore >= 60 ? "animate-pulse text-red-500 font-bold" : "text-gray-400"}>
-                                {cid?.replace(/(CID-)+/g, "CID-") || <span className="text-gray-600 animate-pulse text-xs">INITIALIZING...</span>}
+                        <div className="font-mono text-sm flex items-center gap-2 h-5 w-full"> {/* Fixed height to prevent layout shift */}
+                            <span className={`
+                                ${revealPhase === 'DONE' ? "text-white" : "text-gray-500 animate-pulse"}
+                                ${revealPhase === 'TYPING' ? "text-white" : ""}
+                                ${revealPhase === 'ASSIGNING' ? "text-white" : ""} 
+                            `}>
+                                {displayCID}
+                                {showCursor && <span className="text-white">_</span>}
                             </span>
+
+                            {/* Flag Label */}
                             {riskScore >= 60 && (
-                                <span className="text-[10px] text-red-500 border border-red-500 px-1 rounded animate-bounce">
+                                <span className="text-[10px] text-red-500 border border-red-500 px-1 rounded animate-bounce ml-auto">
                                     FLAGGED
                                 </span>
                             )}

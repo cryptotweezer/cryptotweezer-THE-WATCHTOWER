@@ -17,6 +17,7 @@ interface SentinelManagerProps {
     identity: {
         alias: string;
         fingerprint: string | null;
+        cid?: string | null;
         riskScore: number;
         ip: string | null;
     };
@@ -43,20 +44,65 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
     const isSystemReadyRef = useRef(false);
     const hasInitialized = useRef(false);
 
+    // V34: AbortController for Stream Stability
+    const abortControllerRef = useRef<AbortController | null>(null);
+
     // V33: Strict Mode Latch to prevent double-counting in Dev
     const processedPathRef = useRef<string | null>(null);
 
     // 2. SENTINEL TRIGGER (The Reaction)
+    // 2. SENTINEL TRIGGER (The Reaction)
+    // 2. SENTINEL TRIGGER (The Reaction)
     const triggerSentinel = useCallback(async (prompt: string, eventType: string, skipRisk: boolean = false) => {
-        if (isStreamingRef.current) return;
 
-        // Unique Technique Guard
+        // V36 FIX: UNIQUE GUARD MUST BE FIRST.
+        // Reason: If a "Known" event comes in, it must NOT abort an "Active" event.
+        // It should just be ignored immediately.
+
         // EXCEPTIONS: Handshake (Once per Boot), Warnings (Logic Driven), Routing (Path Dependent)
         const EXCEPTIONS = [TECHNIQUES.HANDSHAKE, TECHNIQUES.WARNING, TECHNIQUES.ROUTING];
         if (!EXCEPTIONS.includes(eventType)) {
             if (knownTechniquesRef.current.includes(eventType)) return;
+            // Note: We push to knownTechniquesRef AFTER successful start or here?
+            // If we push here, we commit to it. 
+            // Let's keep the push here to prevent rapid-fire duplicates from passing.
             knownTechniquesRef.current.push(eventType);
         }
+
+        // V36: PRIORITY QUEUE LOGIC (Fixing "Silence" Race Conditions)
+        // Scenario: User opens DevTools (Forensic) -> Browser loses focus (Focus Loss).
+        // Old Logic: Focus Loss aborts Forensic. Forensic is burned. Focus Loss might be burned. Result: Silence.
+        // New Logic: Low Priority events do NOT abort active streams. They are dropped if busy.
+
+        const LOW_PRIORITY = [
+            TECHNIQUES.CONTEXT,
+            "FOCUS_LOSS_ANOMALY",
+            TECHNIQUES.SURFACE
+        ];
+
+        if (abortControllerRef.current) {
+            // 1. If incoming is Low Priority and we are busy, DROP IT.
+            // (Even if it is NEW, if we are busy with High Prio, we drop it to save the High Prio).
+            if (LOW_PRIORITY.includes(eventType)) {
+                // If we dropped it, we should probably remove it from 'known' so it can try again later?
+                // Or "Resistance is futile" means even if dropped it counts?
+                // User said "First time... message". If we drop it, no message.
+                // So maybe we should pop it back?
+                // Let's leave it simple for now: If dropped, it's burnt. "You were too slow".
+                return;
+            }
+
+            // 2. If incoming is Normal/High, ABORT the previous (Unless it's the Reveal).
+            if (eventType !== "IDENTITY_REVEAL_PROTOCOL") {
+                abortControllerRef.current.abort();
+                abortControllerRef.current = null;
+            }
+        }
+
+        // Initialize new controller for this request
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+        isStreamingRef.current = true; // Lock UI immediately
 
         // Persistence (Atomic)
         try {
@@ -64,12 +110,20 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
             const updated = Array.from(new Set([...currentStored, eventType]));
             localStorage.setItem("sentinel_techniques", JSON.stringify(updated));
             setSessionTechniques(updated as string[]);
-        } catch (e) { console.error("Storage Sync Error:", e); }
+        } catch (e: unknown) { console.error("Storage Sync Error:", e); }
 
         // Event Log
         const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
-        const routePath = (eventType === TECHNIQUES.ROUTING || eventType === TECHNIQUES.WARNING) && invokePath ? invokePath : "";
-        const displayEvent = routePath ? `${eventType} -> ${routePath}` : eventType;
+        let displayEvent = eventType;
+
+        // DISPLAY MAP: Clean up technical events for the UI log
+        if (eventType === "IDENTITY_REVEAL_PROTOCOL") {
+            displayEvent = "TAGGED: SCRIPT-KIDDIE";
+        } else if (eventType === TECHNIQUES.ROUTING || eventType === TECHNIQUES.WARNING) {
+            const routePath = invokePath ? invokePath : "UNKNOWN";
+            displayEvent = `${eventType} -> ${routePath}`;
+        }
+
         const logEntry = `> [${timestamp}] DETECTED: [${displayEvent}]`;
 
         setEventLog(prev => {
@@ -83,12 +137,12 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
             setCurrentRiskScore(currentScore => {
                 let impact = 0;
                 switch (eventType) {
-                    case TECHNIQUES.INSPECTION: impact = 5; break;
-                    case TECHNIQUES.SURFACE: impact = 2; break;
-                    case TECHNIQUES.EXFIL: impact = 1; break;
-                    case TECHNIQUES.CONTEXT: impact = 1; break;
-                    case "FOCUS_LOSS_ANOMALY": impact = 1; break;
-                    case TECHNIQUES.ROUTING: impact = 10; break;
+                    case TECHNIQUES.INSPECTION: impact = 6; break; // V33: >5% per Requirement
+                    case TECHNIQUES.SURFACE: impact = 1; break; // V33: 1%
+                    case TECHNIQUES.EXFIL: impact = 1; break; // V33: 1%
+                    case TECHNIQUES.CONTEXT: impact = 1; break; // V33: 1%
+                    case "FOCUS_LOSS_ANOMALY": impact = 1; break; // V33: 1%
+                    case TECHNIQUES.ROUTING: impact = 11; break; // V33: Protocol of 3 Strike (11%)
                     case TECHNIQUES.INJECTION: impact = 20; break;
                     default: impact = 0;
                 }
@@ -98,24 +152,27 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
 
                 let newScore = currentScore + impact;
 
-                // V33: Global 20% Hard Cap for Browser & Routine Events
-                const CAPPED_EVENTS = [
+                // V33: Global 20% Hard Cap for Tier 1 Events
+                const TIER_1_EVENTS = [
                     TECHNIQUES.INSPECTION,
                     TECHNIQUES.SURFACE,
                     TECHNIQUES.EXFIL,
                     TECHNIQUES.CONTEXT,
                     "FOCUS_LOSS_ANOMALY",
-                    TECHNIQUES.ROUTING // Routing is now capped at 20 max for the category
+                    TECHNIQUES.ROUTING
                 ];
 
-                if (CAPPED_EVENTS.includes(eventType)) {
-                    // Rule: If the new score exceeds 20 for these events, clamp it.
-                    // But if it was already > 20 (e.g. Injection), we don't reduce it, just add 0.
-                    if (currentScore < 20) {
-                        newScore = Math.min(newScore, 20);
-                    } else if (currentScore >= 20) {
-                        // If we are already at or above 20, these events cannot add more risk.
-                        newScore = currentScore;
+                if (TIER_1_EVENTS.includes(eventType)) {
+                    // Logic: Tier 1 cannot push score beyond 20%.
+                    // If we are already at 20+, these events add 0.
+                    // If we are at 18 and add 6 (Inspection), we cap at 20.
+
+                    if (currentScore >= 20) {
+                        return currentScore; // Locked.
+                    }
+
+                    if (newScore > 20) {
+                        newScore = 20; // Hard Cap.
                     }
                 }
 
@@ -131,14 +188,24 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
         isStreamingRef.current = true;
         setStreamText("");
 
+        // CRITICAL IDENTITY GUARD: No Fingerprint = No Event.
+        // We strictly forbid "GHOST_OPERATOR" or anonymous events.
+        const activeFingerprint = stableFingerprint || identity.fingerprint;
+
+        if (!activeFingerprint || activeFingerprint === "unknown") {
+            console.warn("Sentinel Trigger Aborted: No Identity Available yet.");
+            return;
+        }
+
         try {
             const response = await fetch('/api/sentinel', {
                 method: 'POST',
                 headers: { 'x-cid': cid.replace(/(CID-)+/g, "CID-") },
+                signal: controller.signal, // Attach Abort Signal
                 body: JSON.stringify({
                     prompt,
                     eventType,
-                    fingerprint: stableFingerprint || "GHOST_OPERATOR",
+                    fingerprint: activeFingerprint, // STRICT IDENTITY
                     ipAddress: identity.ip,
                     alias: identity.alias || "Unknown User",
                     location: "Australia/Sydney",
@@ -162,7 +229,8 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
             }
 
             let cleanText = accumulated;
-            const tagMatch = accumulated.match(/\[TECHNIQUE:\s*(.*?)\]/);
+            // UNIVERSAL TAG CLEANER: Remove any [TYPE: VALUE] tag from the end of the message (Aggressive).
+            const tagMatch = accumulated.match(/\[.*?:.*?\]\s*$/);
             if (tagMatch) cleanText = accumulated.replace(tagMatch[0], "").trim();
 
             setStreamText("");
@@ -172,11 +240,19 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
                 return newHistory;
             });
 
-        } catch (err) {
+        } catch (err: unknown) {
+            if (err instanceof Error && err.name === 'AbortError') {
+                console.log("Sentinel Stream Aborted (New Trigger Priority)");
+                return; // Silent exit
+            }
             console.error("Sentinel Downlink Failed:", err);
             setStreamText("");
         } finally {
-            isStreamingRef.current = false;
+            // Only unlock if we are the current active controller (avoids race conditions)
+            if (abortControllerRef.current === controller) {
+                isStreamingRef.current = false;
+                abortControllerRef.current = null;
+            }
         }
 
     }, [stableFingerprint, cid, identity, invokePath]);
@@ -191,7 +267,6 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
         const storedEventLog = localStorage.getItem("sentinel_event_log");
         const storedTechniques = localStorage.getItem("sentinel_techniques");
         const storedRisk = localStorage.getItem("sentinel_risk_score");
-        const storedCid = localStorage.getItem("sentinel_cid");
 
         if (storedHistory) setHistory(JSON.parse(storedHistory).filter((msg: string) => !msg.includes("DETECTED:")));
         if (storedEventLog) setEventLog(JSON.parse(storedEventLog));
@@ -206,17 +281,11 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
             riskScoreRef.current = score;
         }
 
-        // CID Logic
-        let activeCid = storedCid;
-        if (activeCid && activeCid.includes("CID-CID-")) {
-            activeCid = activeCid.replace(/^(CID-)+/, "CID-");
-            localStorage.setItem("sentinel_cid", activeCid);
+        // CID Logic (Strict Source of Truth: SERVER ONLY)
+        // We do NOT generate random CIDs here. We wait for the DB Handshake.
+        if (identity.cid && identity.cid !== "unknown") {
+            setCid(identity.cid);
         }
-        if (!activeCid || !/CID-[0-9A-F]{4}-\d$/.test(activeCid || "")) {
-            activeCid = `CID-${Math.random().toString(16).slice(2, 6).toUpperCase()}-${Math.floor(Math.random() * 9)}`;
-            localStorage.setItem("sentinel_cid", activeCid);
-        }
-        setCid(activeCid);
 
         // --- POISON ---
         if (typeof window !== "undefined" && !Object.prototype.hasOwnProperty.call(window, '_VGT_DEBUG_')) {
@@ -231,36 +300,47 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
 
         // --- ROUTING LOGIC (PRIORITY ZERO - Before Handshake) ---
         if (invokePath) {
-            const isSuspicious = invokePath !== "/" && invokePath !== "/unknown";
-            const isMathProbe = /[\d=+\-*/]/.test(invokePath) && invokePath.length < 20;
+            // NOISE FILTER: Ignore system paths
+            const isSystemPath =
+                invokePath.includes(".well-known") ||
+                invokePath.includes("favicon") ||
+                invokePath.includes("_next/static");
 
-            // V33: Exact Latching to prevent Strict Mode Double-Count
+            const isSuspicious = invokePath !== "/" && invokePath !== "/unknown" && !isSystemPath;
+
+            // "The system must no longer award points for individual routing attempts... tracks UNIQUE routes."
+            // "Only when the user reaches 3 different routes... trigger Strike".
+
             if (isSuspicious && processedPathRef.current !== invokePath) {
                 processedPathRef.current = invokePath; // Latch immediately
 
-                const currentProbeCount = parseInt(localStorage.getItem("sentinel_probe_count") || "0", 10);
-                const newProbeCount = currentProbeCount + 1;
-                localStorage.setItem("sentinel_probe_count", newProbeCount.toString());
+                // Protocol of 3: Persistence
+                const storedPaths = JSON.parse(localStorage.getItem("sentinel_invoked_paths") || "[]");
 
-                // PROTOCOL OF 3:
-                // Attempts 1, 2, 3: LOGGED.
-                // Attempt 4+: SILENT (return).
-                if (newProbeCount > 3) {
-                    return;
-                }
+                // If this path is NEW, add it.
+                if (!storedPaths.includes(invokePath)) {
+                    const newPaths = [...storedPaths, invokePath];
+                    localStorage.setItem("sentinel_invoked_paths", JSON.stringify(newPaths));
 
-                if (isMathProbe) {
-                    // Points Logic: 
-                    // 1 & 2 = Skip Risk (Points 0)
-                    // 3 = Add Risk (Points 10, subject to Cap)
-                    // 4+ = Blocked above.
-                    const skipRisk = newProbeCount < 3;
+                    const uniqueCount = newPaths.length;
 
-                    triggerSentinel(
-                        "SECURITY ALERT: HOSTILE ROUTING PROBE DETECTED.",
-                        TECHNIQUES.ROUTING,
-                        skipRisk
-                    );
+                    if (uniqueCount === 3) {
+                        triggerSentinel(
+                            "SECURITY ALERT: HOSTILE ROUTING PATTERN (TRIPLICATE).",
+                            TECHNIQUES.ROUTING,
+                            false // STRIKE: This is the 11% Penalty
+                        );
+                    } else if (uniqueCount < 3) {
+                        // 1st & 2nd probes are logged but scored as 0 (Warnings)
+                        triggerSentinel(
+                            `Routing Probe: ${invokePath}`,
+                            TECHNIQUES.ROUTING,
+                            true // SKIP RISK
+                        );
+                    }
+                    // STRIKE 4+ -> SILENCE. (No API Trigger)
+                } else {
+                    // Path already visited. Ignore.
                 }
             }
         }
@@ -284,6 +364,7 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
                 }, 0);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [invokePath, triggerSentinel]); // Empty deps for mount mostly, but triggerSentinel is stable.
 
     const handleAccess = () => {
