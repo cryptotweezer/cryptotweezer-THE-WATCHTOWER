@@ -11,7 +11,17 @@ const TECHNIQUES = {
     PROTOCOL: "PROTOCOL_VIOLATION",
     INJECTION: "MEMORY_INJECTION_ATTEMPT",
     WARNING: "SECURITY_WARNING_PROTOCOL",
+    // Ghost Sensor Sub-Categories
+    DOM: "HEURISTIC_DOM",
+    DRAG: "HEURISTIC_DRAG",
+    FUZZ: "HEURISTIC_FUZZ"
 };
+
+// V40: RISK DEBUGGER
+const LOG_RISK = (action: string, details: Record<string, unknown>) => {
+    console.log(`[RISK_ENGINE] ${action}:`, details);
+};
+
 
 interface SentinelManagerProps {
     identity: {
@@ -59,8 +69,8 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
         // Reason: If a "Known" event comes in, it must NOT abort an "Active" event.
         // It should just be ignored immediately.
 
-        // EXCEPTIONS: Handshake (Once per Boot), Warnings (Logic Driven), Routing (Path Dependent)
-        const EXCEPTIONS = [TECHNIQUES.HANDSHAKE, TECHNIQUES.WARNING, TECHNIQUES.ROUTING];
+        // EXCEPTIONS: Handshake (Once per Boot), Warnings (Logic Driven), Routing (Path Dependent), Identity Reveal (Sacred)
+        const EXCEPTIONS = [TECHNIQUES.HANDSHAKE, TECHNIQUES.WARNING, TECHNIQUES.ROUTING, "IDENTITY_REVEAL_PROTOCOL"];
         if (!EXCEPTIONS.includes(eventType)) {
             if (knownTechniquesRef.current.includes(eventType)) return;
             // Note: We push to knownTechniquesRef AFTER successful start or here?
@@ -120,7 +130,7 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
         if (eventType === "IDENTITY_REVEAL_PROTOCOL") {
             displayEvent = "TAGGED: SCRIPT-KIDDIE";
         } else if (eventType === TECHNIQUES.ROUTING || eventType === TECHNIQUES.WARNING) {
-            const routePath = invokePath ? invokePath : "UNKNOWN";
+            const routePath = invokePath ? invokePath : "UNKNOWN"; // Use invokePath directly
             displayEvent = `${eventType} -> ${routePath}`;
         }
 
@@ -136,47 +146,35 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
         if (!skipRisk) {
             setCurrentRiskScore(currentScore => {
                 let impact = 0;
+                // V41: INFAMY THERMOMETER WEIGHTS (No Tiers, Pure Accumulation)
                 switch (eventType) {
-                    case TECHNIQUES.INSPECTION: impact = 6; break; // V33: >5% per Requirement
-                    case TECHNIQUES.SURFACE: impact = 1; break; // V33: 1%
-                    case TECHNIQUES.EXFIL: impact = 1; break; // V33: 1%
-                    case TECHNIQUES.CONTEXT: impact = 1; break; // V33: 1%
-                    case "FOCUS_LOSS_ANOMALY": impact = 1; break; // V33: 1%
-                    case TECHNIQUES.ROUTING: impact = 11; break; // V33: Protocol of 3 Strike (11%)
+                    case TECHNIQUES.INSPECTION: impact = 5; break;  // Tech: +5%
+                    case TECHNIQUES.SURFACE: impact = 2; break;     // Tech: +2%
+                    case TECHNIQUES.EXFIL: impact = 2; break;       // Tech: +2%
+                    case TECHNIQUES.CONTEXT: impact = 2; break;     // Tech: +2%
+                    case "FOCUS_LOSS_ANOMALY": impact = 2; break;   // Tech: +2%
+                    case TECHNIQUES.ROUTING: impact = 5; break;     // Tech: +5%
+
+                    // Heuristics (Aggressive)
+                    case TECHNIQUES.DOM: impact = 10; break;        // Heuristic: +10%
+                    case TECHNIQUES.DRAG: impact = 10; break;       // Heuristic: +10%
+                    case TECHNIQUES.FUZZ: impact = 5; break;        // Heuristic: +5%
+
+                    // Critical
                     case TECHNIQUES.INJECTION: impact = 20; break;
                     default: impact = 0;
                 }
 
-                // Standard Exception Logic
+                // Standard Exception Logic (Routing is no longer an exception for scoring, it adds +5%)
                 if (EXCEPTIONS.includes(eventType) && eventType !== TECHNIQUES.ROUTING) return currentScore;
 
                 let newScore = currentScore + impact;
 
-                // V33: Global 20% Hard Cap for Tier 1 Events
-                const TIER_1_EVENTS = [
-                    TECHNIQUES.INSPECTION,
-                    TECHNIQUES.SURFACE,
-                    TECHNIQUES.EXFIL,
-                    TECHNIQUES.CONTEXT,
-                    "FOCUS_LOSS_ANOMALY",
-                    TECHNIQUES.ROUTING
-                ];
-
-                if (TIER_1_EVENTS.includes(eventType)) {
-                    // Logic: Tier 1 cannot push score beyond 20%.
-                    // If we are already at 20+, these events add 0.
-                    // If we are at 18 and add 6 (Inspection), we cap at 20.
-
-                    if (currentScore >= 20) {
-                        return currentScore; // Locked.
-                    }
-
-                    if (newScore > 20) {
-                        newScore = 20; // Hard Cap.
-                    }
-                }
-
+                // V41: NO CAPS. Only 100% Limit.
                 newScore = Math.min(newScore, 100);
+
+                LOG_RISK("INFAMY_UPDATE", { event: eventType, current: currentScore, impact, new: newScore });
+
                 localStorage.setItem("sentinel_risk_score", newScore.toString());
                 riskScoreRef.current = newScore;
                 return newScore;
@@ -230,8 +228,33 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
 
             let cleanText = accumulated;
             // UNIVERSAL TAG CLEANER: Remove any [TYPE: VALUE] tag from the end of the message (Aggressive).
-            const tagMatch = accumulated.match(/\[.*?:.*?\]\s*$/);
-            if (tagMatch) cleanText = accumulated.replace(tagMatch[0], "").trim();
+            const tagMatch = accumulated.match(/\[TECHNIQUE:\s*(.*?)\]/);
+
+            if (tagMatch) {
+                // V38: TRUE NAMING PROTOCOL (Log Transformation)
+                const trueTechniqueName = tagMatch[1];
+                cleanText = accumulated.replace(tagMatch[0], "").trim();
+
+                // RESTRICT TO HEURISTICS ONLY
+                const isHeuristic = eventType.startsWith("HEURISTIC_");
+
+                if (trueTechniqueName !== "INVENTED_NAME" && isHeuristic) {
+                    setEventLog(prev => {
+                        const newLog = [...prev];
+                        // Replace the MOST RECENT log (index 0) if it matches the generic technical name
+                        // Or just force update index 0 because we are in the same flow.
+                        if (newLog.length > 0) {
+                            const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+                            newLog[0] = `> [${timestamp}] DETECTED: [${trueTechniqueName}]`; // Rewrite History
+                        }
+                        localStorage.setItem("sentinel_event_log", JSON.stringify(newLog));
+                        return newLog;
+                    });
+                }
+            } else {
+                const genericTag = accumulated.match(/\[.*?:.*?\]\s*$/);
+                if (genericTag) cleanText = accumulated.replace(genericTag[0], "").trim();
+            }
 
             setStreamText("");
             setHistory(prev => {

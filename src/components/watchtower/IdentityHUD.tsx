@@ -159,7 +159,7 @@ export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint, on
     }, [revealPhase]);
 
     return (
-        <div className={`rounded-xl border ${borderColor} ${bgColor} ${glow} p-6 max-w-3xl mx-auto backdrop-blur-md transition-all duration-500`}>
+        <div draggable="true" className={`rounded-xl border ${borderColor} ${bgColor} ${glow} p-6 max-w-3xl mx-auto backdrop-blur-md transition-all duration-500`}>
             {/* Header */}
             <div className="flex justify-between items-center mb-6 border-b border-gray-800/50 pb-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">

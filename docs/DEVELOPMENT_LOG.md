@@ -418,3 +418,49 @@
 **🚧 Next Steps**:
 *   **Manual Verification**: Confirm the "Silence" and "Clean Chat" in a live session.
 *   **PHASE 1 START**: The Attack Lab (SQL, XSS, etc.).
+
+### [2026-02-04] Phase 1 Implemented: Ghost Sensor "Elite" & True Naming
+**👤 Author**: Antigravity
+**🎯 Goal**: Implement proactive "Ghost Sensor" heuristics and a dynamic "True Naming" log system.
+**✅ Accomplished**:
+*   **Heuristic Sub-Categories**:
+    *   Split generic `HEURISTIC_ANOMALY` into `HEURISTIC_DOM` (Tampering), `HEURISTIC_DRAG` (Physics), and `HEURISTIC_FUZZ` (Rate Limit).
+    *   Implemented **One-Shot Memory**: Each violation triggers once per session, ensuring one does not block the other.
+*   **True Naming Protocol (`useSentinelManager.ts` & `route.ts`)**:
+    *   **Logic**: The UI Log initially reports `[DETECTED: HEURISTIC_DRAG]`.
+    *   **Transformation**: Once GPT-4o generates an "Invented Name" (e.g., `GRAVITY_VORTEX`), the Log **reactively updates** to match the creative output.
+    *   **Risk**: Enforced **40% Hard Cap** for these Tier 2 events.
+*   **Phantom Drag Repair**:
+    *   **Fix**: Added `draggable="true"` to `IdentityHUD` and `HomeTerminal` containers, enabling the browser's native Drag API to trigger the sensor.
+*   **Build Stabilization**:
+    *   Resolved Post-Merge Purity Errors (`crypto.randomUUID` in `page.tsx`).
+    *   Fixed `any` type casting in `proxy.ts`.
+**🚧 Next Steps**:
+*   **Phase 2**: Advanced Attack Vectors.
+    *   SQL Injection Simulation.
+    *   XSS Payload detection.
+    *   "Honeypot" Detonation (`_VGT_DEBUG_`).
+
+### [2026-02-05] Phase 2: The Infamy Thermometer & Personality Evolution
+**👤 Author**: Antigravity
+**🎯 Goal**: Implement dynamic, cumulative risk scoring (0-100%) and evolutive AI personality, removing rigid Tier Caps.
+**✅ Accomplished**:
+*   **Infamy Thermometer (Risk Engine)**:
+    *   **Caps Removed**: Deleted 20% (Tier 1) and 40% (Tier 2) server/client limits. Risk is now purely cumulative.
+    *   **New Weights**:
+        *   Technical (Route/Inspect): +5%
+        *   Heuristic (Drag/DOM): +10%
+        *   Critical (Injection): +20%
+*   **Personality Evolution Matrix**:
+    *   Refactored `route.ts` to instruct GPT-4o based on 3 phases:
+        *   **0-20%**: Script Kiddie (Mocking).
+        *   **21-70%**: Threat Actor (Cold/Clinical).
+        *   **71-100%**: Adversary (Hostile/Defensive).
+*   **Ghost Sensor Hardening**:
+    *   **Fuzzing**: Implemented "6 clicks in 1s" burst detection.
+    *   **DOM Shield**: Added `data-shield` protection and recursive deletion detection.
+*   **True Naming**:
+    *   Verified `HEURISTIC_` events trigger the "Invented Name" protocol (`[DETECTED: PHANTOM_PHYSICS]`).
+**🚧 Next Steps**:
+*   **Phase 3**: The Codebreaker (SQLi/XSS).
+*   **Verification**: Test the "Adversary" phase response tone.
