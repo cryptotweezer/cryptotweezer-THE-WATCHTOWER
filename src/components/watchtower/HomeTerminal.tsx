@@ -42,7 +42,7 @@ export default function HomeTerminal({ identity, invokePath }: HomeTerminalProps
         <>
             {!state.accessGranted && <Gatekeeper onAccess={actions.handleAccess} />}
 
-            <main className={`flex min-h-screen flex-col items-center justify-between p-24 bg-neutral-950 text-neutral-200 transition-all duration-1000 ${state.accessGranted ? "blur-none opacity-100 scale-100" : "blur-lg opacity-50 scale-95 overflow-hidden h-screen"}`}>
+            <main data-shield="protected" className={`flex min-h-screen flex-col items-center justify-between p-24 bg-neutral-950 text-neutral-200 transition-all duration-1000 ${state.accessGranted ? "blur-none opacity-100 scale-100" : "blur-lg opacity-50 scale-95 overflow-hidden h-screen"}`}>
 
                 {/* Header Section */}
                 <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
@@ -109,8 +109,8 @@ export default function HomeTerminal({ identity, invokePath }: HomeTerminalProps
                     </div>
 
                     {/* Right Column (B): Live Feed */}
-                    <div className="w-full lg:w-1/2 group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 flex flex-col relative h-full lg:max-h-[500px]">
-                        <h2 className={`mb-3 text-2xl font-semibold animate-pulse ${state.currentRiskScore >= 100 ? "text-red-500" : state.currentRiskScore >= 60 ? "text-orange-500" : state.currentRiskScore >= 20 ? "text-cyan-400" : "text-blue-500"} sticky top-0 z-10 w-full`}>
+                    <div draggable="true" className="w-full lg:w-1/2 group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30 flex flex-col relative h-full lg:max-h-[500px]">
+                        <h2 className={`mb-3 text-2xl font-semibold animate-pulse ${state.currentRiskScore >= 100 ? "text-red-500" : state.currentRiskScore >= 60 ? "text-orange-500" : state.currentRiskScore >= 20 ? "text-cyan-400" : "text-blue-500"} w-full`}>
                             LIVE CONNECTION
                         </h2>
 

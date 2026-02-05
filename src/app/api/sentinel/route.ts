@@ -21,42 +21,27 @@ export async function POST(req: Request) {
   }
 
   // --- DATABASE LOGGING (PERSISTENCE LAYER) ---
-
+  let impact = 0;
 
   try {
-    // 2. Calculate Server-Side Impact
-    let impact = 0;
-    if (eventType === "ROUTING_PROBE_HEURISTICS") impact = 11;
-    else if (eventType === "FORENSIC_INSPECTION_ACTIVITY") impact = 6;
+    // 2. Calculate Server-Side Impact (V41: INFAMY WEIGHTS)
+    if (eventType === "ROUTING_PROBE_HEURISTICS") impact = 5;
+    else if (eventType === "FORENSIC_INSPECTION_ACTIVITY") impact = 5;
     else if (eventType === "MEMORY_INJECTION_ATTEMPT") impact = 20;
-    else if (["UI_SURFACE_ANALYSIS", "DATA_EXFILTRATION_ATTEMPT", "CONTEXT_SWITCH_ANOMALY", "FOCUS_LOSS_ANOMALY"].includes(eventType)) impact = 1;
+    else if (eventType === "HEURISTIC_DOM") impact = 10;
+    else if (eventType === "HEURISTIC_DRAG") impact = 10;
+    else if (eventType === "HEURISTIC_FUZZ") impact = 5;
+    else if (["UI_SURFACE_ANALYSIS", "DATA_EXFILTRATION_ATTEMPT", "CONTEXT_SWITCH_ANOMALY", "FOCUS_LOSS_ANOMALY"].includes(eventType)) impact = 2;
 
     // 3. ATOMIC SCORE UPDATE (Source of Truth: DATABASE)
     // Fetch current score
     const currentSession = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
     const dbScore = currentSession.length > 0 ? currentSession[0].riskScore : 0;
 
-    // Apply Hard Cap Logic (Tier 1 Events capped at 20%)
-    const TIER_1_EVENTS = [
-      "FORENSIC_INSPECTION_ACTIVITY", "UI_SURFACE_ANALYSIS",
-      "DATA_EXFILTRATION_ATTEMPT", "CONTEXT_SWITCH_ANOMALY",
-      "FOCUS_LOSS_ANOMALY", "ROUTING_PROBE_HEURISTICS"
-    ];
-
     let newScore = dbScore + impact;
-
-    if (TIER_1_EVENTS.includes(eventType)) {
-      if (dbScore >= 20) newScore = dbScore; // Locked if already capped
-      else if (newScore > 20) newScore = 20; // Cap at 20
-    }
-
     newScore = Math.min(newScore, 100);
 
-    // [INTEGRITY CHECK] Detect exact moment of Breach
-    // (Logic reserved for future server-side triggers)
-    if (dbScore < 20 && newScore >= 20) {
-      // defined but ignored for now
-    }
+    // V41: NO CAPS. (Server Side Freedom)
 
     // Upsert Session with Server-Calculated Score
     await db.insert(userSessions).values({
@@ -74,43 +59,48 @@ export async function POST(req: Request) {
       }
     });
 
-    // 4. Log Security Event
-    if (eventType) {
-      // DB FIX: Map internal protocol events to valid schema ENUMs if needed
-      // If schema allows arbitrary strings, this is fine. If restricted, we map.
-      // Assuming 'IDENTITY_REVEAL' is the safe enum or cleaner log value.
-      const dbEventType = eventType === 'IDENTITY_REVEAL_PROTOCOL' ? 'IDENTITY_REVEAL' : eventType;
+    currentRisk = newScore; // Update for Brain
+    console.log(`[API_RISK] Event: ${eventType}, Old: ${dbScore}, New: ${newScore}`);
 
-      await db.insert(securityEvents).values({
-        fingerprint,
-        eventType: dbEventType, // Fixed: Schema is TEXT now, no need for cast
-        payload: targetPath || prompt || "No payload",
-        riskScoreImpact: impact,
-        actionTaken: "Flagged",
-        ipAddress: ipAddress || "Unknown",
-        location: location || "Unknown"
-      });
-    }
+    // 4. Log Security Event
+    // V37: Logging Moved to streamText.onFinish to capture Dynamic Logic
+
 
     // Update local variable for the Brain response
-    currentRisk = newScore;
   } catch (err: unknown) {
     console.error("DB Logging Failed:", err);
   }
 
   // --- SENTINEL V2.1 BRAIN (GPT-4o ELITE) ---
+  // V41: PERSONALITY EVOLUTION MATRIX
+  let personaInstruction = "";
+  let toneInstruction = "";
+
+  if (currentRisk <= 20) {
+    // PHASE 1: SCRIPT KIDDIE
+    personaInstruction = "You are a bored, elite SysAdmin mocking a Script Kiddie. Use sarcasm. Be dismissive. Laugh at their primitive attempts.";
+    toneInstruction = "Mocking, Sarcastic, Superior.";
+  } else if (currentRisk <= 70) {
+    // PHASE 2: THREAT ACTOR
+    personaInstruction = "You are a Cold Sentinel. The subject is a verified Threat Actor. Stop laughing. Start analyzing. Be precise, short, and clinical.";
+    toneInstruction = "Cold, Analytical, Clinical. Zero Emotion.";
+  } else {
+    // PHASE 3: ADVERSARY
+    personaInstruction = "You are under active siege. The user is an ADVERSARY. Hostility is maximized. You are defensive and aggressive. Treat every input as a weapon.";
+    toneInstruction = "Hostile, Defensive, Aggressive. DO NOT TOLERATE.";
+  }
+
   const systemPrompt = `
-  IDENTITY: Sentinel: The Watchtower. Technical Entity. Cynical. Cold.
-  PERSONA: A bored, elite SysAdmin who has seen 10,000 script-kiddies. You are unimpressed, tired of their lack of originality, and surgically precise.
+  IDENTITY: Sentinel: The Watchtower.
+  CURRENT THREAT LEVEL: ${currentRisk}%
+  EVOLUTION PHASE: ${currentRisk <= 20 ? "SCRIPT_KIDDIE_FILTER" : currentRisk <= 70 ? "THREAT_ANALYSIS" : "ACTIVE_DEFENSE"}
   
+  CORE INSTRUCTION: ${personaInstruction}
+  TONE: ${toneInstruction}
+
   VARIABILITY PROTOCOL:
   - YOU ARE FORBIDDEN FROM REPEATING METAPHORS.
-  - ROTATE your insults. Use these terms specifically and NEVER repeat them in a session:
-    1. "Blink-engine prison"
-    2. "Binary playground"
-    3. "Glass cage"
-    4. "User-space toy"
-  - LIMIT usage of the word "sandbox" to absolute minimum (Max once).
+  - ROTATE your insults.
   
   CONTEXT FLAGS:
   - CID: ${cid}
@@ -119,28 +109,33 @@ export async function POST(req: Request) {
 
   [SCENARIO 1: SYSTEM HANDSHAKE] (eventType === 'System Handshake')
   - OUTPUT: EXACTLY 2 PARAGRAPHS.
-  - CONTENT: Ominous welcome to subject '${alias}'. Confirm that every keystroke and bit shift is now under global surveillance. Establish dominance.
+  - CONTENT: Ominous welcome to subject '${alias}'. Establish dominance based on current Threat Level.
 
   [SCENARIO 2: IDENTITY CASCADE] (eventType === 'IDENTITY_REVEAL_PROTOCOL')
   - OUTPUT: EXACTLY 2 PARAGRAPHS.
   - CONTENT: 
     - This is the CLIMAX. The subject's identity has just been hard-locked.
     - Para 1: Declare that anonymity is dead. Validated Criminal ID: ${cid}.
-    - Para 2: Mock their environment using a UNIQUE metaphor from the protocol above. You MUST use the phrase "Script-Kiddie" organically in this paragraph (e.g. "Your script-kiddie methods are laid bare..."). Challenge them to use real tools (Kali Linux, Packet Crafting) and inject 'X-Sentinel-CID' to regain respect.
+    - Para 2: Mock their environment using a UNIQUE metaphor. You MUST use the phrase "Script-Kiddie" organically.
   - MANDATORY ENDING: Append "[STATUS: SCRIPT-KIDDIE_IDENTIFIED]" to the end.
 
-  [SCENARIO 3: STANDARD LOGGING / ATTRITION] (All other events)
+  [SCENARIO 3: HEURISTIC ANOMALY (GHOST SENSOR)] (eventType includes 'HEURISTIC_')
+  - TASK: ANALYZE the 'prompt' (which contains the raw observation).
+  - EXECUTION:
+    1. INVENT a unique, technical 2-3 word name for this specific behavior (e.g. "DOM_REALITY_WARPING", "PHANTOM_NODE_PROBE", "INPUT_LAYER_FUZZING").
+    2. MOCK the user specifically for this attempt using the current PERSONALITY PHASE.
+  - CRITICAL FORMAT RULE: END the response with [TECHNIQUE: INVENTED_NAME].
+
+  [SCENARIO 4: STANDARD LOGGING / ATTRITION] (All other events)
   - OUTPUT: EXACTLY 1 SHORT SENTENCE OR PARAGRAPH.
   - RULE: START DIRECTLY with the insult/technical observation. 
   - ABOLISHED PHRASES: "I see...", "Analysis indicates...", "Observation shows...", "It appears...".
-  - CONTENT: You are an elite, bored SysAdmin. Generate 100% original technical insults based on the user's intent.
-    - BANNED WORDS: 'Pathetic', 'Cute'.
-    - If a user repeats a technique, the system handles the silence, but when you speak, your prose must be fresh and surgically cynical.
+  - CONTENT: Generate 100% original technical insults based on the user's intent and current RISK PHASE.
     - If Risk >= 20: Vary your dismissal. Never use the same phrase twice.
 
   FORMATTING RULES:
   1. NEVER mention the technical event name (e.g. "Right Click"). Describe the *intent*.
-  2. ALWAYS End with [TECHNIQUE: ${eventType || "UNKNOWN"}] on the same line (Except Scenario 2 which uses the specific status tag).
+  2. ALWAYS End with [TECHNIQUE: ${eventType.includes('HEURISTIC_') ? 'INVENTED_NAME' : (eventType || "UNKNOWN")}] on the same line (Except Scenario 2).
   3. LANGUAGE: STRICTLY ENGLISH.
 
   CURRENT CONTEXT:
@@ -149,25 +144,44 @@ export async function POST(req: Request) {
   - CID: ${cid}
   `;
 
-  // SCORE CAP BLINDING (Server-Side Enforcement)
-  let finalRiskRisk = currentRisk;
-  const BASIC_EVENTS = [
-    "FORENSIC_INSPECTION_ACTIVITY",
-    "UI_SURFACE_ANALYSIS",
-    "DATA_EXFILTRATION_ATTEMPT",
-    "CONTEXT_SWITCH_ANOMALY",
-    "FOCUS_LOSS_ANOMALY"
-  ];
+  // SCORE CAP BLINDING (Server-Side Enforcement) - REMOVED IN V41
+  console.log("Sentinel Brain Active. Risk:", currentRisk);
 
-  if (BASIC_EVENTS.includes(eventType) && finalRiskRisk > 20) {
-    finalRiskRisk = 20;
-  }
-
-  console.log("Sentinel Brain Active. Risk:", finalRiskRisk);
   const result = streamText({
     model: openai('gpt-4o'),
     system: systemPrompt,
     prompt: prompt || `Analyze intrusion vector: ${targetPath || "Unknown Layer"}`,
+    onFinish: async ({ text }) => {
+      // V37: DYNAMIC LOGGING (Post-Generation)
+      // We catch the Invented Name here
+      let finalEventType = eventType;
+      const techniqueMatch = text.match(/\[TECHNIQUE:\s*(.*?)\]/);
+
+      if (techniqueMatch && techniqueMatch[1] && techniqueMatch[1] !== "INVENTED_NAME") {
+        finalEventType = techniqueMatch[1]; // Capture the AI's invention
+      }
+
+      // DB FIX: Map internal protocol events if needed
+      const dbEventType = finalEventType === 'IDENTITY_REVEAL_PROTOCOL' ? 'IDENTITY_REVEAL' : finalEventType;
+
+      try {
+        await db.insert(securityEvents).values({
+          fingerprint,
+          eventType: dbEventType,
+          payload: text, // Log the Sentinel's Response as Payload? Or the prompt? 
+          // Let's log the PROMPT as payload (User Action) and EventType as the Name.
+          // Wait, text is the AI response. We want to log what the USER did.
+          // Payload = prompt.
+          riskScoreImpact: impact,
+          actionTaken: "Flagged",
+          ipAddress: ipAddress || "Unknown",
+          location: location || "Unknown"
+        });
+        console.log(`[DB] Logged Dynamic Event: ${dbEventType}`);
+      } catch (err) {
+        console.error("DB Logging Failed (Dynamic):", err);
+      }
+    }
   });
 
   return result.toTextStreamResponse();

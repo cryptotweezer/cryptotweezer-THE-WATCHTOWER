@@ -6,8 +6,13 @@ const TECHNIQUES = {
     SURFACE: "UI_SURFACE_ANALYSIS", // DB Safe
     EXFIL: "DATA_EXFILTRATION_ATTEMPT",
     CONTEXT: "CONTEXT_SWITCH_ANOMALY",
-    FOCUS: "FOCUS_LOSS_ANOMALY"
+    FOCUS: "FOCUS_LOSS_ANOMALY",
+    // Sub-Categories for Phase 1
+    DOM: "HEURISTIC_DOM",
+    DRAG: "HEURISTIC_DRAG",
+    FUZZ: "HEURISTIC_FUZZ"
 };
+
 
 interface SentinelSensorsProps {
     triggerSentinel: (prompt: string, eventType: string, skipRisk?: boolean) => void;
@@ -176,4 +181,80 @@ export default function useSentinelSensors({ triggerSentinel, isSystemReadyRef, 
         };
     }, [triggerSentinel, isSystemReadyRef, accessGranted]); // Dependencies
 
+    // GHOST SENSORS (Phase 1: Attack Lab)
+    // 1. DOM SHIELD (MutationObserver) - Detects "Reality Warping"
+    useEffect(() => {
+        if (!accessGranted || !isSystemReadyRef.current) return;
+
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (mutation.type === 'childList') {
+                    const removed = Array.from(mutation.removedNodes);
+                    // V39: AGGRESSIVE SHIELD - Trigger if ANY protected element is deleted
+                    const hasSensitiveDeletion = removed.some(node =>
+                        node instanceof HTMLElement && (
+                            node.id.includes("watchtower") ||
+                            node.getAttribute("data-shield") === "protected" ||
+                            (node.querySelector && node.querySelector('[data-shield="protected"]')) // Deep check
+                        )
+                    );
+
+                    if (hasSensitiveDeletion) {
+                        triggerSentinel(
+                            "CRITICAL HEURISTIC: UI Layer Deletion detected. Subject attempting to blind the Sentinel.",
+                            TECHNIQUES.DOM
+                        );
+                    }
+                }
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+        return () => observer.disconnect();
+    }, [accessGranted, triggerSentinel, isSystemReadyRef]);
+
+    // 2. PHANTOM DRAG & ERRATIC FUZZING
+    useEffect(() => {
+        if (!accessGranted) return;
+
+        let clickCount = 0;
+        let resetTimer: NodeJS.Timeout | null = null;
+
+        const handleDrag = (e: DragEvent) => {
+            triggerSentinel(
+                `HEURISTIC: Anomalous Drag Interaction on [${(e.target as HTMLElement).tagName}]. Subject testing physics engine.`,
+                TECHNIQUES.DRAG
+            );
+        };
+
+        const handleFuzzing = () => {
+            // V39: SIMPLIFIED AGGRESSIVE FUZZER
+            // 6 clicks in 1 second = Trigger.
+            if (clickCount === 0) {
+                resetTimer = setTimeout(() => {
+                    clickCount = 0;
+                }, 1000);
+            }
+
+            clickCount++;
+
+            if (clickCount >= 6) {
+                triggerSentinel(
+                    "HEURISTIC: Erratic Fuzzing (High Velocity Inputs). Subject Stress-Testing Input Layer.",
+                    TECHNIQUES.FUZZ
+                );
+                clickCount = 0; // Reset immediately to capture next burst
+                if (resetTimer) clearTimeout(resetTimer);
+            }
+        };
+
+        window.addEventListener("dragstart", handleDrag);
+        window.addEventListener("click", handleFuzzing);
+
+        return () => {
+            window.removeEventListener("dragstart", handleDrag);
+            window.removeEventListener("click", handleFuzzing);
+            if (resetTimer) clearTimeout(resetTimer);
+        };
+    }, [accessGranted, triggerSentinel]);
 }
