@@ -1,66 +1,62 @@
-🏛️ WAR ROOM: INTELLIGENCE & OPERATIONS CENTER
-"Where telemetry transforms into a forensic narrative."
+🏛️ WAR-ROOM.MD: THE GLOBAL COMMAND CENTER (GCC) BIBLE
+1. FILOSOFÍA Y ESTÉTICA (THE VIBE)
+Identidad: El War Room es la extensión forense del Sentinel. Estética CRT/Terminal, fondo #000000, líneas de escaneo y tipografía monospace.
 
-The War Room is the operational heart of The Watchtower. It is not a static control panel; it is a real-time intelligence interface designed to manage adversary infamy while demonstrating infrastructure resilience to authorized observers.
+Layout Táctico: 3 columnas fijas (SPA), sin scroll, 100% de ocupación visual.
 
-🏛️ 1. DUAL ACCESS PROTOCOL (CLEARANCE)
-The Dashboard identifies user intent through two distinct entry paths:
+Header: THE WATCHTOWER // GLOBAL COMMAND CENTER (GCC).
 
-Adversary Mode (Threat Actor): Requires a valid Criminal ID (CID) generated after passing the Gatekeeper handshake.
+2. REGLAS DE ORO (LECCIONES DE LA SESIÓN ANTERIOR)
+REGLA 1: La DB es la Única Verdad (SSoT). El Sentinel no debe tener "cerebro de pez". Prohibido inicializar el score en 0 si el usuario ya existe. Antes de cualquier acción, se realiza un Hydration Step desde Neon.
 
-Tone: Hostile, cynical, and challenging.
+REGLA 2: Guerra de Middlewares. Para evitar el error 404, la lógica de Arcjet, Clerk y Sentinel debe vivir en un único archivo de control (según la exigencia del compilador, usar proxy.ts o middleware.ts sin duplicidad).
 
-Goal: The user searches for Elite Honeypots to reach 100% risk.
+REGLA 3: Sincronización Atómica. Cada evento de riesgo se actualiza en tiempo real en la UI (Optimistic UI) pero se persiste inmediatamente en Neon vía Server Actions.
 
-Observer Mode (Recruiter): Activated via the ?clearance=RECRUITER URL parameter.
+REGLA 4: Nada de nombres genéricos. No existe el "User Dossier". Usaremos nombres técnicos: SUBJECT_METADATA_STREAM, IDENTITY_PROVENANCE, etc.
 
-Tone: Professional, technical, and analytical ("Briefing Mode").
+3. NAVEGACIÓN Y VISTAS (MODULAR)
+Sidebar (Izquierda): Texto puro.
 
-Goal: Showcase the tech stack (Next.js, Arcjet, Neon) and the architect's monitoring capabilities.
+[ALIAS_DINÁMICO] -> Abre la metadata del sujeto.
 
-🏛️ 2. ACTIVE TELEMETRY COMPONENTS
-A. Global Threat Map (Powered by Neon)
-Function: Geo-spatial visualization of blocked attacks.
+GLOBAL INTELLIGENCE -> Mapa y telemetría mundial.
 
-Logic: Consumes logs from the security_events table in Neon. Every entry with a valid IP generates a light pulse on the map based on the country code.
+CONTACT DEV -> El Honeypot (The Success Trap).
 
-Visual Impact: Failed attacks from other users appear as "ghost pulses," creating the sensation of a live system under constant siege.
+Sentinel Chat: Ventana flotante omnipresente. El Sentinel te sigue a todas las vistas.
 
-B. System Stress Meter (Powered by Arcjet)
-Function: Dynamic indicator of infrastructure health and load.
+4. LAS 4 OPERACIONES ESPECIALES (HONEYPOTS)
+Las ranuras tácticas en el dossier se activan por detección de patrones:
 
-Levels:
+DEEP DRILL: Inyección SQL (Detectada en el formulario de contacto).
 
-CYAN (Calm): Nominal traffic.
+DARKSIDE: Vectores XSS.
 
-ORANGE (Loaded): Bot detection or request bursts.
+MIDNIGHT HAMMER: Fuerza bruta detectada por Arcjet.
 
-RED GLITCH (Critical): Massive attack saturation or Fuzzing. The final 10% of the Infamy Score is unlocked by maintaining this state.
+SILENT SCANNER: Detección de herramientas (User-Agent de Kali, Nmap, Burp).
 
-C. Sentinel V2 Uplink (Forensic AI)
-Function: Advanced conversational terminal.
+5. ROADMAP DE IMPLEMENTACIÓN ATÓMICA (PASO A PASO)
+BLOQUE A: Cimientos y Persistencia (Prioridad Máxima)
 
-Technical Memory: Unlike the Home terminal, the AI here has access to the user's last 20 security events.
+[ ] Tarea A.1: Unique Middleware. Fusionar Clerk y Arcjet en un solo archivo de control para eliminar errores 404.
 
-Interrogation: Users can ask: "Why did my last JSON Injection attempt fail?" and the Sentinel will provide real technical details based on actual logs.
+[ ] Tarea A.2: DB Hydration. Refactorizar SentinelContext para que el riskScore y el CID se recuperen de Neon al montar la app.
 
-🏛️ 3. THE TRIPLE LOCK (HONEYPOT TRACKER)
-The War Room tracks progress for the covert missions required to reach 100% infamy:
+[ ] Tarea A.3: Clerk-Neon Handshake. Vincular el user_id de Clerk con el registro criminal del usuario.
 
-Operation Shadow-Field: API manipulation detection.
+BLOQUE B: Shell Visual y Sidebar
 
-Operation Binary-Ghost: Memory tampering detection.
+[ ] Tarea B.1: Grid Layout. Crear el esqueleto de 3 columnas en /war-room.
 
-Operation Ghost-Key: Source code secret leak detection.
+[ ] Tarea B.2: Sidebar Dinámica. Implementar la navegación por texto con el Alias editable (EDIT_ALIAS >).
 
-🏛️ 4. HIGH-PRIORITY ACTIONS
-Wall of Infamy (The Deface): A restricted area. Write access is only enabled if risk_score == 100. This allows the user to leave a persistent, signed message in the database.
+BLOQUE C: Inteligencia y Engaño
 
-Identity Eraser (Digital Suicide): A "right to be forgotten" feature. It irreversibly wipes all records of the CID from Neon, reinforcing the narrative of "cleaning your tracks" after a successful operation.
+[ ] Tarea C.1: Ghost Map. Mapa de contorno blanco con pulsos azules en ataques.
 
-🏛️ 5. TECH STACK IMPLEMENTATION
-Frontend: React Context to manage terminal state and map pulses.
+[ ] Tarea C.2: The Success Trap. Formulario de contacto que devuelve JSON falso ante ataques de inyección.
 
-Backend: Server Actions for identity erasure and optimized Neon queries.
-
-Security: Arcjet request counting to feed the Stress Meter.
+🛡️ NOTA PARA ANTIGRAVITY:
+No intentes realizar múltiples tareas de diferentes bloques simultáneamente. La prioridad es la Tarea A.1 y A.2. El sistema debe ser estable y persistente antes de construir la interfaz visual.

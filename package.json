@@ -16,6 +16,7 @@
     "@ai-sdk/react": "^3.0.51",
     "@arcjet/next": "^1.0.0",
     "@arcjet/node": "^1.0.0",
+    "@clerk/nextjs": "^6.37.3",
     "@neondatabase/serverless": "^1.0.2",
     "ai": "^6.0.49",
     "dotenv": "^17.2.3",

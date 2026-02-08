@@ -1,7 +1,9 @@
 
 import { db } from "@/db";
-import { userSessions } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { userSessions, securityEvents } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
+
+
 
 const ADJECTIVES = ["Hidden", "Neon", "Silent", "Binary", "Digital", "Ghost", "Iron", "Zero", "Shadow", "Electric"];
 const NOUNS = ["Fox", "Wolf", "Specter", "Cipher", "Signal", "Node", "Link", "Protocol", "Spider", "Hawk"];
@@ -13,28 +15,60 @@ export function generateCyberAlias(): string {
     return `${adj}-${noun}`;
 }
 
-export async function getOrCreateSession(fingerprint: string) {
-    // 1. Check if session exists
-    const existing = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
+export async function getOrCreateSession(fingerprint: string, clerkId?: string) {
+    let session;
 
-    if (existing.length > 0) {
-        return existing[0];
+    // 1. Prioridad 1: Buscar por Clerk ID si está disponible
+    if (clerkId) {
+        session = await db.select().from(userSessions).where(eq(userSessions.clerkId, clerkId)).limit(1);
+        if (session.length > 0) {
+            // Found by Clerk ID. Only update lastSeen. The fingerprint associated with this Clerk ID
+            // should remain its original primary key.
+            await db.update(userSessions)
+                .set({ lastSeen: new Date() })
+                .where(eq(userSessions.clerkId, clerkId));
+            return session[0];
+        }
     }
 
-    // 2. Create new session
+    // 2. Prioridad 2: Buscar por Fingerprint
+    // Esto se ejecutará si no hay clerkId, O si hay clerkId pero no se encontró una sesión con él.
+    const anonymousSessionByFingerprint = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
+
+    if (anonymousSessionByFingerprint.length > 0) {
+        const existingSession = anonymousSessionByFingerprint[0];
+        // Si tenemos un clerkId y la sesión existente es anónima (sin clerkId), actualizarla.
+        if (clerkId && !existingSession.clerkId) {
+            await db.update(userSessions)
+                .set({ clerkId: clerkId, lastSeen: new Date() })
+                .where(eq(userSessions.fingerprint, fingerprint));
+            return { ...existingSession, clerkId: clerkId };
+        }
+        // Si no hay clerkId, o la sesión ya tiene un clerkId, simplemente devolverla.
+        // Asegurarse de actualizar lastSeen
+        await db.update(userSessions)
+            .set({ lastSeen: new Date() })
+            .where(eq(userSessions.fingerprint, fingerprint));
+        return existingSession;
+    }
+
+    // 3. Si no se encontró ninguna sesión (ni por clerkId ni por fingerprint actual), crear una nueva.
     const newAlias = generateCyberAlias();
     const newCid = `CID-${Math.floor(100 + Math.random() * 900)}-${Math.random().toString(36).substring(2, 3).toUpperCase()}`;
 
-    const newSession = await db.insert(userSessions).values({
-        fingerprint,
+    const newSessionEntry = await db.insert(userSessions).values({
+        fingerprint: fingerprint,
+        clerkId: clerkId || null, // VINCULAR SIEMPRE CLERKID SI ESTÁ DISPONIBLE
         alias: newAlias,
         cid: newCid,
         riskScore: 0,
+        lastSeen: new Date(),
+        firstSeen: new Date(),
     }).returning();
 
     return {
-        ...newSession[0],
-        cid: newCid // Explicit return to guarantee availability immediately
+        ...newSessionEntry[0],
+        cid: newCid // Asegurarse de que el CID generado se devuelva correctamente
     };
 }
 
@@ -42,3 +76,70 @@ export async function getSession(fingerprint: string) {
     const existing = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
     return existing[0] || null;
 }
+
+export async function getSessionLogs(fingerprint: string, limit?: number) {
+    const query = db.select()
+        .from(securityEvents)
+        .where(eq(securityEvents.fingerprint, fingerprint))
+        .orderBy(desc(securityEvents.timestamp));
+
+    if (limit) {
+        // Drizzle's limit() needs to be applied to the query builder
+        // We can just await the query first if we want, OR use .limit() carefully.
+        // Simplified:
+        const logs = await query.limit(limit);
+        return formatLogs(logs);
+    }
+
+    const logs = await query;
+    return formatLogs(logs);
+}
+
+export async function checkAndIncrementRoutingProbe(fingerprint: string): Promise<boolean> {
+    const session = await getSession(fingerprint);
+    if (!session) return true; // Fail open if no session (shouldn't happen)
+
+    if (session.routingProbeCount >= 3) {
+        return false; // Limit reached
+    }
+
+    await db.update(userSessions)
+        .set({ routingProbeCount: session.routingProbeCount + 1 })
+        .where(eq(userSessions.fingerprint, fingerprint));
+
+    return true; // Allowed
+}
+
+function formatLogs(logs: typeof securityEvents.$inferSelect[]) {
+
+    return logs.map(log => {
+        const time = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('en-US', { hour12: false }) : "00:00:00";
+        let displayEvent = log.eventType;
+
+        // Reconstruct display logic if needed or just use raw eventType
+        // The previous context logic had some specific formatting for "ROUTING_PROBE_HEURISTICS" and "IDENTITY_REVEAL_PROTOCOL"
+        // But storing formatted strings in DB is cleaner, OR we replicate logic here.
+        // For now, raw eventType + payload is a good start, but HomeTerminal expects strings.
+
+        if (log.eventType === "IDENTITY_REVEAL_PROTOCOL" || log.eventType === "IDENTITY_REVEAL") {
+            displayEvent = "TAGGED: SCRIPT-KIDDIE";
+        } else if (log.eventType === "ROUTING_PROBE_HEURISTICS" && log.route) {
+            displayEvent = `ROUTING_PROBE_HEURISTICS -> ${log.route}`;
+        }
+
+        return `> [${time}] DETECTED: [${displayEvent}]`;
+
+    });
+}
+
+export async function getUniqueTechniquesForSession(fingerprint: string): Promise<string[]> {
+    const events = await db.select({ eventType: securityEvents.eventType })
+        .from(securityEvents)
+        .where(eq(securityEvents.fingerprint, fingerprint));
+
+    const uniqueTechniques = new Set<string>();
+    events.forEach(event => uniqueTechniques.add(event.eventType));
+
+    return Array.from(uniqueTechniques);
+}
+
