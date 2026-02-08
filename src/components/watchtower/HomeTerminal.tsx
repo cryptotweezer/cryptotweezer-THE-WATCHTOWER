@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { Activity } from "lucide-react";
+import Link from "next/link";
 import IdentityHUD from "@/components/watchtower/IdentityHUD";
 import Briefing from "@/components/watchtower/Briefing";
 import Footer from "@/components/watchtower/Footer";
 import Gatekeeper from "@/components/watchtower/Gatekeeper";
-import useSentinelManager from "./useSentinelManager";
-import useSentinelSensors from "./useSentinelSensors";
+import { useSentinel } from "@/contexts/SentinelContext";
+import { SignInButton, SignOutButton, SignedIn, SignedOut } from "@clerk/nextjs";
 
 interface HomeTerminalProps {
     threatCount: number;
@@ -19,24 +21,23 @@ interface HomeTerminalProps {
         ip: string | null;
     };
     invokePath?: string;
+    initialLogs?: string[];
 }
 
-export default function HomeTerminal({ identity, invokePath }: HomeTerminalProps) {
-    // 1. MANAGER (Brain)
-    const { state, actions, refs } = useSentinelManager({ identity, invokePath });
+export default function HomeTerminal({ identity, invokePath, initialLogs }: HomeTerminalProps) {
+    // 1. GLOBAL CONTEXT (Brain + Sensors now global)
+    const { state, actions } = useSentinel();
 
-    // 2. SENSORS (Eyes)
-    useSentinelSensors({
-        triggerSentinel: actions.triggerSentinel,
-        isSystemReadyRef: refs.isSystemReadyRef,
-        accessGranted: state.accessGranted
-    });
-
+    // 2. HYDRATE FROM SERVER (DB is SSoT)
     const [isMounted, setIsMounted] = useState(false);
-    // eslint-disable-next-line
-    useEffect(() => { setIsMounted(true); }, []);
+    useEffect(() => {
+        setIsMounted(true);
+        actions.hydrateFromServer(identity, invokePath, initialLogs);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     if (!isMounted) return null;
+
 
     return (
         <>
@@ -50,9 +51,30 @@ export default function HomeTerminal({ identity, invokePath }: HomeTerminalProps
                         SecOps Platform v3.0
                     </p>
                     <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-                        <span className="flex place-items-center gap-2 p-8 lg:p-0">
-                            By <a href="https://github.com/cryptotweezer/Digital-Twin-III.git" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline hover:text-blue-400 transition-colors">Team 02</a>
-                        </span>
+
+                        <div className="flex gap-4 items-center">
+                            <SignedIn>
+                                <Link
+                                    href="/war-room"
+                                    className="font-mono text-white text-sm tracking-widest transition-all duration-300 hover:text-[#00f2ff] hover:shadow-[0_0_10px_rgba(0,242,255,0.5)] p-8 lg:p-0"
+                                >
+                                    WAR ROOM
+                                </Link>
+                                <SignOutButton>
+                                    <button className="text-xs text-red-500 hover:text-red-400 uppercase tracking-widest border border-red-900/50 px-2 py-1 rounded hover:bg-red-900/20 transition-all">
+                                        Logout
+                                    </button>
+                                </SignOutButton>
+                            </SignedIn>
+
+                            <SignedOut>
+                                <SignInButton mode="modal" forceRedirectUrl="/war-room">
+                                    <button className="font-mono text-neutral-400 text-sm tracking-widest transition-all duration-300 hover:text-blue-500 hover:border-blue-500/50 border border-transparent px-4 py-2 rounded hover:shadow-[0_0_15px_rgba(59,130,246,0.4)] uppercase">
+                                        War Room
+                                    </button>
+                                </SignInButton>
+                            </SignedOut>
+                        </div>
                     </div>
                 </div>
 
@@ -89,7 +111,7 @@ export default function HomeTerminal({ identity, invokePath }: HomeTerminalProps
                                 </span>
                             </h2>
                             <p className={`m-0 max-w-[30ch] text-5xl font-mono text-red-500`}>
-                                {state.sessionTechniques.length}
+                                {state.uniqueTechniqueCount}
                             </p>
                         </div>
 
@@ -100,9 +122,10 @@ export default function HomeTerminal({ identity, invokePath }: HomeTerminalProps
                                 Signal Logs
                             </h3>
                             <div className="font-mono text-xs flex-1 overflow-y-auto scrollbar-none pr-1">
-                                {state.eventLog.map((log, idx) => (
+                                {state.eventLog.slice(0, 10).map((log, idx) => (
                                     <p key={idx} className="text-[#FFFFFF] whitespace-normal break-words leading-tight mb-2 opacity-90 hover:opacity-100">{log}</p>
                                 ))}
+
                                 {state.eventLog.length === 0 && <span className="text-gray-600 italic opacity-50">-- NO ANOMALIES --</span>}
                             </div>
                         </div>

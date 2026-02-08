@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import useStableIdentity from "@/hooks/useStableIdentity";
 
 const TECHNIQUES = {
     INSPECTION: "FORENSIC_INSPECTION_ACTIVITY",
@@ -36,7 +35,7 @@ interface SentinelManagerProps {
 
 export default function useSentinelManager({ identity, invokePath }: SentinelManagerProps) {
     // 1. STABLE IDENTITY ANCHOR
-    const stableFingerprint = useStableIdentity(identity.fingerprint);
+    const stableFingerprint = identity.fingerprint;
 
     // STATE
     const [accessGranted, setAccessGranted] = useState(false);

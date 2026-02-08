@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm add:*)",
+      "Bash(findstr:*)",
+      "Bash(pnpm db:generate:*)",
+      "Bash(pnpm db:migrate:*)"
+    ]
+  }
+}

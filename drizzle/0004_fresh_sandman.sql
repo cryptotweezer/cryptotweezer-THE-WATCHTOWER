@@ -1,0 +1,1 @@
+ALTER TABLE "user_sessions" ADD COLUMN "unique_technique_count" integer DEFAULT 0 NOT NULL;
