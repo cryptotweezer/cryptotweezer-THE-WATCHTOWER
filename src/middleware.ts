@@ -1,5 +1,4 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import arcjet, { detectBot, shield, slidingWindow } from "@arcjet/next";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -13,7 +12,8 @@ const isPublicRoute = createRouteMatcher([
     "/privacy",
     "/terms",
     "/api/sentinel",
-    "/api/security/log"
+    "/api/security/log",
+    "/api/arcjet"
 ]);
 
 // Ghost Route Detection: Routes that are valid pages (not honeypot targets)
@@ -37,44 +37,9 @@ export const config = {
     ],
 };
 
-// Shared Arcjet + Identity logic applied to any response
-async function applySecurityLayer(req: NextRequest, response: NextResponse) {
-    const ajKey = process.env.ARCJET_KEY;
-    if (!ajKey || ajKey === "aj_mock_key" || ajKey.length < 10) return response;
-
-    const aj = arcjet({
-        key: ajKey,
-        rules: [
-            shield({ mode: "LIVE" }),
-            detectBot({ mode: "LIVE", allow: [] }),
-            slidingWindow({ mode: "LIVE", interval: "1m", max: 60 }),
-        ],
-    });
-
-    const decision = await aj.protect(req);
-
-    if (decision.isDenied()) {
-        console.warn("THREAT DETECTED (NON-BLOCKING):", decision.reason);
-        response.headers.set("x-arcjet-threat-detected", "true");
-        if (decision.reason.isBot()) {
-            response.headers.set("x-arcjet-threat-type", "BOT_ARMY");
-        } else if (decision.reason.isRateLimit()) {
-            response.headers.set("x-arcjet-threat-type", "DDoS_ATTEMPT");
-        } else if (decision.reason.isShield()) {
-            response.headers.set("x-arcjet-threat-type", "INJECTION_ATTACK");
-        } else {
-            response.headers.set("x-arcjet-threat-type", "ANOMALY");
-        }
-    }
-
-    // FINGERPRINT / IDENTITY PERSISTENCE
-    // 1. Arcjet Fingerprint (Priority if available)
-    const fingerprint = (decision as { fingerprint?: string }).fingerprint;
-    if (fingerprint) {
-        response.headers.set("x-arcjet-fingerprint", fingerprint);
-    }
-
-    // 2. Persistent Cookie (Fallback/Stable ID)
+// Lightweight Identity Layer (No Arcjet - moved to /api/arcjet)
+function applyIdentityLayer(req: NextRequest, response: NextResponse) {
+    // Persistent Cookie (Stable ID for anonymous users)
     let stableId = req.cookies.get("watchtower_node_id")?.value;
 
     if (!stableId) {
@@ -101,8 +66,8 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     // probing routes are observed, not redirected to Clerk sign-in.
     const isWarRoomSubRoute = path.startsWith("/war-room/") && path !== "/war-room";
     const isGhostRoute = (!VALID_PAGES.includes(path) &&
-                         !isStaticOrInternal(path) &&
-                         !isApiRoute(path)) || isWarRoomSubRoute;
+        !isStaticOrInternal(path) &&
+        !isApiRoute(path)) || isWarRoomSubRoute;
 
     if (isGhostRoute) {
         const url = req.nextUrl.clone();
@@ -110,7 +75,7 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
         url.pathname = isWarRoomSubRoute ? "/war-room" : "/";
         const response = NextResponse.rewrite(url);
         response.headers.set("x-watchtower-ghost-path", path);
-        return applySecurityLayer(req, response);
+        return applyIdentityLayer(req, response);
     }
 
     // Si la ruta no es pública, entonces está protegida.
@@ -119,5 +84,5 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     }
 
     const baseResponse = NextResponse.next();
-    return applySecurityLayer(req, baseResponse);
+    return applyIdentityLayer(req, baseResponse);
 });
