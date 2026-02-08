@@ -1,5 +1,6 @@
 import { headers, cookies } from "next/headers";
 import { getOrCreateSession, getSessionLogs, getUniqueTechniquesForSession } from "@/lib/session";
+import { runArcjetSecurity } from "@/lib/arcjet";
 import { currentUser } from "@clerk/nextjs/server";
 
 import WarRoomShell from "@/components/war-room/WarRoomShell";
@@ -9,8 +10,12 @@ export const dynamic = "force-dynamic";
 export default async function WarRoomPage() {
     // Mirror page.tsx identity flow for consistency
     const user = await currentUser();
+
+    // Run Arcjet Security (Shield, Bot Detection, Rate Limiting)
+    const arcjetResult = await runArcjetSecurity();
+
     const headersList = await headers();
-    let fingerprint = headersList.get("x-arcjet-fingerprint");
+    let fingerprint = arcjetResult.fingerprint || headersList.get("x-arcjet-fingerprint");
     const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
 
     // Fallback for Dev/Bypass Mode

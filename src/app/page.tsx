@@ -1,6 +1,7 @@
 import { headers, cookies } from "next/headers";
 import { getThreatCount } from "@/lib/security";
 import { getOrCreateSession, getSessionLogs, getUniqueTechniquesForSession } from "@/lib/session";
+import { runArcjetSecurity } from "@/lib/arcjet";
 import { currentUser } from "@clerk/nextjs/server";
 
 import HomeTerminal from "@/components/watchtower/HomeTerminal";
@@ -11,9 +12,12 @@ export default async function Home() {
   const threatCount = await getThreatCount();
   const user = await currentUser();
 
+  // Run Arcjet Security (Shield, Bot Detection, Rate Limiting)
+  const arcjetResult = await runArcjetSecurity();
+
   // Data Hoisting: Identify User on Server
   const headersList = await headers();
-  let fingerprint = headersList.get("x-arcjet-fingerprint");
+  let fingerprint = arcjetResult.fingerprint || headersList.get("x-arcjet-fingerprint");
   const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
 
   // V34: PERSISTENCE STRATEGY
