@@ -464,3 +464,77 @@
 **🚧 Next Steps**:
 *   **Phase 3**: The Codebreaker (SQLi/XSS).
 *   **Verification**: Test the "Adversary" phase response tone.
+
+### [2026-02-08] Identity System Redesign & Clerk Integration
+**👤 Author**: Antigravity
+**🎯 Goal**: Anchor Identity to Clerk, fix Vercel Edge Function limits, and restore full Arcjet security.
+**✅ Accomplished**:
+*   **Identity System Redesign**:
+    *   Added `clerk_id` column to `userSessions` table for persistent cross-device authentication.
+    *   Implemented `syncUserIdentity` server action to link Clerk users with Sentinel sessions.
+    *   Updated `getOrCreateSession` to prioritize Clerk ID over fingerprint for identity resolution.
+    *   Refactored `middleware.ts` with persistent `watchtower_node_id` cookie (1-year expiration).
+*   **War Room Implementation**:
+    *   Created `/war-room` page with dedicated `WarRoomShell` component.
+    *   Implemented authentication gate via Clerk middleware.
+    *   Updated HomeTerminal auth button: Text changed to "War Room", blue hover matching Identity Node, redirect to `/war-room` after auth.
+*   **Arcjet Architecture Migration**:
+    *   **Problem**: Middleware exceeded Vercel's 1MB Edge Function limit (was 1.04 MB).
+    *   **Solution**: Moved Arcjet from middleware to dedicated server-side utility (`src/lib/arcjet.ts`).
+    *   Created `runArcjetSecurity()` function called from `page.tsx` and `war-room/page.tsx`.
+    *   Middleware is now lightweight (Clerk auth + identity cookie + ghost route detection only).
+    *   Full Arcjet functionality preserved: Shield, Bot Detection, Rate Limiting, Fingerprinting.
+*   **Build & Deployment Fixes**:
+    *   Added `dynamic` prop to `ClerkProvider` to fix prerender error on `/_not-found`.
+    *   Resolved merge conflicts between feature branch and main.
+    *   Verified Vercel deployment successful after fixing environment variables.
+*   **Cleanup**:
+    *   Removed deprecated `useStableIdentity` hook (replaced by server-side hydration).
+    *   Enhanced `SentinelContext` with non-streaming routing probe support.
+**🚧 Next Steps**:
+*   **War Room Development**: Build out the War Room dashboard with full attack history, leaderboard, and advanced analytics.
+*   **Identity Persistence Testing**: Verify cross-device session linking works correctly.
+
+### [2026-02-09] War Room Command Center: Layout, Sentinel Chat & Risk Calibration
+**Author**: Antigravity
+**Goal**: Transform the War Room into a fully operational command center with reorganized layout, interactive Sentinel chat, and calibrated risk scoring.
+**Accomplished**:
+*   **War Room Layout Redesign (`WarRoomShell.tsx`)**:
+    *   **LEFT Panel**: Navigation-only (user alias, Global Intelligence, Contact Dev) + Threat Level indicator at bottom.
+    *   **CENTER Panel**: Full Subject Dossier — Identity Node card (Alias, Criminal ID, Node ID, Net Address, Deep Scan metadata, Status Rank, Techniques count) + Security Events log below.
+    *   **RIGHT Panel**: Dedicated Sentinel Uplink chat panel (chat only, no other content).
+    *   Ported Deep Scan logic (OS, Browser, Timezone, Screen) from `IdentityHUD.tsx` into the War Room Identity card.
+    *   Status rank display (`SCRIPT-KIDDIE`, `THREAT ACTOR`, `ADVERSARY`) with risk-adaptive colors.
+*   **Interactive Sentinel Chat System**:
+    *   Built full chat UI with user text input, Send button, and Enter key submission.
+    *   Implemented streaming responses via `fetch` + `TextDecoder` (native stream protocol).
+    *   Flat chat style — no boxed/card separation between messages (continuous flow).
+    *   Auto-scroll to latest message, cursor auto-focus after sending.
+    *   Auto-triggered sensor messages from `SentinelContext.history` sync into chat feed alongside user conversations.
+*   **Dedicated Chat API (`/api/sentinel/chat/route.ts` — NEW)**:
+    *   Edge runtime endpoint with full DB context: user events (50 max), user session dossier, global stats (total sessions, total events, top 10 techniques, last 25 global events with alias resolution).
+    *   Risk-adaptive persona: Script-Kiddie (<=20%), Threat Actor (<=70%), Adversary (>70%).
+    *   Strict scope restriction: only answers about the current subject's data, platform activity, and security concepts. All off-topic queries rejected in-character.
+    *   English-only enforcement. Response length: 1-3 paragraphs. Full conversation history support for contextual responses.
+    *   Uses `streamText` with `openai('gpt-4o')` and multi-turn `messages` format.
+*   **Chat Persistence**:
+    *   localStorage-backed chat history (`warroom_chat_{fingerprint}`) survives page refresh and navigation.
+    *   Content-based dedup prevents auto-triggered sensor messages from re-appearing after navigation.
+    *   Initialization priority: localStorage > SentinelContext history seed.
+*   **Risk Score Calibration (Phase 1 Cap)**:
+    *   **40% Hard Cap**: Maximum achievable risk with current sensors. 40%+ reserved for future honeypot implementations.
+    *   **Rebalanced Impacts** (total max 39%): ROUTING_PROBE=3, FORENSIC_INSPECTION=3, MEMORY_INJECTION=8, HEURISTIC_DOM=5, HEURISTIC_DRAG=5, HEURISTIC_FUZZ=3, UI_SURFACE=2, DATA_EXFIL=2, CONTEXT_SWITCH=1, FOCUS_LOSS=1.
+    *   **Server-Side Dedup** (`route.ts`): Checks `securityEvents` table for existing `eventType+fingerprint` before applying impact. Prevents duplicate scoring across Home and War Room.
+    *   **Client-Side Hydration Merge** (`SentinelContext.tsx`): `knownTechniquesRef` now merges server techniques with local state instead of overwriting, preventing re-scoring on page transitions.
+    *   `PHASE1_RISK_CAP = 40` enforced in both client (`SentinelContext`) and server (`/api/sentinel/route.ts`).
+*   **Visual Polish**:
+    *   Risk colors match Home: blue (<=20%), yellow (<=50%), red (>50%).
+    *   "Sentinel Uplink" header: blue pulsing with dot indicator (matches Home's LIVE CONNECTION style).
+    *   "ONLINE" in top header: green pulsing with dot when fully synced, neutral gray while syncing.
+    *   SENTINEL-02 label in pure white across all chat messages.
+    *   User messages right-aligned with cyan styling and "YOU" label.
+**Next Steps**:
+*   **Global Intelligence Panel**: Build out the "GLOBAL INTELLIGENCE" nav link with cross-session analytics.
+*   **Hall of Infamy**: Leaderboard integration using `researchLeaderboard` table.
+*   **Phase 2 Honeypots**: Advanced traps (SQLi, XSS challenges) to unlock 40%+ risk scores.
+

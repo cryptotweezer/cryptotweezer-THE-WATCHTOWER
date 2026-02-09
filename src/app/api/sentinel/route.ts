@@ -3,7 +3,7 @@ import { openai } from '@ai-sdk/openai';
 import { db } from '@/db';
 import { securityEvents, userSessions } from '@/db/schema';
 import { checkAndIncrementRoutingProbe } from '@/lib/session';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 // Define interface for request body to improve type inference
@@ -82,15 +82,35 @@ export async function POST(req: Request) {
     }
   }
 
+  // Phase 1 cap: 40% max with current sensors. 40%+ reserved for future honeypots.
+  const PHASE1_RISK_CAP = 40;
+
   let impact = 0;
-  // Calculate Server-Side Impact
-  if (eventType === "ROUTING_PROBE_HEURISTICS") impact = 5;
-  else if (eventType === "FORENSIC_INSPECTION_ACTIVITY") impact = 5;
-  else if (eventType === "MEMORY_INJECTION_ATTEMPT") impact = 20;
-  else if (eventType === "HEURISTIC_DOM") impact = 10;
-  else if (eventType === "HEURISTIC_DRAG") impact = 10;
-  else if (eventType === "HEURISTIC_FUZZ") impact = 5;
-  else if (["UI_SURFACE_ANALYSIS", "DATA_EXFILTRATION_ATTEMPT", "CONTEXT_SWITCH_ANOMALY", "FOCUS_LOSS_ANOMALY"].includes(eventType)) impact = 2;
+  // Calculate Server-Side Impact (Phase 1 balanced values)
+  if (eventType === "ROUTING_PROBE_HEURISTICS") impact = 3;
+  else if (eventType === "FORENSIC_INSPECTION_ACTIVITY") impact = 3;
+  else if (eventType === "MEMORY_INJECTION_ATTEMPT") impact = 8;
+  else if (eventType === "HEURISTIC_DOM") impact = 5;
+  else if (eventType === "HEURISTIC_DRAG") impact = 5;
+  else if (eventType === "HEURISTIC_FUZZ") impact = 3;
+  else if (eventType === "UI_SURFACE_ANALYSIS" || eventType === "DATA_EXFILTRATION_ATTEMPT") impact = 2;
+  else if (eventType === "CONTEXT_SWITCH_ANOMALY" || eventType === "FOCUS_LOSS_ANOMALY") impact = 1;
+
+  // Server-side dedup: skip impact if this unique technique was already scored
+  const NON_UNIQUE_SERVER = ["System Handshake", "SECURITY_WARNING_PROTOCOL", "ROUTING_PROBE_HEURISTICS", "IDENTITY_REVEAL_PROTOCOL"];
+  if (impact > 0 && !NON_UNIQUE_SERVER.includes(eventType)) {
+    const alreadyLogged = await db.select({ id: securityEvents.id })
+      .from(securityEvents)
+      .where(and(
+        eq(securityEvents.fingerprint, fingerprint),
+        eq(securityEvents.eventType, eventType)
+      ))
+      .limit(1);
+    if (alreadyLogged.length > 0) {
+      console.log(`[DEDUP] Skipping impact for ${eventType} — already scored for ${fingerprint}`);
+      impact = 0;
+    }
+  }
 
   let finalDbRiskScore = currentRisk;
   let dbEventTypeToLog = eventType;
@@ -102,7 +122,7 @@ export async function POST(req: Request) {
     const currentSession = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
     const dbScore = currentSession.length > 0 ? currentSession[0].riskScore : 0;
     let newScore = dbScore + impact;
-    newScore = Math.min(newScore, 100); // Cap at 100 for consistency with client display
+    newScore = Math.min(newScore, PHASE1_RISK_CAP); // Phase 1 cap
     await db.insert(userSessions).values({
       fingerprint, alias: alias || "Unknown Subject", riskScore: newScore, firstSeen: new Date(), lastSeen: new Date()
     }).onConflictDoUpdate({

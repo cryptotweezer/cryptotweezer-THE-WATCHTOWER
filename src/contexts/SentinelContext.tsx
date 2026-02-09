@@ -222,24 +222,26 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         });
 
         // Risk Scoring (Client-side, will be overwritten by server for non-streaming)
+        // Phase 1 cap: 40% max with current sensors. 40%+ reserved for future honeypots.
+        const PHASE1_RISK_CAP = 40;
         if (!skipRisk && !isRoutingProbe) { // Only do client-side risk calc for streaming events
             setCurrentRiskScore(currentScore => {
                 let impact = 0;
                 switch (eventType) {
-                    case TECHNIQUES.INSPECTION: impact = 5; break;
+                    case TECHNIQUES.INSPECTION: impact = 3; break;
                     case TECHNIQUES.SURFACE: impact = 2; break;
                     case TECHNIQUES.EXFIL: impact = 2; break;
-                    case TECHNIQUES.CONTEXT: impact = 2; break;
-                    case "FOCUS_LOSS_ANOMALY": impact = 2; break;
-                    case TECHNIQUES.ROUTING: impact = 5; break;
-                    case TECHNIQUES.DOM: impact = 10; break;
-                    case TECHNIQUES.DRAG: impact = 10; break;
-                    case TECHNIQUES.FUZZ: impact = 5; break;
-                    case TECHNIQUES.INJECTION: impact = 20; break;
+                    case TECHNIQUES.CONTEXT: impact = 1; break;
+                    case "FOCUS_LOSS_ANOMALY": impact = 1; break;
+                    case TECHNIQUES.ROUTING: impact = 3; break;
+                    case TECHNIQUES.DOM: impact = 5; break;
+                    case TECHNIQUES.DRAG: impact = 5; break;
+                    case TECHNIQUES.FUZZ: impact = 3; break;
+                    case TECHNIQUES.INJECTION: impact = 8; break;
                     default: impact = 0;
                 }
                 if (NON_UNIQUE_EVENTS.includes(eventType) && eventType !== TECHNIQUES.ROUTING) return currentScore;
-                const newScore = Math.min(currentScore + impact, 100);
+                const newScore = Math.min(currentScore + impact, PHASE1_RISK_CAP);
                 LOG_RISK("INFAMY_UPDATE", { event: eventType, current: currentScore, impact, new: newScore });
                 localStorage.setItem("sentinel_risk_score", newScore.toString());
                 riskScoreRef.current = newScore;
@@ -393,10 +395,13 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         }
 
         // HYDRATE UNIQUE TECHNIQUES FROM SERVER (NEW SSoT)
+        // Merge with existing ref to prevent race condition where a technique
+        // detected before hydration gets lost and re-triggers on the new page
         if (serverIdentity.sessionTechniques) {
-            setSessionTechniques(serverIdentity.sessionTechniques);
-            knownTechniquesRef.current = serverIdentity.sessionTechniques;
-            localStorage.setItem("sentinel_techniques", JSON.stringify(serverIdentity.sessionTechniques));
+            const merged = [...new Set([...knownTechniquesRef.current, ...serverIdentity.sessionTechniques])];
+            setSessionTechniques(merged);
+            knownTechniquesRef.current = merged;
+            localStorage.setItem("sentinel_techniques", JSON.stringify(merged));
         }
 
         // HYDRATE LOGS (Source of Truth)
