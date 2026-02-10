@@ -46,6 +46,7 @@ export interface IdentityData {
     cid?: string | null;
     riskScore: number;
     ip: string | null;
+    countryCode?: string;
     sessionTechniques?: string[];
     uniqueTechniqueCount?: number;
 }
@@ -267,7 +268,8 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
                 signal: isRoutingProbe ? undefined : controller.signal, // Only use signal for streaming
                 body: JSON.stringify({
                     prompt, eventType, fingerprint: activeFingerprint, ipAddress: identityRef.current?.ip,
-                    alias: identityRef.current?.alias || "Unknown User", location: "Australia/Sydney",
+                    alias: identityRef.current?.alias || "Unknown User",
+                    location: identityRef.current?.countryCode || "UNKNOWN",
                     threatLevel: (identityRef.current?.riskScore || 0) > 50 ? "High" : "Low",
                     riskScore: riskScoreRef.current, targetPath: currentInvokePath.current,
                     nonStreaming: isRoutingProbe // Send the nonStreaming flag
@@ -444,6 +446,41 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         setIsIdentityReady(true);
         setIsHydrated(true); // Signal that hydration is complete
     }, [triggerSentinel]);
+
+    // ============= CENTRALIZED CID REVEAL TRIGGER =============
+    // This effect monitors when risk crosses 20% and triggers the reveal message
+    // from ANY page (Home or War Room). Previously this was only in IdentityHUD.tsx.
+    const hasTriggeredRevealRef = useRef(false);
+
+    useEffect(() => {
+        // Guard: Only trigger once per session
+        if (hasTriggeredRevealRef.current) return;
+
+        // Guard: Wait for identity to be ready and CID to be valid
+        if (!isIdentityReady) return;
+        if (!cid || cid === "unknown" || !cid.startsWith("CID-")) return;
+
+        // Guard: Check localStorage to prevent re-trigger across page loads
+        const alreadyRevealed = localStorage.getItem("sentinel_cid_revealed") === "true";
+        if (alreadyRevealed) {
+            hasTriggeredRevealRef.current = true;
+            return;
+        }
+
+        // Trigger condition: Risk crosses 20% threshold
+        if (currentRiskScore >= 20) {
+            hasTriggeredRevealRef.current = true;
+            localStorage.setItem("sentinel_cid_revealed", "true");
+
+            // CASCADE TRIGGER: 6000ms delay for dramatic pacing (AAA UX)
+            setTimeout(() => {
+                triggerSentinel(
+                    "IDENTITY REVEAL CONFIRMED. CASCADE INITIATED.",
+                    "IDENTITY_REVEAL_PROTOCOL"
+                );
+            }, 6000);
+        }
+    }, [currentRiskScore, isIdentityReady, cid, triggerSentinel]);
 
     // ROUTING LOGIC (Moved to useEffect to avoid Race Condition)
     useEffect(() => {

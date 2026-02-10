@@ -1,6 +1,8 @@
 import { headers, cookies } from "next/headers";
-import { getOrCreateSession, getSessionLogs, getUniqueTechniquesForSession } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { getSession, getSessionLogs, getUniqueTechniquesForSession } from "@/lib/session";
 import { runArcjetSecurity } from "@/lib/arcjet";
+import { logArcjetDetection } from "@/lib/security";
 import { currentUser } from "@clerk/nextjs/server";
 
 import WarRoomShell from "@/components/war-room/WarRoomShell";
@@ -8,7 +10,6 @@ import WarRoomShell from "@/components/war-room/WarRoomShell";
 export const dynamic = "force-dynamic";
 
 export default async function WarRoomPage() {
-    // Mirror page.tsx identity flow for consistency
     const user = await currentUser();
 
     // Run Arcjet Security (Shield, Bot Detection, Rate Limiting)
@@ -35,9 +36,22 @@ export default async function WarRoomPage() {
         }
     }
 
-    // DB Hydration (SSoT)
-    const session = await getOrCreateSession(fingerprint, user?.id);
+    // GET-only — no session creation. Must go through Gatekeeper first.
+    const session = await getSession(fingerprint, user?.id);
+
+    if (!session) {
+        redirect("/");
+    }
+
     const uniqueTechniques = await getUniqueTechniquesForSession(session.fingerprint);
+
+    // Extract country code from middleware header
+    const countryCode = headersList.get("x-watchtower-country") || "UNKNOWN";
+
+    // Log Arcjet detections (non-blocking — just telemetry)
+    if (arcjetResult.isDenied) {
+        logArcjetDetection(arcjetResult, session.fingerprint, ip, countryCode);
+    }
 
     const identity = {
         alias: session.alias,
@@ -45,6 +59,7 @@ export default async function WarRoomPage() {
         cid: session.cid,
         riskScore: session.riskScore,
         ip: ip,
+        countryCode: countryCode,
         sessionTechniques: uniqueTechniques,
         uniqueTechniqueCount: session.uniqueTechniqueCount
     };

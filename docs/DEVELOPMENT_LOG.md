@@ -538,3 +538,65 @@
 *   **Hall of Infamy**: Leaderboard integration using `researchLeaderboard` table.
 *   **Phase 2 Honeypots**: Advanced traps (SQLi, XSS challenges) to unlock 40%+ risk scores.
 
+---
+
+### Session: 2026-02-09 (AEST)
+**Author**: Gemini + Lead Architect
+**Goal**: Fix CID reveal message not triggering in War Room when user reaches 20%.
+**Accomplished**:
+*   **Centralized CID Reveal Logic (`SentinelContext.tsx`)**:
+    *   Moved `IDENTITY_REVEAL_PROTOCOL` trigger from `IdentityHUD.tsx` callback to centralized `useEffect` in `SentinelContext.tsx`.
+    *   The reveal message now triggers when `currentRiskScore >= 20` regardless of whether the user is in Home or War Room.
+    *   Maintains the 6-second delay (`setTimeout`) for dramatic pacing (AAA UX).
+    *   Uses `localStorage.getItem("sentinel_cid_revealed")` to prevent re-triggering across page loads.
+    *   Uses `hasTriggeredRevealRef` to prevent multiple triggers within the same session.
+*   **Removed Duplicate Callback (`HomeTerminal.tsx`)**:
+    *   Removed `onRevealComplete` prop from `IdentityHUD` component since the logic is now centralized.
+*   **Build Verification**: `pnpm build` passed with exit code 0.
+**Next Steps**:
+*   Test the reveal message in both Home and War Room to confirm synchronization.
+
+---
+
+### Session: 2026-02-09 (AEST) - Continued
+**Author**: Gemini + Lead Architect
+**Goal**: Improve Sentinel chat tone and add conditional creator context injection.
+**Accomplished**:
+*   **Reformulated Sentinel Chat Personality**:
+    *   Responses now 1-2 paragraphs MAX (punchy, not verbose).
+    *   Embraces dark cyber-gothic atmosphere — provocative, challenging, immersive.
+    *   Risk-adaptive personas: bored elite hacker (≤20%), cold analyst (≤70%), hostile defender (>70%).
+    *   Uses technical jargon naturally (CIDs, fingerprints, techniques, risk scores).
+*   **Conditional Creator Context Injection**:
+    *   Defined `CREATOR_KEYWORDS` array: creator, author, andres, contact, hire, linkedin, website, email, resume, portfolio, etc.
+    *   Only injects creator profile when user message contains matching keywords (saves tokens).
+    *   Creator info includes: name, role, links (website, LinkedIn), emails, certifications, skills.
+*   **Preserved Automatic Responses**: Live Connection messages unchanged — only interactive chat improved.
+*   **Build Verification**: `pnpm build` passed with exit code 0.
+**Next Steps**:
+*   Test chat with various queries to validate tone and creator context injection.
+
+---
+
+### Session: 2026-02-10 (AEST)
+**Author**: Antigravity + Lead Architect
+**Goal**: Fix Forensic Wipe redirect, Sentinel anti-repetition, and resume accuracy.
+**Accomplished**:
+*   **Forensic Wipe Redirect Fix (`WarRoomShell.tsx`)**:
+    *   **Root Cause**: `signOut({ redirectUrl: '/' })` used Clerk's client-side navigation, keeping `SentinelContext` mounted with `accessGranted=true` in React state — Gatekeeper was skipped.
+    *   **Fix**: Replaced with `signOut({ redirectUrl: undefined })` + `window.location.href = '/'` to force a hard page reload, destroying the React tree so `SentinelContext` re-initializes from clean localStorage.
+*   **Sentinel Anti-Repetition Rules (`route.ts` + `chat/route.ts`)**:
+    *   Added explicit `ABOLISHED OPENERS` list: "Oh", "Ah", "Well", "How quaint", "How cute", "I see", "It appears", "Oh wow", "My my", etc.
+    *   Added `MANDATORY VARIETY` patterns: verbs, direct statements, technical mockery, declarations.
+    *   Applied to both auto-trigger responses (Home) and interactive chat (War Room).
+*   **Resume Context Integration (Token-Saving Strategy)**:
+    *   Created `src/lib/resume-context.ts` — full resume exported as build-time constant (Edge-compatible).
+    *   Only injected into chat prompt when `isCreatorQuery === true` (0 extra tokens on non-creator messages).
+    *   Includes all 3 degrees, 11 certifications, 4 work positions, skills, achievements, and contact info.
+    *   Added strict `DO NOT FABRICATE` instruction to prevent AI hallucination of credentials.
+    *   Expanded `CREATOR_KEYWORDS` to 30+ terms: dev, architect, education, study, university, certification, hire, etc.
+*   **Build Verification**: `pnpm build` and `pnpm lint` passed with exit code 0.
+**Next Steps**:
+*   Manual testing of forensic wipe flow (verify Gatekeeper appears after wipe).
+*   Test Sentinel responses for varied openers (no more "Oh"/"Ah").
+*   Test chat with education/resume queries for accuracy.

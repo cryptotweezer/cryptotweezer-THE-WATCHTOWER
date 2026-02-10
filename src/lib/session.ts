@@ -72,9 +72,17 @@ export async function getOrCreateSession(fingerprint: string, clerkId?: string) 
     };
 }
 
-export async function getSession(fingerprint: string) {
-    const existing = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
-    return existing[0] || null;
+/**
+ * GET-only session lookup. Returns session or null — NEVER creates.
+ * Priority: clerkId first, then fingerprint.
+ */
+export async function getSession(fingerprint: string, clerkId?: string) {
+    if (clerkId) {
+        const byClerk = await db.select().from(userSessions).where(eq(userSessions.clerkId, clerkId)).limit(1);
+        if (byClerk.length > 0) return byClerk[0];
+    }
+    const byFp = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
+    return byFp[0] || null;
 }
 
 export async function getSessionLogs(fingerprint: string, limit?: number) {

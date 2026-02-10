@@ -2,20 +2,42 @@
 
 import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
+import { performHandshake } from "@/app/actions";
 
-interface GatekeeperProps {
-    onAccess: (granted: boolean) => void;
+interface HandshakeIdentity {
+    alias: string;
+    fingerprint: string | null;
+    cid?: string | null;
+    riskScore: number;
+    ip: string | null;
+    sessionTechniques?: string[];
+    uniqueTechniqueCount?: number;
 }
 
-export default function Gatekeeper({ onAccess }: GatekeeperProps) {
+interface GatekeeperProps {
+    fingerprint: string | null;
+    clerkId?: string | null;
+    onAccess: (identity: HandshakeIdentity, logs: string[]) => void;
+}
+
+export default function Gatekeeper({ fingerprint, clerkId, onAccess }: GatekeeperProps) {
     const [isUnlocking, setIsUnlocking] = useState(false);
 
     const handleHandshake = async () => {
+        if (!fingerprint) return;
         setIsUnlocking(true);
-        // Visual delay for effect, then access
-        setTimeout(() => {
-            onAccess(true);
-        }, 1500);
+
+        try {
+            // Real handshake — creates session in DB
+            const result = await performHandshake(fingerprint, clerkId);
+            // Brief visual delay then pass identity back
+            setTimeout(() => {
+                onAccess(result.identity, result.initialLogs);
+            }, 1200);
+        } catch (error) {
+            console.error("[GATEKEEPER] Handshake failed:", error);
+            setIsUnlocking(false);
+        }
     };
 
     return (
@@ -44,12 +66,11 @@ export default function Gatekeeper({ onAccess }: GatekeeperProps) {
                     <button
                         className="group relative overflow-hidden rounded-md bg-blue-600 px-8 py-4 font-mono text-lg font-bold uppercase tracking-widest text-white transition-all hover:bg-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.7)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleHandshake}
-                        disabled={isUnlocking}
+                        disabled={isUnlocking || !fingerprint}
                     >
                         <span className="relative z-10">
                             {isUnlocking ? "ESTABLISHING LINK..." : "[ INITIALIZE HANDSHAKE ]"}
                         </span>
-                        {/* Scanline/Shine effect */}
                         <div className="absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-300 group-hover:translate-x-0" />
                     </button>
                 </div>

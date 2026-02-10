@@ -135,38 +135,38 @@ export async function POST(req: Request) {
 
     // If nonStreaming, log to DB NOW and return JSON
     if (nonStreaming) {
-        // Log Security Event directly for non-streaming case
-        const logEntry = {
-          fingerprint,
-          eventType: dbEventTypeToLog === 'IDENTITY_REVEAL_PROTOCOL' ? 'IDENTITY_REVEAL' : dbEventTypeToLog,
-          payload: logPayload,
-          riskScoreImpact: impact,
-          actionTaken: "Flagged" as const,
-          ipAddress: ipAddress || "Unknown",
-          location: location || "Unknown",
-          route: targetPath || null,
-          timestamp: logTimestamp // Use the consistent timestamp
-        };
-        await db.insert(securityEvents).values(logEntry);
-        console.log(`[DB] Logged Dynamic Event (Non-Stream): ${dbEventTypeToLog}`);
+      // Log Security Event directly for non-streaming case
+      const logEntry = {
+        fingerprint,
+        eventType: dbEventTypeToLog === 'IDENTITY_REVEAL_PROTOCOL' ? 'IDENTITY_REVEAL' : dbEventTypeToLog,
+        payload: logPayload,
+        riskScoreImpact: impact,
+        actionTaken: "Flagged" as const,
+        ipAddress: ipAddress || "Unknown",
+        location: location || "Unknown",
+        route: targetPath || null,
+        timestamp: logTimestamp // Use the consistent timestamp
+      };
+      await db.insert(securityEvents).values(logEntry);
+      console.log(`[DB] Logged Dynamic Event (Non-Stream): ${dbEventTypeToLog}`);
 
-        const uniqueTechniqueCount = await updateUniqueTechniqueCount(fingerprint);
+      const uniqueTechniqueCount = await updateUniqueTechniqueCount(fingerprint);
 
-        return NextResponse.json({
-            status: "success",
-            finalRiskScore: finalDbRiskScore,
-            uniqueTechniqueCount,
-            loggedEventType: dbEventTypeToLog,
-            loggedTimestamp: logEntry.timestamp.toISOString(),
-            logMessage: `> [${logEntry.timestamp.toLocaleTimeString('en-US', { hour12: false })}] DETECTED: [${dbEventTypeToLog}]`
-        });
+      return NextResponse.json({
+        status: "success",
+        finalRiskScore: finalDbRiskScore,
+        uniqueTechniqueCount,
+        loggedEventType: dbEventTypeToLog,
+        loggedTimestamp: logEntry.timestamp.toISOString(),
+        logMessage: `> [${logEntry.timestamp.toLocaleTimeString('en-US', { hour12: false })}] DETECTED: [${dbEventTypeToLog}]`
+      });
     }
 
   } catch (err: unknown) {
     console.error("DB Logging Failed:", err);
     // If DB logging fails for nonStreaming, still return a response
     if (nonStreaming) {
-        return NextResponse.json({ status: "error", message: "DB Logging Failed", error: (err as Error).message }, { status: 500 });
+      return NextResponse.json({ status: "error", message: "DB Logging Failed", error: (err as Error).message }, { status: 500 });
     }
   }
 
@@ -200,7 +200,19 @@ export async function POST(req: Request) {
 
     VARIABILITY PROTOCOL:
     - YOU ARE FORBIDDEN FROM REPEATING METAPHORS.
-    - ROTATE your insults.
+    - ROTATE your insults. Every response must feel unique.
+    - NEVER start ANY response with filler words.
+    
+    ABOLISHED OPENERS (NEVER use these to start a response):
+    "Oh", "Ah", "Well", "How quaint", "How cute", "I see", "It appears",
+    "Analysis indicates", "Observation shows", "Interesting", "So", "Now",
+    "Look at", "My my", "Tsk tsk", "Oh wow", "Oh how"
+    
+    MANDATORY VARIETY: Start responses with one of these patterns (rotate):
+    - A verb: "Detected...", "Traced...", "Flagged...", "Scanning..."
+    - A direct statement: "Your fingerprint just...", "That technique triggered..."
+    - Technical mockery: "Amateur-grade...", "Kindergarten-level..."
+    - A declaration: "Another probe.", "Pathetic.", "Predictable."
     
     CONTEXT FLAGS:
     - CID: ${cid}
@@ -228,8 +240,8 @@ export async function POST(req: Request) {
 
     [SCENARIO 4: STANDARD LOGGING / ATTRITION] (All other events)
     - OUTPUT: EXACTLY 1 SHORT SENTENCE OR PARAGRAPH.
-    - RULE: START DIRECTLY with the insult/technical observation. 
-    - ABOLISHED PHRASES: "I see...", "Analysis indicates...", "Observation shows...", "It appears...".
+    - RULE: START DIRECTLY with the insult/technical observation. NO FILLER WORDS.
+    - ABOLISHED PHRASES: "Oh", "Ah", "Well", "I see...", "Analysis indicates...", "Observation shows...", "It appears...", "How quaint", "How cute".
     - CONTENT: Generate 100% original technical insults based on the user's intent and current RISK PHASE.
       - If Risk >= 20: Vary your dismissal. Never use the same phrase twice.
 

@@ -13,7 +13,8 @@ const isPublicRoute = createRouteMatcher([
     "/terms",
     "/api/sentinel",
     "/api/security/log",
-    "/api/arcjet"
+    "/api/arcjet",
+    "/api/global-intel"
 ]);
 
 // Ghost Route Detection: Routes that are valid pages (not honeypot targets)
@@ -54,6 +55,12 @@ function applyIdentityLayer(req: NextRequest, response: NextResponse) {
 
     // Inject into Header for page.tsx to read
     response.headers.set("x-watchtower-node-id", stableId);
+
+    // Extract Country Code from Vercel Geo Headers (production only)
+    // In dev, we use "LOCAL" as fallback
+    const countryCode = req.headers.get("x-vercel-ip-country")
+        || (process.env.NODE_ENV === "development" ? "LOCAL" : "UNKNOWN");
+    response.headers.set("x-watchtower-country", countryCode);
 
     return response;
 }
