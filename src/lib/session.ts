@@ -82,7 +82,17 @@ export async function getSession(fingerprint: string, clerkId?: string) {
         if (byClerk.length > 0) return byClerk[0];
     }
     const byFp = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
-    return byFp[0] || null;
+    if (byFp.length > 0) {
+        // Link clerkId if the session is anonymous and caller provides one
+        if (clerkId && !byFp[0].clerkId) {
+            await db.update(userSessions)
+                .set({ clerkId })
+                .where(eq(userSessions.fingerprint, fingerprint));
+            return { ...byFp[0], clerkId };
+        }
+        return byFp[0];
+    }
+    return null;
 }
 
 export async function getSessionLogs(fingerprint: string, limit?: number) {
