@@ -9,7 +9,6 @@ interface IdentityHUDProps {
     ip: string;
     cid?: string;
     fingerprint?: string;
-    onRevealComplete?: () => void;
 }
 
 interface DeepScanData {
@@ -19,7 +18,7 @@ interface DeepScanData {
     screen: string;
 }
 
-export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint, onRevealComplete }: IdentityHUDProps) {
+export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint }: IdentityHUDProps) {
     const [deepScan, setDeepScan] = useState<DeepScanData | null>(null);
 
     useEffect(() => {
@@ -133,12 +132,8 @@ export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint, on
                 if (charCount >= formattedCID.length) {
                     clearInterval(typeInterval);
                     setRevealPhase('DONE');
-                    localStorage.setItem("sentinel_cid_revealed", "true");
-
-                    // CASCADE TRIGGER: 6000ms Delay for Simmering Silence (AAA Pacing)
-                    if (onRevealComplete) {
-                        setTimeout(() => onRevealComplete(), 6000);
-                    }
+                    // Note: localStorage "sentinel_cid_revealed" and cascade trigger
+                    // are now owned by SentinelContext's centralized CID reveal effect.
                 }
             }, 75);
 
@@ -146,7 +141,7 @@ export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint, on
             // This prevents "ghost threads" from trying to update state on an unmounted component.
             return () => clearInterval(typeInterval);
         }
-    }, [revealPhase, cid, onRevealComplete]);
+    }, [revealPhase, cid]);
 
     // Blinking Cursor Logic
     useEffect(() => {

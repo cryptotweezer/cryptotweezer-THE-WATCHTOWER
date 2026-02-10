@@ -5,11 +5,16 @@ export interface ArcjetResult {
     fingerprint: string | null;
     isDenied: boolean;
     threatType: string | null;
+    // Rich detection data (for logging, NOT blocking)
+    isBot: boolean;
+    isRateLimited: boolean;
+    isShieldTriggered: boolean;
 }
 
 /**
  * Run Arcjet security checks on the current request.
- * Call this from server components to get fingerprinting and threat detection.
+ * IMPORTANT: We NEVER block users. All detections are logged only.
+ * Results are used for telemetry in securityEvents.
  */
 export async function runArcjetSecurity(): Promise<ArcjetResult> {
     const ajKey = process.env.ARCJET_KEY;
@@ -19,7 +24,10 @@ export async function runArcjetSecurity(): Promise<ArcjetResult> {
         return {
             fingerprint: null,
             isDenied: false,
-            threatType: null
+            threatType: null,
+            isBot: false,
+            isRateLimited: false,
+            isShieldTriggered: false,
         };
     }
 
@@ -45,31 +53,40 @@ export async function runArcjetSecurity(): Promise<ArcjetResult> {
         const decision = await aj.protect(req as Parameters<typeof aj.protect>[0]);
 
         let threatType: string | null = null;
+        const isBot = decision.isDenied() && decision.reason.isBot();
+        const isRateLimited = decision.isDenied() && decision.reason.isRateLimit();
+        const isShieldTriggered = decision.isDenied() && decision.reason.isShield();
 
         if (decision.isDenied()) {
-            console.warn("[ARCJET] Threat detected:", decision.reason);
-            if (decision.reason.isBot()) {
-                threatType = "BOT_ARMY";
-            } else if (decision.reason.isRateLimit()) {
-                threatType = "DDoS_ATTEMPT";
-            } else if (decision.reason.isShield()) {
-                threatType = "INJECTION_ATTACK";
+            console.warn("[ARCJET] Threat detected (LOGGED, NOT BLOCKED):", decision.reason);
+            if (isBot) {
+                threatType = "ARCJET_BOT_DETECTED";
+            } else if (isRateLimited) {
+                threatType = "ARCJET_RATE_LIMITED";
+            } else if (isShieldTriggered) {
+                threatType = "ARCJET_SHIELD_TRIGGERED";
             } else {
-                threatType = "ANOMALY";
+                threatType = "ARCJET_ANOMALY";
             }
         }
 
         return {
             fingerprint: (decision as ArcjetDecision & { fingerprint?: string }).fingerprint || null,
             isDenied: decision.isDenied(),
-            threatType
+            threatType,
+            isBot,
+            isRateLimited,
+            isShieldTriggered,
         };
     } catch (error) {
         console.error("[ARCJET] Security check failed:", error);
         return {
             fingerprint: null,
             isDenied: false,
-            threatType: null
+            threatType: null,
+            isBot: false,
+            isRateLimited: false,
+            isShieldTriggered: false,
         };
     }
 }

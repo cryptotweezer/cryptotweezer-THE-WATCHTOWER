@@ -3,6 +3,7 @@ import { securityEvents, userSessions } from "@/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 import { getOrCreateSession } from "./session";
+import type { ArcjetResult } from "./arcjet";
 
 // Log a security event to the database
 export async function logSecurityEvent(event: {
@@ -39,6 +40,34 @@ export async function logSecurityEvent(event: {
         });
     } catch (error) {
         console.error("Failed to log security event:", error);
+    }
+}
+
+/**
+ * Log Arcjet detections to securityEvents.
+ * NEVER blocks the user — just records the detection for intelligence.
+ * Call this AFTER getOrCreateSession() so the fingerprint exists in DB.
+ */
+export async function logArcjetDetection(
+    arcjetResult: ArcjetResult,
+    fingerprint: string,
+    ip: string,
+    location: string,
+) {
+    if (!arcjetResult.isDenied || !arcjetResult.threatType) return;
+
+    try {
+        await db.insert(securityEvents).values({
+            fingerprint,
+            eventType: arcjetResult.threatType,
+            riskScoreImpact: 0,
+            actionTaken: "Flagged" as const,
+            ipAddress: ip,
+            payload: `Arcjet detection: ${arcjetResult.threatType}`,
+            location,
+        });
+    } catch (error) {
+        console.error("[ARCJET_LOG] Failed to log detection:", error);
     }
 }
 

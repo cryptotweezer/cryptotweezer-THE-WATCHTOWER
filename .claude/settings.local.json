@@ -6,7 +6,10 @@
       "Bash(pnpm add:*)",
       "Bash(findstr:*)",
       "Bash(pnpm db:generate:*)",
-      "Bash(pnpm db:migrate:*)"
+      "Bash(pnpm db:migrate:*)",
+      "Bash(curl:*)",
+      "Bash(npx next:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

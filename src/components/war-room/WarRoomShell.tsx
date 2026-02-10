@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { useSentinel } from "@/contexts/SentinelContext";
 import Link from "next/link";
-import { Shield, Network, Monitor, Globe, Clock, Send } from "lucide-react";
+import { Shield, Network, Monitor, Globe, Clock, Send, AlertTriangle } from "lucide-react";
+import GlobalIntelPanel from "./GlobalIntelPanel";
+import GeoTrackerPanel from "./GeoTrackerPanel";
+import { forensicWipe } from "@/app/actions";
+
+type ActiveView = "subject" | "global-intel" | "geo-tracker" | "contact" | "forensic-wipe";
 
 interface DeepScanData {
     browser: string;
@@ -38,8 +43,11 @@ export default function WarRoomShell({ identity, initialLogs, invokePath }: WarR
     const { actions, state } = useSentinel();
 
     const { isLoaded: isClerkLoaded } = useUser();
+    const { signOut } = useClerk();
     const [isMounted, setIsMounted] = useState(false);
     const [deepScan, setDeepScan] = useState<DeepScanData | null>(null);
+    const [activeView, setActiveView] = useState<ActiveView>("subject");
+    const [isWiping, setIsWiping] = useState(false);
 
     // Chat state
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -204,6 +212,41 @@ export default function WarRoomShell({ identity, initialLogs, invokePath }: WarR
         }
     }, [chatInput, isStreaming, identity, chatMessages, state.cid, state.currentRiskScore]);
 
+    // FORENSIC WIPE: Erase all traces and redirect to Gatekeeper
+    const handleForensicWipe = async () => {
+        if (!identity.fingerprint || isWiping) return;
+        setIsWiping(true);
+
+        try {
+            // 1. Server: Purge DB records
+            await forensicWipe(identity.fingerprint);
+
+            // 2. Client: Clear all Watchtower localStorage keys
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith("sentinel_") || key.startsWith("watchtower_") || key.startsWith("warroom_"))) {
+                    localStorage.removeItem(key);
+                }
+            }
+
+            // 3. Client: Clear sessionStorage
+            sessionStorage.clear();
+
+            // 4. Client: Expire tracking cookie
+            document.cookie = "watchtower_node_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+            // 5. Clerk: Sign out (no redirect — we handle it manually)
+            await signOut({ redirectUrl: undefined });
+
+            // 6. Hard redirect: Forces full React tree rebuild so SentinelContext
+            // re-initializes with clean localStorage (accessGranted = false → Gatekeeper shows)
+            window.location.href = "/";
+        } catch (error) {
+            console.error("[FORENSIC_WIPE] Execution failed:", error);
+            setIsWiping(false);
+        }
+    };
+
     // Wait for mount
     if (!isMounted) return null;
 
@@ -265,14 +308,50 @@ export default function WarRoomShell({ identity, initialLogs, invokePath }: WarR
 
                     {/* Navigation Links */}
                     <nav className="flex flex-col gap-2 text-sm">
-                        <button className="text-left text-neutral-400 hover:text-[#00f2ff] transition-colors py-1 border-l-2 border-[#00f2ff] pl-2">
+                        <button
+                            onClick={() => setActiveView("subject")}
+                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "subject"
+                                ? "text-[#00f2ff] border-[#00f2ff]"
+                                : "text-neutral-600 hover:text-[#00f2ff] border-transparent hover:border-[#00f2ff]"
+                                }`}
+                        >
                             [{isFullyReady ? identity.alias : "SYNCING..."}]
                         </button>
-                        <button className="text-left text-neutral-600 hover:text-[#00f2ff] transition-colors py-1 border-l-2 border-transparent hover:border-[#00f2ff] pl-2">
+                        <button
+                            onClick={() => setActiveView("global-intel")}
+                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "global-intel"
+                                ? "text-[#00f2ff] border-[#00f2ff]"
+                                : "text-neutral-600 hover:text-[#00f2ff] border-transparent hover:border-[#00f2ff]"
+                                }`}
+                        >
                             GLOBAL INTELLIGENCE
                         </button>
-                        <button className="text-left text-neutral-600 hover:text-[#00f2ff] transition-colors py-1 border-l-2 border-transparent hover:border-[#00f2ff] pl-2">
+                        <button
+                            onClick={() => setActiveView("geo-tracker")}
+                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "geo-tracker"
+                                ? "text-[#00f2ff] border-[#00f2ff]"
+                                : "text-neutral-600 hover:text-[#00f2ff] border-transparent hover:border-[#00f2ff]"
+                                }`}
+                        >
+                            GEO TRACKER
+                        </button>
+                        <button
+                            onClick={() => setActiveView("contact")}
+                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "contact"
+                                ? "text-[#00f2ff] border-[#00f2ff]"
+                                : "text-neutral-600 hover:text-[#00f2ff] border-transparent hover:border-[#00f2ff]"
+                                }`}
+                        >
                             CONTACT DEV
+                        </button>
+                        <button
+                            onClick={() => setActiveView("forensic-wipe")}
+                            className={`text-left transition-colors py-1 border-l-2 pl-2 mt-4 ${activeView === "forensic-wipe"
+                                ? "text-red-500 border-red-500"
+                                : "text-red-900 hover:text-red-500 border-transparent hover:border-red-500"
+                                }`}
+                        >
+                            FORENSIC WIPE
                         </button>
                     </nav>
 
@@ -296,139 +375,204 @@ export default function WarRoomShell({ identity, initialLogs, invokePath }: WarR
                     </div>
                 </section>
 
-                {/* CENTER: Subject Dossier */}
-                <section className="bg-black p-4 overflow-hidden flex flex-col">
-                    <h2 className="text-[10px] text-neutral-600 mb-4 tracking-[0.2em] uppercase border-b border-neutral-800 pb-2">
-                        Subject Dossier
-                    </h2>
-
-                    {/* Identity Card */}
-                    <div className="border border-neutral-800/60 rounded-lg p-5 bg-neutral-950/50 mb-4 shrink-0">
-                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800/40">
-                            <div className="flex items-center gap-2">
-                                <Shield size={14} className={state.currentRiskScore > 50 ? "text-red-500" : "text-cyan-500"} />
-                                <span className="text-[10px] text-neutral-500 uppercase tracking-[0.2em]">Identity Node</span>
+                {/* CENTER: Dynamic Content based on activeView */}
+                <section className={`bg-black p-4 flex flex-col ${activeView === "global-intel" ? "overflow-y-auto cyber-scrollbar" : "overflow-hidden"}`}>
+                    {activeView === "geo-tracker" ? (
+                        <GeoTrackerPanel />
+                    ) : activeView === "global-intel" ? (
+                        <GlobalIntelPanel />
+                    ) : activeView === "forensic-wipe" ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+                            <AlertTriangle size={48} className="text-red-500 mb-6 animate-pulse" />
+                            <h2 className="text-xl font-bold text-red-500 mb-2 tracking-widest">
+                                FORENSIC WIPE PROTOCOL
+                            </h2>
+                            <p className="text-neutral-500 text-sm mb-6 max-w-md leading-relaxed">
+                                A true ghost leaves no trace. This protocol will permanently purge
+                                your digital footprint from The Watchtower&apos;s memory:
+                            </p>
+                            <div className="text-left text-xs text-neutral-600 space-y-2 mb-8 max-w-sm">
+                                <p className="flex items-center gap-2">
+                                    <span className="text-red-500">&#x2022;</span> Identity node (alias, CID, fingerprint)
+                                </p>
+                                <p className="flex items-center gap-2">
+                                    <span className="text-red-500">&#x2022;</span> Complete security event history
+                                </p>
+                                <p className="flex items-center gap-2">
+                                    <span className="text-red-500">&#x2022;</span> Risk assessment and classification
+                                </p>
+                                <p className="flex items-center gap-2">
+                                    <span className="text-red-500">&#x2022;</span> Session telemetry and behavioral data
+                                </p>
                             </div>
-                            <span className="text-[10px] text-cyan-500/60 animate-pulse flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500/60"></span>
-                                LIVE
-                            </span>
+                            <p className="text-neutral-700 text-xs mb-8 italic max-w-sm">
+                                This action is irreversible. Once executed, you will be redirected
+                                to the perimeter gate as an unknown entity.
+                            </p>
+                            <button
+                                onClick={handleForensicWipe}
+                                disabled={isWiping}
+                                className="px-6 py-3 bg-red-500/10 border border-red-500 text-red-500 rounded font-bold tracking-widest text-sm hover:bg-red-500/20 transition-all hover:shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isWiping ? "WIPING..." : "[ EXECUTE FORENSIC WIPE ]"}
+                            </button>
+                            <p className="text-neutral-800 text-[10px] mt-6 italic">
+                                &quot;The best intrusion is the one that was never detected.&quot;
+                            </p>
                         </div>
+                    ) : activeView === "contact" ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center">
+                            <h2 className="text-xl font-bold text-[#00f2ff] mb-4">CONTACT THE ARCHITECT</h2>
+                            <p className="text-neutral-400 mb-4">Want to discuss security, collaboration, or hire?</p>
+                            <a
+                                href="https://www.andreshenao.com.au/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-[#00f2ff]/10 border border-[#00f2ff] text-[#00f2ff] rounded hover:bg-[#00f2ff]/20 transition-colors"
+                            >
+                                Visit Portfolio
+                            </a>
+                            <div className="mt-4 text-xs text-neutral-600">
+                                <a href="https://www.linkedin.com/in/andres-henao-2b185318a/" target="_blank" rel="noopener noreferrer" className="hover:text-[#00f2ff]">LinkedIn</a>
+                                <span className="mx-2">•</span>
+                                <span>andreshenao.tech@gmail.com</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <h2 className="text-[10px] text-neutral-600 mb-4 tracking-[0.2em] uppercase border-b border-neutral-800 pb-2">
+                                Subject Dossier
+                            </h2>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-0">
-                            {/* Left: Core Identity */}
-                            <div className="space-y-3">
-                                <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">
-                                    <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Alias</span>
-                                    <span className="text-lg font-bold text-white tracking-tight truncate">
-                                        {isFullyReady ? identity.alias : "---"}
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">
-                                    <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Criminal ID</span>
+                            {/* Identity Card */}
+                            <div className="border border-neutral-800/60 rounded-lg p-5 bg-neutral-950/50 mb-4 shrink-0">
+                                <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800/40">
                                     <div className="flex items-center gap-2">
-                                        <span className={`text-sm ${state.currentRiskScore >= CID_REVEAL_THRESHOLD ? "text-white" : "text-neutral-600 animate-pulse"}`}>
-                                            {isFullyReady ? displayCID : "---"}
-                                        </span>
-                                        {state.currentRiskScore >= 60 && (
-                                            <span className="text-[9px] text-red-500 border border-red-500/50 px-1 rounded">
-                                                FLAGGED
+                                        <Shield size={14} className={state.currentRiskScore > 50 ? "text-red-500" : "text-cyan-500"} />
+                                        <span className="text-[10px] text-neutral-500 uppercase tracking-[0.2em]">Identity Node</span>
+                                    </div>
+                                    <span className="text-[10px] text-cyan-500/60 animate-pulse flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500/60"></span>
+                                        LIVE
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-0">
+                                    {/* Left: Core Identity */}
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">
+                                            <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Alias</span>
+                                            <span className="text-lg font-bold text-white tracking-tight truncate">
+                                                {isFullyReady ? identity.alias : "---"}
                                             </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">
+                                            <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Criminal ID</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-sm ${state.currentRiskScore >= CID_REVEAL_THRESHOLD ? "text-white" : "text-neutral-600 animate-pulse"}`}>
+                                                    {isFullyReady ? displayCID : "---"}
+                                                </span>
+                                                {state.currentRiskScore >= 60 && (
+                                                    <span className="text-[9px] text-red-500 border border-red-500/50 px-1 rounded">
+                                                        FLAGGED
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">
+                                            <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Node ID</span>
+                                            <span className="text-[11px] text-neutral-500 truncate">
+                                                {identity.fingerprint || "UNKNOWN_NODE"}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-[90px_1fr] items-center gap-2">
+                                            <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Net Address</span>
+                                            <span className="text-sm text-cyan-300/80 flex items-center gap-1.5">
+                                                <Network size={11} /> {identity.ip || "unknown"}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Deep Scan + Status */}
+                                    <div className="space-y-2.5 mt-3 lg:mt-0">
+                                        <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm border-b border-neutral-800/20 pb-2">
+                                            <Monitor size={12} className="text-neutral-600" />
+                                            <span className="text-neutral-600 text-[10px] uppercase tracking-wider">System</span>
+                                            <span className="text-neutral-400 text-xs text-right">
+                                                {deepScan ? deepScan.os : <span className="animate-pulse text-neutral-700">SCANNING</span>}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm border-b border-neutral-800/20 pb-2">
+                                            <Globe size={12} className="text-neutral-600" />
+                                            <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Engine</span>
+                                            <span className="text-neutral-400 text-xs text-right">
+                                                {deepScan ? deepScan.browser : <span className="animate-pulse text-neutral-700">ANALYZING</span>}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm border-b border-neutral-800/20 pb-2">
+                                            <Clock size={12} className="text-neutral-600" />
+                                            <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Timezone</span>
+                                            <span className="text-neutral-400 text-xs text-right">
+                                                {deepScan ? deepScan.timezone : <span className="animate-pulse text-neutral-700">LOCATING</span>}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm border-b border-neutral-800/20 pb-2">
+                                            <Monitor size={12} className="text-neutral-600" />
+                                            <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Display</span>
+                                            <span className="text-neutral-400 text-xs text-right">
+                                                {deepScan ? deepScan.screen : <span className="animate-pulse text-neutral-700">MEASURING</span>}
+                                            </span>
+                                        </div>
+
+                                        {statusRank && (
+                                            <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm pt-1">
+                                                <Shield size={12} className={`${statusRank.iconColor} ${statusRank.animate}`} />
+                                                <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Status</span>
+                                                <span className={`text-right font-bold tracking-widest text-xs ${statusRank.color} ${statusRank.animate}`}>
+                                                    {statusRank.label}
+                                                </span>
+                                            </div>
                                         )}
+
+                                        <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm pt-2 border-t border-neutral-800/30 mt-1">
+                                            <span className="text-red-500 text-[10px] font-bold">#</span>
+                                            <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Techniques</span>
+                                            <span className="text-right text-red-500 font-bold text-lg">
+                                                {state.uniqueTechniqueCount}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-
-                                <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">
-                                    <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Node ID</span>
-                                    <span className="text-[11px] text-neutral-500 truncate">
-                                        {identity.fingerprint || "UNKNOWN_NODE"}
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                    <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Net Address</span>
-                                    <span className="text-sm text-cyan-300/80 flex items-center gap-1.5">
-                                        <Network size={11} /> {identity.ip || "unknown"}
-                                    </span>
                                 </div>
                             </div>
 
-                            {/* Right: Deep Scan + Status */}
-                            <div className="space-y-2.5 mt-3 lg:mt-0">
-                                <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm border-b border-neutral-800/20 pb-2">
-                                    <Monitor size={12} className="text-neutral-600" />
-                                    <span className="text-neutral-600 text-[10px] uppercase tracking-wider">System</span>
-                                    <span className="text-neutral-400 text-xs text-right">
-                                        {deepScan ? deepScan.os : <span className="animate-pulse text-neutral-700">SCANNING</span>}
-                                    </span>
+                            {/* Event Log */}
+                            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                                <div className="text-[10px] text-neutral-600 uppercase tracking-[0.2em] border-b border-neutral-800 pb-2 mb-3 shrink-0">
+                                    Security Events
                                 </div>
-
-                                <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm border-b border-neutral-800/20 pb-2">
-                                    <Globe size={12} className="text-neutral-600" />
-                                    <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Engine</span>
-                                    <span className="text-neutral-400 text-xs text-right">
-                                        {deepScan ? deepScan.browser : <span className="animate-pulse text-neutral-700">ANALYZING</span>}
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm border-b border-neutral-800/20 pb-2">
-                                    <Clock size={12} className="text-neutral-600" />
-                                    <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Timezone</span>
-                                    <span className="text-neutral-400 text-xs text-right">
-                                        {deepScan ? deepScan.timezone : <span className="animate-pulse text-neutral-700">LOCATING</span>}
-                                    </span>
-                                </div>
-
-                                <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm border-b border-neutral-800/20 pb-2">
-                                    <Monitor size={12} className="text-neutral-600" />
-                                    <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Display</span>
-                                    <span className="text-neutral-400 text-xs text-right">
-                                        {deepScan ? deepScan.screen : <span className="animate-pulse text-neutral-700">MEASURING</span>}
-                                    </span>
-                                </div>
-
-                                {statusRank && (
-                                    <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm pt-1">
-                                        <Shield size={12} className={`${statusRank.iconColor} ${statusRank.animate}`} />
-                                        <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Status</span>
-                                        <span className={`text-right font-bold tracking-widest text-xs ${statusRank.color} ${statusRank.animate}`}>
-                                            {statusRank.label}
-                                        </span>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-[20px_80px_1fr] items-center text-sm pt-2 border-t border-neutral-800/30 mt-1">
-                                    <span className="text-red-500 text-[10px] font-bold">#</span>
-                                    <span className="text-neutral-600 text-[10px] uppercase tracking-wider">Techniques</span>
-                                    <span className="text-right text-red-500 font-bold text-lg">
-                                        {state.uniqueTechniqueCount}
-                                    </span>
+                                <div className="flex-1 overflow-y-auto text-xs space-y-1 pr-1">
+                                    {state.eventLog.length > 0 ? (
+                                        state.eventLog.map((log, idx) => (
+                                            <p
+                                                key={idx}
+                                                className={`${idx === 0 ? "text-white" : "text-neutral-600"} leading-relaxed`}
+                                            >
+                                                {log}
+                                            </p>
+                                        ))
+                                    ) : (
+                                        <p className="text-neutral-700 italic">-- NO SIGNALS --</p>
+                                    )}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Event Log */}
-                    <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-                        <div className="text-[10px] text-neutral-600 uppercase tracking-[0.2em] border-b border-neutral-800 pb-2 mb-3 shrink-0">
-                            Security Events
-                        </div>
-                        <div className="flex-1 overflow-y-auto text-xs space-y-1 pr-1">
-                            {state.eventLog.length > 0 ? (
-                                state.eventLog.map((log, idx) => (
-                                    <p
-                                        key={idx}
-                                        className={`${idx === 0 ? "text-white" : "text-neutral-600"} leading-relaxed`}
-                                    >
-                                        {log}
-                                    </p>
-                                ))
-                            ) : (
-                                <p className="text-neutral-700 italic">-- NO SIGNALS --</p>
-                            )}
-                        </div>
-                    </div>
+                        </>
+                    )}
                 </section>
 
                 {/* RIGHT: Sentinel Uplink Chat */}

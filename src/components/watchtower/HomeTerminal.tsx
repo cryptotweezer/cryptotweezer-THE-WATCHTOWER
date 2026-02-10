@@ -19,29 +19,60 @@ interface HomeTerminalProps {
         cid?: string | null;
         riskScore: number;
         ip: string | null;
+        countryCode?: string;
+        sessionTechniques?: string[];
+        uniqueTechniqueCount?: number;
     };
+    needsHandshake?: boolean;
+    clerkId?: string | null;
     invokePath?: string;
     initialLogs?: string[];
 }
 
-export default function HomeTerminal({ identity, invokePath, initialLogs }: HomeTerminalProps) {
+export default function HomeTerminal({ identity, invokePath, initialLogs, needsHandshake, clerkId }: HomeTerminalProps) {
     // 1. GLOBAL CONTEXT (Brain + Sensors now global)
     const { state, actions } = useSentinel();
 
-    // 2. HYDRATE FROM SERVER (DB is SSoT)
+    // 2. LOCAL STATE (tracks identity post-handshake)
     const [isMounted, setIsMounted] = useState(false);
+    const [activeIdentity, setActiveIdentity] = useState(identity);
+
+    // 3. HYDRATE FROM SERVER (only if session already exists)
     useEffect(() => {
         setIsMounted(true);
-        actions.hydrateFromServer(identity, invokePath, initialLogs);
+        if (!needsHandshake) {
+            actions.hydrateFromServer(identity, invokePath, initialLogs);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // 4. GATEKEEPER CALLBACK: receives real identity from handshake
+    const handleGatekeeperAccess = (
+        newIdentity: { alias: string; fingerprint: string | null; cid?: string | null; riskScore: number; ip: string | null; sessionTechniques?: string[]; uniqueTechniqueCount?: number },
+        logs: string[]
+    ) => {
+        const mergedIdentity = {
+            ...newIdentity,
+            countryCode: identity.countryCode,
+            ip: identity.ip || newIdentity.ip,
+        };
+        setActiveIdentity(mergedIdentity);
+        actions.handleAccess();
+        actions.hydrateFromServer(mergedIdentity, invokePath, logs);
+    };
 
     if (!isMounted) return null;
 
 
     return (
         <>
-            {!state.accessGranted && <Gatekeeper onAccess={actions.handleAccess} />}
+            {!state.accessGranted && (
+                <Gatekeeper
+                    fingerprint={activeIdentity.fingerprint}
+                    clerkId={clerkId}
+                    onAccess={handleGatekeeperAccess}
+                />
+            )}
 
             <main data-shield="protected" className={`flex min-h-screen flex-col items-center justify-between p-24 bg-neutral-950 text-neutral-200 transition-all duration-1000 ${state.accessGranted ? "blur-none opacity-100 scale-100" : "blur-lg opacity-50 scale-95 overflow-hidden h-screen"}`}>
 
@@ -87,12 +118,11 @@ export default function HomeTerminal({ identity, invokePath, initialLogs }: Home
 
                     <div className="w-full mt-4">
                         <IdentityHUD
-                            alias={identity.alias}
+                            alias={activeIdentity.alias}
                             riskScore={state.currentRiskScore}
-                            ip={identity.ip || "unknown"}
-                            cid={identity.cid || state.cid}
-                            fingerprint={identity.fingerprint || "Scanning..."}
-                            onRevealComplete={() => actions.triggerSentinel("IDENTITY REVEAL CONFIRMED. CASCADE INITIATED.", "IDENTITY_REVEAL_PROTOCOL")}
+                            ip={activeIdentity.ip || "unknown"}
+                            cid={activeIdentity.cid || state.cid}
+                            fingerprint={activeIdentity.fingerprint || "Scanning..."}
                         />
                     </div>
                 </div>
