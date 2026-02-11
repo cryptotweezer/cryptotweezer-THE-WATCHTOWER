@@ -600,3 +600,47 @@
 *   Manual testing of forensic wipe flow (verify Gatekeeper appears after wipe).
 *   Test Sentinel responses for varied openers (no more "Oh"/"Ah").
 *   Test chat with education/resume queries for accuracy.
+
+### [2026-02-11] Kali CID Phase 2 Refinement: Complete Real-Time Sync System
+**👤 Author**: Antigravity + Lead Architect (Claude Opus 4.6)
+**🎯 Goal**: Implement full Phase 2 Refinement — live external attack feedback in the web app, real-time state sync, ASCII terminal overhaul, and AI-generated attack narratives.
+**✅ Accomplished**:
+*   **Planning & Documentation**:
+    *   Created `docs/KALI2.md` — granular implementation plan (6 phases, 18 steps) with architecture decisions, evaluation of original plan, and live development log.
+    *   Evaluated user's proposed plan (`KALI_CID_FASE2.md`), identified 6 adjustments (cursor-based events, DB bypass for notifications, CID-gated polling, visibility pause, operations in context, single Sentinel trigger per poll).
+*   **FASE A — Terminal ASCII Refinements (`external/route.ts`)**:
+    *   ASCII banner "THE WATCHTOWER" prepended to all terminal responses.
+    *   Removed numeric metrics (Risk Score, Technique count) — replaced with narrative operation status (INITIATED / IN PROGRESS / UNLOCKED).
+    *   Integrated `generateText` (Vercel AI SDK + GPT-4o, `temperature: 0.9`) for unique 2-3 paragraph messages per attack. Every response is AI-generated, never static templates.
+*   **FASE B — Sync Endpoint (`/api/sentinel/sync`)**:
+    *   New GET endpoint (Edge runtime), cookie-based identity (`watchtower_node_id`).
+    *   Cursor-based event diffing via `since` timestamp parameter using Drizzle `gt()` operator.
+    *   Returns: events, riskScore, riskCap, operations, uniqueTechniqueCount, externalTechniqueCount.
+    *   Graceful error handling: returns 503 on DB failure instead of crashing.
+*   **FASE C — Frontend Polling + State Sync (`SentinelContext.tsx`)**:
+    *   Adaptive polling with `setTimeout` recursive loop (NOT `setInterval`).
+    *   Base interval: 10s. Exponential backoff on failures (10s -> 20s -> 40s -> cap 60s). Reset on success or tab visibility change.
+    *   Guards: CID must be valid, tab must be visible, no active streaming.
+    *   Processes EXT_* events: adds to eventLog, triggers ONE Sentinel narrative for the most recent event.
+    *   Operations state in SentinelContext — hydrated from server, updated by polling. WarRoomShell reads from context (real-time) with fallback to server props.
+*   **FASE D — Sentinel Narrative for Defender (`/api/sentinel/route.ts`)**:
+    *   `isNotificationOnly` bypass for `EXT_ATTACK_INTERCEPTED` — skips DB upsert, score update, and onFinish logging (already handled by external API).
+    *   SCENARIO 5 added to system prompt — defender-perspective, 2-3 paragraphs, sarcastic superiority at absent attacker.
+    *   `EXT_ATTACK_INTERCEPTED` added to `NON_UNIQUE_EVENTS` (allows multiple triggers).
+*   **FASE E — UI Polish**:
+    *   External events (`EXT_*`) highlighted in red in both WarRoomShell and HomeTerminal event logs.
+    *   Detection pattern: `log.includes("DETECTED: [EXT_")` (avoids false positive on CONTEXT_SWITCH_ANOMALY which contains "EXT_" as substring).
+*   **Bugfixes (Post-Testing)**:
+    *   **Sync timestamp comparison**: Raw `sql` template didn't serialize `Date` correctly for Neon — replaced with `gt()` from drizzle-orm.
+    *   **Polling cursor**: Now uses server event timestamp instead of client `new Date()` to avoid clock skew.
+    *   **CONTEXT_SWITCH_ANOMALY red highlight**: Fixed false positive from `log.includes("EXT_")` matching "CONT**EXT**_SWITCH".
+    *   **Neon connection exhaustion**: 5s `setInterval` polling saturated Neon free tier connections. Fixed with 10s adaptive `setTimeout` + exponential backoff + sync endpoint try/catch returning 503.
+
+**📁 Files Created**: `docs/KALI2.md`, `src/app/api/sentinel/sync/route.ts`
+**📁 Files Modified**: `external/route.ts`, `middleware.ts`, `SentinelContext.tsx`, `page.tsx`, `war-room/page.tsx`, `WarRoomShell.tsx`, `sentinel/route.ts`, `HomeTerminal.tsx`
+**🔨 Builds**: All lint + build checks passed (zero warnings, zero errors).
+**🚧 Next Steps**:
+*   End-to-end verification of the complete loop: Kali Attack -> Terminal AI Response -> Web App Red Alert + Sentinel Narrative.
+*   Operation Overlord and Rolling Thunder implementation (Phase 3).
+*   Consider SSE upgrade if polling proves insufficient at scale.
+

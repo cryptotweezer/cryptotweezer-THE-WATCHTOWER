@@ -9,7 +9,18 @@
       "Bash(pnpm db:migrate:*)",
       "Bash(curl:*)",
       "Bash(npx next:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(git -C \"C:\\\\AI_Workspace\\\\cryptotweezer-THE-WATCHTOWER\" status --short)",
+      "Bash(git -C \"C:\\\\AI_Workspace\\\\cryptotweezer-THE-WATCHTOWER\" log --oneline -5)",
+      "Bash(git -C \"C:\\\\AI_Workspace\\\\cryptotweezer-THE-WATCHTOWER\" remote -v)",
+      "Bash(git -C \"C:\\\\AI_Workspace\\\\cryptotweezer-THE-WATCHTOWER\" checkout -- src/app/actions.ts src/app/page.tsx src/app/war-room/page.tsx src/components/war-room/WarRoomShell.tsx src/components/watchtower/HomeTerminal.tsx src/contexts/SentinelContext.tsx src/db/schema.ts src/lib/session.ts src/middleware.ts workflow.md drizzle/meta/_journal.json)",
+      "Bash(node:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)"
     ]
   }
 }

@@ -1,5 +1,5 @@
 
-import { pgTable, text, timestamp, integer, uuid, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, uuid, pgEnum, boolean } from "drizzle-orm/pg-core";
 
 // Enums
 export const eventTypeEnum = pgEnum("event_type", [
@@ -37,6 +37,12 @@ export const userSessions = pgTable("user_sessions", {
 
     routingProbeCount: integer("routing_probe_count").default(0).notNull(), // Rate limiting for probes
     uniqueTechniqueCount: integer("unique_technique_count").default(0).notNull(), // DB-tracked unique techniques
+
+    // Kali CID Phase 2 — External attack tracking + operation milestones
+    externalTechniqueCount: integer("external_technique_count").default(0).notNull(),
+    operationDesertStorm: boolean("operation_desert_storm").default(false).notNull(),
+    operationOverlord: boolean("operation_overlord").default(false).notNull(),
+    operationRollingThunder: boolean("operation_rolling_thunder").default(false).notNull(),
 });
 
 
