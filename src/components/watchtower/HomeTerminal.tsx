@@ -152,9 +152,12 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                                 Signal Logs
                             </h3>
                             <div className="font-mono text-xs flex-1 overflow-y-auto scrollbar-none pr-1">
-                                {state.eventLog.slice(0, 10).map((log, idx) => (
-                                    <p key={idx} className="text-[#FFFFFF] whitespace-normal break-words leading-tight mb-2 opacity-90 hover:opacity-100">{log}</p>
-                                ))}
+                                {state.eventLog.slice(0, 10).map((log, idx) => {
+                                    const isExternal = log.includes("DETECTED: [EXT_");
+                                    return (
+                                    <p key={idx} className={`${isExternal ? "text-red-500 font-bold" : "text-[#FFFFFF]"} whitespace-normal break-words leading-tight mb-2 opacity-90 hover:opacity-100`}>{log}</p>
+                                    );
+                                })}
 
                                 {state.eventLog.length === 0 && <span className="text-gray-600 italic opacity-50">-- NO ANOMALIES --</span>}
                             </div>

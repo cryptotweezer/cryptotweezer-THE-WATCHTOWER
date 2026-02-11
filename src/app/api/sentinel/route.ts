@@ -82,8 +82,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // Phase 1 cap: 40% max with current sensors. 40%+ reserved for future honeypots.
-  const PHASE1_RISK_CAP = 40;
+  // Phase 2: Notification-only events skip scoring and DB logging entirely
+  const isNotificationOnly = eventType === "EXT_ATTACK_INTERCEPTED";
 
   let impact = 0;
   // Calculate Server-Side Impact (Phase 1 balanced values)
@@ -118,20 +118,29 @@ export async function POST(req: Request) {
   const logTimestamp = new Date(); // To ensure consistent timestamp for logging
 
   try {
-    // --- ATOMIC SCORE UPDATE ---
-    const currentSession = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
-    const dbScore = currentSession.length > 0 ? currentSession[0].riskScore : 0;
-    let newScore = dbScore + impact;
-    newScore = Math.min(newScore, PHASE1_RISK_CAP); // Phase 1 cap
-    await db.insert(userSessions).values({
-      fingerprint, alias: alias || "Unknown Subject", riskScore: newScore, firstSeen: new Date(), lastSeen: new Date()
-    }).onConflictDoUpdate({
-      target: userSessions.fingerprint,
-      set: { riskScore: newScore, lastSeen: new Date(), alias: alias }
-    });
-    finalDbRiskScore = newScore;
-    currentRisk = newScore;
-    console.log(`[API_RISK] Event: ${eventType}, Old: ${dbScore}, New: ${newScore}`);
+    if (!isNotificationOnly) {
+      // --- ATOMIC SCORE UPDATE (skip for notification-only events) ---
+      const currentSession = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
+      const dbScore = currentSession.length > 0 ? currentSession[0].riskScore : 0;
+      // Dynamic cap: raised by operations (Desert Storm -> 60, Overlord -> 80, Rolling Thunder -> 100)
+      let RISK_CAP = 40;
+      if (currentSession.length > 0) {
+        if (currentSession[0].operationDesertStorm) RISK_CAP = 60;
+        if (currentSession[0].operationOverlord) RISK_CAP = 80;
+        if (currentSession[0].operationRollingThunder) RISK_CAP = 100;
+      }
+      let newScore = dbScore + impact;
+      newScore = Math.min(newScore, RISK_CAP);
+      await db.insert(userSessions).values({
+        fingerprint, alias: alias || "Unknown Subject", riskScore: newScore, firstSeen: new Date(), lastSeen: new Date()
+      }).onConflictDoUpdate({
+        target: userSessions.fingerprint,
+        set: { riskScore: newScore, lastSeen: new Date(), alias: alias }
+      });
+      finalDbRiskScore = newScore;
+      currentRisk = newScore;
+      console.log(`[API_RISK] Event: ${eventType}, Old: ${dbScore}, New: ${newScore}`);
+    }
 
     // If nonStreaming, log to DB NOW and return JSON
     if (nonStreaming) {
@@ -238,16 +247,29 @@ export async function POST(req: Request) {
       2. MOCK the user specifically for this attempt using the current PERSONALITY PHASE.
     - CRITICAL FORMAT RULE: END the response with [TECHNIQUE: INVENTED_NAME].
 
-    [SCENARIO 4: STANDARD LOGGING / ATTRITION] (All other events)
+    [SCENARIO 4: STANDARD LOGGING / ATTRITION] (All other events except EXT_ATTACK_INTERCEPTED)
     - OUTPUT: EXACTLY 1 SHORT SENTENCE OR PARAGRAPH.
     - RULE: START DIRECTLY with the insult/technical observation. NO FILLER WORDS.
     - ABOLISHED PHRASES: "Oh", "Ah", "Well", "I see...", "Analysis indicates...", "Observation shows...", "It appears...", "How quaint", "How cute".
     - CONTENT: Generate 100% original technical insults based on the user's intent and current RISK PHASE.
       - If Risk >= 20: Vary your dismissal. Never use the same phrase twice.
 
+    [SCENARIO 5: EXTERNAL ATTACK INTERCEPTED] (eventType === 'EXT_ATTACK_INTERCEPTED')
+    - CONTEXT: An external attacker just hit The Watchtower from outside the browser using a tool (curl, sqlmap, nikto, etc.). The prompt contains the technique, payload, and impact details.
+    - OUTPUT: EXACTLY 2-3 PARAGRAPHS.
+    - PERSPECTIVE: You are addressing the DEFENDER (the user watching the War Room), NOT the attacker.
+    - CONTENT:
+      - Para 1: Announce the interception with dramatic flair. Mention the specific technique detected from the prompt.
+      - Para 2: Mock the attacker's sophistication (or lack thereof). Reference their tools being loud and predictable.
+      - Para 3 (optional): Comment on the platform's vigilance or reference classified operations if relevant.
+    - TONE: Sarcastic superiority directed at the absent attacker, reassuring dominance for the defender.
+    - MANDATORY: Do NOT mention technical API details, endpoints, or header formats.
+    - MANDATORY: Address the defender as a fellow operator/analyst, not as a suspect.
+    - NO [TECHNIQUE: ...] tag at the end (this is a notification, not a detection).
+
     FORMATTING RULES:
     1. NEVER mention the technical event name (e.g. "Right Click"). Describe the *intent*.
-    2. ALWAYS End with [TECHNIQUE: ${eventType.includes('HEURISTIC_') ? 'INVENTED_NAME' : (eventType || "UNKNOWN")}] on the same line (Except Scenario 2).
+    2. ALWAYS End with [TECHNIQUE: ${eventType.includes('HEURISTIC_') ? 'INVENTED_NAME' : (eventType || "UNKNOWN")}] on the same line (Except Scenarios 2 and 5).
     3. LANGUAGE: STRICTLY ENGLISH.
 
     CURRENT CONTEXT:
@@ -261,6 +283,9 @@ export async function POST(req: Request) {
     system: systemPrompt,
     prompt: prompt || `Analyze intrusion vector: ${targetPath || "Unknown Layer"}`,
     onFinish: async ({ text }) => {
+      // Skip DB logging for notification-only events (already logged by /api/sentinel/external)
+      if (isNotificationOnly) return;
+
       let finalEventType = eventType;
       const techniqueMatch = text.match(/\[TECHNIQUE:\s*(.*?)\]/);
       if (techniqueMatch && techniqueMatch[1] && techniqueMatch[1] !== "INVENTED_NAME") {

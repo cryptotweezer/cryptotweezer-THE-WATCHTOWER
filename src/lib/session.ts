@@ -2,6 +2,33 @@
 import { db } from "@/db";
 import { userSessions, securityEvents } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
+
+// Shared fingerprint resolution — MUST be used by ALL server pages.
+// Priority: Arcjet → Cookie → Header → Random
+// Cookie is SSoT because it's set once by middleware and persists 1 year.
+// Header is a fallback for the first request (before cookie roundtrip).
+export function resolveFingerprint(
+    arcjetFingerprint: string | null | undefined,
+    headersList: Headers,
+    cookieStore: ReadonlyRequestCookies
+): string {
+    // 1. Arcjet (production — stable in prod, unstable in dev)
+    if (arcjetFingerprint) return arcjetFingerprint;
+    const arcjetHeader = headersList.get("x-arcjet-fingerprint");
+    if (arcjetHeader) return arcjetHeader;
+
+    // 2. Cookie (stable — set once by middleware, persists 1 year)
+    const cookie = cookieStore.get("watchtower_node_id");
+    if (cookie?.value) return cookie.value;
+
+    // 3. Middleware header (fallback for first request before cookie roundtrip)
+    const middlewareId = headersList.get("x-watchtower-node-id");
+    if (middlewareId) return middlewareId;
+
+    // 4. Random (last resort — should never happen in normal flow)
+    return "node_temp_" + crypto.randomUUID().substring(0, 8);
+}
 
 
 

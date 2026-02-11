@@ -1,6 +1,6 @@
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getSession, getSessionLogs, getUniqueTechniquesForSession } from "@/lib/session";
+import { getSession, getSessionLogs, getUniqueTechniquesForSession, resolveFingerprint } from "@/lib/session";
 import { runArcjetSecurity } from "@/lib/arcjet";
 import { logArcjetDetection } from "@/lib/security";
 import { currentUser } from "@clerk/nextjs/server";
@@ -16,25 +16,9 @@ export default async function WarRoomPage() {
     const arcjetResult = await runArcjetSecurity();
 
     const headersList = await headers();
-    let fingerprint = arcjetResult.fingerprint || headersList.get("x-arcjet-fingerprint");
+    const cookieStore = await cookies();
+    const fingerprint = resolveFingerprint(arcjetResult.fingerprint, headersList, cookieStore);
     const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
-
-    // Fallback for Dev/Bypass Mode
-    if (!fingerprint) {
-        const cookieStore = await cookies();
-        const storedNodeId = cookieStore.get("watchtower_node_id");
-
-        if (storedNodeId) {
-            fingerprint = storedNodeId.value;
-        } else {
-            const middlewareId = headersList.get("x-watchtower-node-id");
-            if (middlewareId) {
-                fingerprint = middlewareId;
-            } else {
-                fingerprint = "node_temp_" + crypto.randomUUID().substring(0, 8);
-            }
-        }
-    }
 
     // GET-only — no session creation. Must go through Gatekeeper first.
     const session = await getSession(fingerprint, user?.id);
@@ -53,6 +37,19 @@ export default async function WarRoomPage() {
         logArcjetDetection(arcjetResult, session.fingerprint, ip, countryCode);
     }
 
+    // Dynamic risk cap based on operation milestones
+    let riskCap = 40;
+    if (session.operationDesertStorm) riskCap = 60;
+    if (session.operationOverlord) riskCap = 80;
+    if (session.operationRollingThunder) riskCap = 100;
+
+    // Operation milestones
+    const operations = {
+        desertStorm: session.operationDesertStorm,
+        overlord: session.operationOverlord,
+        rollingThunder: session.operationRollingThunder,
+    };
+
     const identity = {
         alias: session.alias,
         fingerprint: session.fingerprint,
@@ -61,7 +58,9 @@ export default async function WarRoomPage() {
         ip: ip,
         countryCode: countryCode,
         sessionTechniques: uniqueTechniques,
-        uniqueTechniqueCount: session.uniqueTechniqueCount
+        uniqueTechniqueCount: session.uniqueTechniqueCount,
+        riskCap,
+        operations,
     };
 
     // Ghost Route Detection: Read path set by middleware rewrite
@@ -70,5 +69,5 @@ export default async function WarRoomPage() {
     // WAR ROOM: FULL HISTORICAL ACCESS (no limit)
     const fullLogs = await getSessionLogs(identity.fingerprint);
 
-    return <WarRoomShell identity={identity} initialLogs={fullLogs} invokePath={invokePath} />;
+    return <WarRoomShell identity={identity} operations={operations} initialLogs={fullLogs} invokePath={invokePath} />;
 }

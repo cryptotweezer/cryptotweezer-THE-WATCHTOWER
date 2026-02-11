@@ -31,12 +31,18 @@ interface WarRoomShellProps {
         riskScore: number;
         ip: string | null;
         sessionTechniques?: string[];
+        riskCap?: number;
+    };
+    operations?: {
+        desertStorm: boolean;
+        overlord: boolean;
+        rollingThunder: boolean;
     };
     initialLogs?: string[];
     invokePath?: string;
 }
 
-export default function WarRoomShell({ identity, initialLogs, invokePath }: WarRoomShellProps) {
+export default function WarRoomShell({ identity, operations, initialLogs, invokePath }: WarRoomShellProps) {
 
     const CID_REVEAL_THRESHOLD = 20;
 
@@ -494,6 +500,37 @@ export default function WarRoomShell({ identity, initialLogs, invokePath }: WarR
                                                 <Network size={11} /> {identity.ip || "unknown"}
                                             </span>
                                         </div>
+
+                                        {/* Operation Milestones (context = real-time, props = initial) */}
+                                        {(() => {
+                                            const liveOps = state.operations;
+                                            const effectiveOps = (liveOps.desertStorm || liveOps.overlord || liveOps.rollingThunder)
+                                                ? liveOps
+                                                : operations;
+                                            if (!effectiveOps) return null;
+                                            return (
+                                            <div className="mt-3 pt-3 border-t border-neutral-800/30 space-y-1.5">
+                                                <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Operations</span>
+                                                {[
+                                                    { label: "DESERT STORM", active: effectiveOps.desertStorm },
+                                                    { label: "OVERLORD", active: effectiveOps.overlord },
+                                                    { label: "ROLLING THUNDER", active: effectiveOps.rollingThunder },
+                                                ].map((op) => (
+                                                    <div key={op.label} className="flex items-center justify-between text-[11px]">
+                                                        <span className={op.active ? "text-green-400" : "text-neutral-700"}>
+                                                            {op.label}
+                                                        </span>
+                                                        <span className={op.active
+                                                            ? "text-green-400 font-bold tracking-wider"
+                                                            : "text-neutral-700"
+                                                        }>
+                                                            {op.active ? "[COMPLETE]" : "[LOCKED]"}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            );
+                                        })()}
                                     </div>
 
                                     {/* Right: Deep Scan + Status */}
@@ -558,14 +595,21 @@ export default function WarRoomShell({ identity, initialLogs, invokePath }: WarR
                                 </div>
                                 <div className="flex-1 overflow-y-auto text-xs space-y-1 pr-1">
                                     {state.eventLog.length > 0 ? (
-                                        state.eventLog.map((log, idx) => (
+                                        state.eventLog.map((log, idx) => {
+                                            const isExternal = log.includes("DETECTED: [EXT_");
+                                            return (
                                             <p
                                                 key={idx}
-                                                className={`${idx === 0 ? "text-white" : "text-neutral-600"} leading-relaxed`}
+                                                className={`${
+                                                    idx === 0
+                                                        ? (isExternal ? "text-red-500 font-bold animate-pulse" : "text-white")
+                                                        : (isExternal ? "text-red-700" : "text-neutral-600")
+                                                } leading-relaxed`}
                                             >
                                                 {log}
                                             </p>
-                                        ))
+                                            );
+                                        })
                                     ) : (
                                         <p className="text-neutral-700 italic">-- NO SIGNALS --</p>
                                     )}

@@ -27,7 +27,8 @@ const NON_UNIQUE_EVENTS = [
     TECHNIQUES.WARNING,
     TECHNIQUES.ROUTING,
     "IDENTITY_REVEAL_PROTOCOL",
-    "TAGGED: SCRIPT-KIDDIE" // Display name for IDENTITY_REVEAL_PROTOCOL
+    "TAGGED: SCRIPT-KIDDIE", // Display name for IDENTITY_REVEAL_PROTOCOL
+    "EXT_ATTACK_INTERCEPTED", // Phase 2: allows multiple external attack notifications
 ];
 
 const KNOWN_ROUTES = ["/", "/war-room", "/legal", "/privacy", "/terms", "/cookies", "/unknown"];
@@ -40,6 +41,12 @@ const LOG_RISK = (action: string, details: Record<string, unknown>) => {
 };
 
 // ============= TYPES =============
+export interface OperationsState {
+    desertStorm: boolean;
+    overlord: boolean;
+    rollingThunder: boolean;
+}
+
 export interface IdentityData {
     alias: string;
     fingerprint: string | null;
@@ -49,6 +56,8 @@ export interface IdentityData {
     countryCode?: string;
     sessionTechniques?: string[];
     uniqueTechniqueCount?: number;
+    riskCap?: number; // Dynamic risk cap (default 40, raised by operations)
+    operations?: OperationsState; // Phase 2: real-time operation tracking
 }
 
 interface SentinelState {
@@ -61,6 +70,7 @@ interface SentinelState {
     sessionTechniques: string[];
     cid: string;
     isIdentityReady: boolean; // Guards against "Unknown User" race condition
+    operations: OperationsState; // Phase 2: real-time operation tracking
 }
 
 interface SentinelActions {
@@ -100,6 +110,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
     const [identity, setIdentity] = useState<IdentityData | null>(null);
     const [isIdentityReady, setIsIdentityReady] = useState(false); // Guards against "Unknown User" race condition
     const [isHydrated, setIsHydrated] = useState(false); // V43: Fix Race Condition for Routing Probes
+    const [operations, setOperations] = useState<OperationsState>({ desertStorm: false, overlord: false, rollingThunder: false });
 
     // REFS
     const isStreamingRef = useRef(false);
@@ -113,6 +124,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
     const currentInvokePath = useRef<string | undefined>(undefined);
     const identityRef = useRef<IdentityData | null>(null);
     const isNavigatingRef = useRef(false);
+    const lastSyncTimeRef = useRef<string | null>(null);
     const pathname = usePathname();
 
     const prevPathnameRef = useRef(pathname);
@@ -223,8 +235,8 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         });
 
         // Risk Scoring (Client-side, will be overwritten by server for non-streaming)
-        // Phase 1 cap: 40% max with current sensors. 40%+ reserved for future honeypots.
-        const PHASE1_RISK_CAP = 40;
+        // Dynamic cap: 40 default, raised by operations (Desert Storm → 60, etc.)
+        const riskCap = identityRef.current?.riskCap || 40;
         if (!skipRisk && !isRoutingProbe) { // Only do client-side risk calc for streaming events
             setCurrentRiskScore(currentScore => {
                 let impact = 0;
@@ -242,7 +254,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
                     default: impact = 0;
                 }
                 if (NON_UNIQUE_EVENTS.includes(eventType) && eventType !== TECHNIQUES.ROUTING) return currentScore;
-                const newScore = Math.min(currentScore + impact, PHASE1_RISK_CAP);
+                const newScore = Math.min(currentScore + impact, riskCap);
                 LOG_RISK("INFAMY_UPDATE", { event: eventType, current: currentScore, impact, new: newScore });
                 localStorage.setItem("sentinel_risk_score", newScore.toString());
                 riskScoreRef.current = newScore;
@@ -425,6 +437,11 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
             setUniqueTechniqueCount(serverIdentity.uniqueTechniqueCount);
         }
 
+        // HYDRATE OPERATIONS FROM SERVER
+        if (serverIdentity.operations) {
+            setOperations(serverIdentity.operations);
+        }
+
         // HANDSHAKE (Once per session)
         if (!hasInitialized.current) {
             hasInitialized.current = true;
@@ -527,6 +544,143 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         }
     }, [isHydrated, triggerSentinel]);
 
+
+    // ============= PHASE 2: REAL-TIME SYNC POLLING =============
+    useEffect(() => {
+        if (!isHydrated) return;
+        if (!cid || !cid.startsWith("CID-")) return;
+
+        let isVisible = true;
+        let isMounted = true;
+        let consecutiveFailures = 0;
+        const BASE_INTERVAL = 10_000; // 10s base
+        const MAX_INTERVAL = 60_000;  // 60s max backoff
+
+        const handleVisibilityForPolling = () => {
+            isVisible = !document.hidden;
+            // Reset backoff when tab becomes visible again
+            if (isVisible) consecutiveFailures = 0;
+        };
+        document.addEventListener("visibilitychange", handleVisibilityForPolling);
+
+        const poll = async () => {
+            if (!isVisible || !isMounted) return;
+            if (isStreamingRef.current) return; // Don't poll during active streaming
+
+            try {
+                const since = lastSyncTimeRef.current || new Date(Date.now() - 30000).toISOString();
+                const res = await fetch(`/api/sentinel/sync?since=${encodeURIComponent(since)}`);
+
+                if (!res.ok) {
+                    consecutiveFailures++;
+                    return;
+                }
+
+                // Success — reset backoff
+                consecutiveFailures = 0;
+
+                const data = await res.json();
+
+                // Update cursor: prefer server event timestamp over client time (avoids clock skew)
+                if (data.events && data.events.length > 0) {
+                    // Events are sorted DESC — first one is most recent
+                    const latestEventTime = data.events[0].timestamp;
+                    if (latestEventTime) {
+                        lastSyncTimeRef.current = new Date(latestEventTime).toISOString();
+                    }
+                } else {
+                    // No new events — advance cursor to server's "now" (fallback)
+                    lastSyncTimeRef.current = new Date().toISOString();
+                }
+
+                // Update risk score if changed
+                if (typeof data.riskScore === "number" && data.riskScore !== riskScoreRef.current) {
+                    setCurrentRiskScore(data.riskScore);
+                    riskScoreRef.current = data.riskScore;
+                    localStorage.setItem("sentinel_risk_score", data.riskScore.toString());
+                }
+
+                // Update operations if changed
+                if (data.operations) {
+                    setOperations(data.operations);
+                }
+
+                // Update unique technique count
+                if (typeof data.uniqueTechniqueCount === "number") {
+                    setUniqueTechniqueCount(data.uniqueTechniqueCount);
+                }
+
+                // Update riskCap in identity ref
+                if (typeof data.riskCap === "number" && identityRef.current) {
+                    identityRef.current = { ...identityRef.current, riskCap: data.riskCap };
+                }
+
+                // C4: Process new EXT_* events
+                if (data.events && data.events.length > 0) {
+                    const extEvents = data.events.filter(
+                        (e: { eventType: string }) => e.eventType.startsWith("EXT_")
+                    );
+
+                    if (extEvents.length > 0) {
+                        // Add ALL new events to the event log
+                        const newLogEntries = data.events.map((e: { timestamp: string; eventType: string }) => {
+                            const time = new Date(e.timestamp).toLocaleTimeString("en-US", { hour12: false });
+                            return `> [${time}] DETECTED: [${e.eventType}]`;
+                        });
+
+                        setEventLog(prev => {
+                            // Dedup: don't add entries that already exist
+                            const existing = new Set(prev);
+                            const fresh = newLogEntries.filter((entry: string) => !existing.has(entry));
+                            if (fresh.length === 0) return prev;
+                            const merged = [...fresh, ...prev];
+                            localStorage.setItem("sentinel_event_log", JSON.stringify(merged));
+                            return merged;
+                        });
+
+                        // Trigger Sentinel narrative for the MOST RECENT external event only
+                        const latest = extEvents[0];
+                        const attackPrompt = [
+                            `EXTERNAL ATTACK INTERCEPTED.`,
+                            `Technique: ${latest.eventType}.`,
+                            `Payload signature: "${((latest.payload as string) || "classified").substring(0, 100)}".`,
+                            `Route targeted: ${(latest.route as string) || "perimeter"}.`,
+                            `Impact: +${latest.riskScoreImpact} risk points.`,
+                            `Address the defender. Mock the attacker's attempt. Be detailed (2-3 paragraphs).`
+                        ].join(" ");
+
+                        triggerSentinel(attackPrompt, "EXT_ATTACK_INTERCEPTED", true);
+                    }
+                }
+            } catch (err) {
+                consecutiveFailures++;
+                console.error(`[SYNC] Poll failed (attempt ${consecutiveFailures}):`, err);
+            }
+        };
+
+        // Adaptive interval: exponential backoff on failures, reset on success
+        let timerId: ReturnType<typeof setTimeout>;
+        const scheduleNext = () => {
+            if (!isMounted) return;
+            const backoff = Math.min(BASE_INTERVAL * Math.pow(2, consecutiveFailures), MAX_INTERVAL);
+            timerId = setTimeout(async () => {
+                await poll();
+                scheduleNext();
+            }, backoff);
+        };
+
+        // Initial poll after short delay, then schedule adaptive loop
+        timerId = setTimeout(async () => {
+            await poll();
+            scheduleNext();
+        }, BASE_INTERVAL);
+
+        return () => {
+            isMounted = false;
+            clearTimeout(timerId);
+            document.removeEventListener("visibilitychange", handleVisibilityForPolling);
+        };
+    }, [isHydrated, cid, triggerSentinel]);
 
     // HANDLE ACCESS
     const handleAccess = useCallback(() => {
@@ -743,7 +897,8 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
             streamText,
             sessionTechniques,
             cid,
-            isIdentityReady
+            isIdentityReady,
+            operations
         },
         actions: {
             handleAccess,

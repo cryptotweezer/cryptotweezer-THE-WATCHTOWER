@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { extractCID, classifyAttack } from "@/lib/attack-classifier";
 
 // Define las rutas que NO requieren autenticación.
 // Todas las demás rutas (incluyendo /war-room) serán protegidas por defecto.
@@ -12,6 +13,8 @@ const isPublicRoute = createRouteMatcher([
     "/privacy",
     "/terms",
     "/api/sentinel",
+    "/api/sentinel/external",
+    "/api/sentinel/sync",
     "/api/security/log",
     "/api/arcjet",
     "/api/global-intel"
@@ -67,6 +70,26 @@ function applyIdentityLayer(req: NextRequest, response: NextResponse) {
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
     const path = req.nextUrl.pathname;
+
+    // KALI CID DETECTION: Intercept requests with a CID + attack payload.
+    // Rewrites to /api/sentinel/external with classified headers.
+    // Must run BEFORE ghost route detection — CID requests are tool probes, not humans navigating.
+    if (!isStaticOrInternal(path) && !isApiRoute(path)) {
+        const cid = extractCID(req);
+        if (cid) {
+            const attack = classifyAttack(req);
+            if (attack) {
+                const url = req.nextUrl.clone();
+                url.pathname = "/api/sentinel/external";
+                const response = NextResponse.rewrite(url);
+                response.headers.set("x-sentinel-cid", cid);
+                response.headers.set("x-sentinel-technique", attack.technique);
+                response.headers.set("x-sentinel-payload", attack.payload.substring(0, 500));
+                response.headers.set("x-sentinel-confidence", attack.confidence.toString());
+                return applyIdentityLayer(req, response);
+            }
+        }
+    }
 
     // GHOST ROUTE DETECTION: Rewrite unknown routes to honeypot targets.
     // This MUST run before auth.protect() so unauthenticated visitors

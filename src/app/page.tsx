@@ -1,6 +1,6 @@
 import { headers, cookies } from "next/headers";
 import { getThreatCount, logArcjetDetection } from "@/lib/security";
-import { getSession, getSessionLogs, getUniqueTechniquesForSession } from "@/lib/session";
+import { getSession, getSessionLogs, getUniqueTechniquesForSession, resolveFingerprint } from "@/lib/session";
 import { runArcjetSecurity } from "@/lib/arcjet";
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -17,23 +17,9 @@ export default async function Home() {
 
   // Data Hoisting: Identify User on Server
   const headersList = await headers();
-  let fingerprint = arcjetResult.fingerprint || headersList.get("x-arcjet-fingerprint");
+  const cookieStore = await cookies();
+  const fingerprint = resolveFingerprint(arcjetResult.fingerprint, headersList, cookieStore);
   const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
-
-  if (!fingerprint) {
-    const middlewareId = headersList.get("x-watchtower-node-id");
-    if (middlewareId) {
-      fingerprint = middlewareId;
-    } else {
-      const cookieStore = await cookies();
-      const storedNodeId = cookieStore.get("watchtower_node_id");
-      if (storedNodeId) {
-        fingerprint = storedNodeId.value;
-      } else {
-        fingerprint = "node_temp_" + crypto.randomUUID().substring(0, 8);
-      }
-    }
-  }
 
   // Extract country code from middleware header
   const countryCode = headersList.get("x-watchtower-country") || "UNKNOWN";
@@ -54,6 +40,12 @@ export default async function Home() {
       logArcjetDetection(arcjetResult, session.fingerprint, ip, countryCode);
     }
 
+    // Dynamic risk cap based on operation milestones
+    let riskCap = 40;
+    if (session.operationDesertStorm) riskCap = 60;
+    if (session.operationOverlord) riskCap = 80;
+    if (session.operationRollingThunder) riskCap = 100;
+
     const identity = {
       alias: session.alias,
       fingerprint: session.fingerprint,
@@ -63,6 +55,12 @@ export default async function Home() {
       countryCode: countryCode,
       sessionTechniques: uniqueTechniques,
       uniqueTechniqueCount: session.uniqueTechniqueCount,
+      riskCap,
+      operations: {
+        desertStorm: session.operationDesertStorm,
+        overlord: session.operationOverlord,
+        rollingThunder: session.operationRollingThunder,
+      },
     };
 
     return (
