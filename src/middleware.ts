@@ -32,6 +32,12 @@ const isStaticOrInternal = (path: string) =>
 
 const isApiRoute = (path: string) => path.startsWith("/api/");
 
+// Real API routes that legitimately receive x-cid headers (e.g., Sentinel chat).
+// These must NOT be intercepted by CID detection. Unknown /api/* paths (e.g.,
+// /api/status, /api/admin) ARE honeypot targets and SHOULD be intercepted.
+const REAL_API_PREFIXES = ["/api/sentinel", "/api/security", "/api/arcjet", "/api/global-intel"];
+const isRealApiRoute = (path: string) => REAL_API_PREFIXES.some(p => path.startsWith(p));
+
 export const config = {
     matcher: [
         // Omite los archivos internos de Next.js y los archivos estáticos
@@ -74,8 +80,9 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     // KALI CID DETECTION: Intercept requests with a CID + attack payload.
     // Rewrites to /api/sentinel/external with classified headers.
     // Must run BEFORE ghost route detection — CID requests are tool probes, not humans navigating.
-    // Runs on ALL routes (including /api/*) — CID presence means it's a tool probe, not a browser.
-    if (!isStaticOrInternal(path)) {
+    // Excludes REAL API routes (they send x-cid legitimately for session tracking).
+    // Unknown /api/* paths (e.g., /api/status) are honeypot targets and get intercepted.
+    if (!isStaticOrInternal(path) && !isRealApiRoute(path)) {
         const cid = extractCID(req);
         if (cid) {
             const attack = classifyAttack(req);
