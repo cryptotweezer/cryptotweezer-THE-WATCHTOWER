@@ -10,17 +10,17 @@ export interface AttackClassification {
 }
 
 /**
- * Extract CID from 5 possible delivery sources.
+ * Extract CID from 7 possible delivery sources.
  * Returns validated CID string or null.
  */
 export function extractCID(req: Request): string | null {
     const url = new URL(req.url);
 
-    // 1. X-CID header
+    // 1. X-CID header (primary method)
     const xCid = req.headers.get("x-cid");
     if (xCid && CID_REGEX.test(xCid)) return xCid;
 
-    // 2. X-Sentinel-CID header
+    // 2. X-Sentinel-CID header (internal rewrite)
     const sentinelCid = req.headers.get("x-sentinel-cid");
     if (sentinelCid && CID_REGEX.test(sentinelCid)) return sentinelCid;
 
@@ -39,6 +39,20 @@ export function extractCID(req: Request): string | null {
     const cookieHeader = req.headers.get("cookie");
     if (cookieHeader) {
         const match = cookieHeader.match(/watchtower_cid=([^;]+)/);
+        if (match && CID_REGEX.test(match[1])) return match[1];
+    }
+
+    // 6. Referer header (e.g., curl -H "Referer: CID-442-X")
+    const referer = req.headers.get("referer");
+    if (referer) {
+        const match = referer.match(/(CID-\d{3}-[A-Z0-9])/);
+        if (match && CID_REGEX.test(match[1])) return match[1];
+    }
+
+    // 7. User-Agent (sneaky — e.g., curl -A "CID-442-X nikto/2.5")
+    const ua = req.headers.get("user-agent");
+    if (ua) {
+        const match = ua.match(/(CID-\d{3}-[A-Z0-9])/);
         if (match && CID_REGEX.test(match[1])) return match[1];
     }
 
@@ -125,6 +139,13 @@ const ATTACK_PATTERNS: { technique: string; patterns: RegExp[]; confidence: numb
             /Set-Cookie\s*:/i,
         ],
         confidence: 0.70,
+    },
+    {
+        technique: "EXT_SCANNER",
+        patterns: [
+            /\b(nikto|sqlmap|nmap|burp|dirbuster|gobuster|wfuzz|masscan|nuclei|ffuf)\b/i,
+        ],
+        confidence: 0.65,
     },
 ];
 
