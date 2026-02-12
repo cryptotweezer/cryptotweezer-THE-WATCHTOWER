@@ -74,20 +74,32 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     // KALI CID DETECTION: Intercept requests with a CID + attack payload.
     // Rewrites to /api/sentinel/external with classified headers.
     // Must run BEFORE ghost route detection — CID requests are tool probes, not humans navigating.
-    if (!isStaticOrInternal(path) && !isApiRoute(path)) {
+    // Runs on ALL routes (including /api/*) — CID presence means it's a tool probe, not a browser.
+    if (!isStaticOrInternal(path)) {
         const cid = extractCID(req);
         if (cid) {
             const attack = classifyAttack(req);
-            if (attack) {
-                const url = req.nextUrl.clone();
-                url.pathname = "/api/sentinel/external";
-                const response = NextResponse.rewrite(url);
-                response.headers.set("x-sentinel-cid", cid);
-                response.headers.set("x-sentinel-technique", attack.technique);
-                response.headers.set("x-sentinel-payload", attack.payload.substring(0, 500));
-                response.headers.set("x-sentinel-confidence", attack.confidence.toString());
-                return applyIdentityLayer(req, response);
-            }
+            // Use classified technique or fall back to EXT_GENERIC_PROBE
+            const technique = attack?.technique ?? "EXT_GENERIC_PROBE";
+            const payload = attack?.payload ?? path;
+            const confidence = attack?.confidence ?? 0.5;
+
+            const url = req.nextUrl.clone();
+            url.pathname = "/api/sentinel/external";
+
+            // CRITICAL: Use request headers (not response headers) so the
+            // rewritten route receives them. Response headers are sent to the
+            // client and NOT forwarded to the destination on Vercel Edge.
+            const requestHeaders = new Headers(req.headers);
+            requestHeaders.set("x-sentinel-cid", cid);
+            requestHeaders.set("x-sentinel-technique", technique);
+            requestHeaders.set("x-sentinel-payload", payload.substring(0, 500));
+            requestHeaders.set("x-sentinel-confidence", confidence.toString());
+
+            const response = NextResponse.rewrite(url, {
+                request: { headers: requestHeaders },
+            });
+            return applyIdentityLayer(req, response);
         }
     }
 
