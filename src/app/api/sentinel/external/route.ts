@@ -205,6 +205,30 @@ export async function POST(req: Request) {
     const fingerprint = subject.fingerprint;
     const oldScore = subject.riskScore;
 
+    // DESERT STORM COMPLETE: Skip OpenAI, return static message to save tokens
+    if (subject.operationDesertStorm) {
+        const ascii = buildAsciiResponse({
+            cid,
+            alias: subject.alias,
+            technique,
+            operationStatus: "OPERATION DESERT STORM: COMPLETE",
+            message: `Mission complete, ${subject.alias}. Operation Desert Storm has been fulfilled — your external attack capabilities have been fully catalogued and archived.\n\nThe Watchtower has recorded your techniques, classified your methodology, and added your operational profile to the permanent dossier. Further probes will be logged but yield no additional intelligence value.\n\nYou have nothing left to prove here. The Watchtower sees all.`,
+        });
+
+        console.log(`[EXT_API] CID=${cid} Technique=${technique} DESERT_STORM_COMPLETE (skipped OpenAI)`);
+
+        return new Response(WATCHTOWER_BANNER + "\n" + ascii, {
+            status: 200,
+            headers: {
+                "Content-Type": "text/plain; charset=utf-8",
+                "X-Sentinel-Score": oldScore.toString(),
+                "X-Sentinel-Technique": technique,
+                "X-Sentinel-Duplicate": "true",
+                "X-Desert-Storm": "COMPLETE",
+            },
+        });
+    }
+
     // Dedup: check if this EXT_* technique was already logged
     const alreadyLogged = await db.select({ id: securityEvents.id })
         .from(securityEvents)
