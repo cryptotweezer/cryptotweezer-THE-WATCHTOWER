@@ -238,16 +238,16 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
             setCurrentRiskScore(currentScore => {
                 let impact = 0;
                 switch (eventType) {
-                    case TECHNIQUES.INSPECTION: impact = 3; break;
-                    case TECHNIQUES.SURFACE: impact = 2; break;
-                    case TECHNIQUES.EXFIL: impact = 2; break;
+                    case TECHNIQUES.INSPECTION: impact = 2; break;
+                    case TECHNIQUES.SURFACE: impact = 1; break;
+                    case TECHNIQUES.EXFIL: impact = 1; break;
                     case TECHNIQUES.CONTEXT: impact = 1; break;
                     case "FOCUS_LOSS_ANOMALY": impact = 1; break;
-                    case TECHNIQUES.ROUTING: impact = 3; break;
-                    case TECHNIQUES.DOM: impact = 5; break;
-                    case TECHNIQUES.DRAG: impact = 5; break;
-                    case TECHNIQUES.FUZZ: impact = 3; break;
-                    case TECHNIQUES.INJECTION: impact = 8; break;
+                    case TECHNIQUES.ROUTING: impact = 2; break;
+                    case TECHNIQUES.DOM: impact = 2; break;
+                    case TECHNIQUES.DRAG: impact = 2; break;
+                    case TECHNIQUES.FUZZ: impact = 2; break;
+                    case TECHNIQUES.INJECTION: impact = 5; break;
                     default: impact = 0;
                 }
                 if (NON_UNIQUE_EVENTS.includes(eventType) && eventType !== TECHNIQUES.ROUTING) return currentScore;
