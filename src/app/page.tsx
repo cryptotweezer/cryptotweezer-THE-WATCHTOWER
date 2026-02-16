@@ -44,7 +44,7 @@ export default async function Home() {
     let riskCap = 40;
     if (session.operationDesertStorm) riskCap = 60;
     if (session.operationOverlord) riskCap = 80;
-    if (session.operationRollingThunder) riskCap = 100;
+    if (session.operationRollingThunder) riskCap = 90;
 
     const identity = {
       alias: session.alias,

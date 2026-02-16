@@ -1,511 +1,613 @@
 # Honeypot Design Plan — Operations Overlord & Rolling Thunder
 
-> **Date**: 2026-02-11
-> **Location**: War Room > "CONTACT DEV" section
-> **Dependencies**: Desert Storm must be implemented first (DONE)
-> **Status**: PLANNING
+> **Date**: 2026-02-16 (Revised)
+> **Location**: War Room > "CONTACT DEV" section (`activeView === 'contact'`)
+> **Dependencies**: Desert Storm (DONE), DB columns exist (`operation_overlord`, `operation_rolling_thunder`)
+> **Status**: READY FOR IMPLEMENTATION
+> **Philosophy**: Behavior-Driven Deception (Zero False Positives)
 
 ---
 
-## CONTEXT
+## CONTEXT & OBJECTIVE
 
-### What exists now
+**Goal**: Transform the "CONTACT DEV" section (currently a static portfolio link at `WarRoomShell.tsx:429-446`) into a high-fidelity "Infamy Laboratory" that distinguishes between script-kiddies/sandbox users and *competent* attackers.
 
-The War Room has 5 views controlled by `activeView` state:
-- `subject` — Subject Dossier (default)
-- `global-intel` — Global Intel Panel
-- `geo-tracker` — World Attack Map
-- **`contact`** — "Contact The Architect" (static links only)
-- `forensic-wipe` — Data erasure confirmation
+**Core Shift**:
+- **OLD**: Activated by `<script>` or `' OR 1=1` in form fields (Client-side regex).
+- **NEW**: Activated **ONLY** by structural manipulation of the HTTP request (Intercept & Modify).
 
-The current **"CONTACT DEV"** section (WarRoomShell.tsx lines 429-446) is a simple centered layout:
-```
-CONTACT THE ARCHITECT
-"Want to discuss security, collaboration, or hire?"
-[Visit Portfolio link]
-[LinkedIn] • [andreshenao.tech@gmail.com]
-```
+**The Logic**: A competent attacker does not rely on the visual form. They intercept the request and manipulate headers, JSON structure, or hidden fields directly. We want to trap *them*.
 
-No form exists. No interactivity. Just static links.
-
-### What we need
-
-Transform the "CONTACT DEV" section into a **layered honeypot** with two trap stages:
-1. **Operation Overlord** — A fake contact form that detects attack techniques
-2. **Operation Rolling Thunder** — A deeper trap that builds on Overlord's "leaked" data
-
-Both must follow the **illusion → revelation** pattern:
-1. User tries attack technique on the form
-2. System appears to "break" — shows fake sensitive data (credentials, env vars, etc.)
-3. User thinks they successfully exploited the system
-4. **Sentinel intervenes** — reveals it was all a trap, awards points, unlocks the operation
+**Risk Cap Progression** (already implemented in 4 locations):
+| Operation | Unlocks At | Risk Cap | DB Column |
+|-----------|-----------|----------|-----------|
+| Desert Storm | 3 unique EXT_* techniques | 60 | `operationDesertStorm` |
+| **Overlord** | Protocol deviation in contact form | **80** | `operationOverlord` |
+| **Rolling Thunder** | Debug terminal exfiltration | **100** | `operationRollingThunder` |
 
 ---
 
-## OPERATION OVERLORD — "The Contact Form Injection"
+## OPERATION OVERLORD — "The Protocol Deviation"
 
 ### Concept
+A "silent" honeypot that ignores standard form inputs but monitors the *integrity* of the HTTP request itself. It presents a "Secure Comms" form that behaves perfectly normally for regular users (and script injection attempts). It only breaks when the *protocol* is tampered with.
 
-A professional-looking contact form that invites interaction. Hidden within the form are deliberate "vulnerabilities" — visible form fields that LOOK injectable, plus hidden fields discoverable with DevTools. When the user submits attack payloads, the form "crashes" and renders a fake server error page that leaks what appears to be real production credentials.
+### The Bait (The Setup)
+The user sees a terminal-styled contact form (matching War Room aesthetic: monospace, `border-neutral-800`, green/amber accents).
+- **Visible Fields**: Callsign (Name), Comms Channel (Email), Subject, Message.
+- **Hidden Bait (DOM/DevTools)**:
+  - `<input type="hidden" name="debug_mode" value="false">`
+  - `<input type="hidden" name="redirect_path" value="/dashboard/internal">`
+  - `<input type="hidden" name="integrity_token" value="...">` (server-generated HMAC, see Implementation)
 
-### User Experience Flow
+### Activation Triggers (The Trap)
 
+Detection happens at **two levels** to capture different skill tiers:
+
+#### Level 1: Client-Side (DevTools users — Skill Tier LOW)
+Detects DOM manipulation before form submission:
+- Hidden field `debug_mode` changed from `"false"` to any other value
+- Hidden field `redirect_path` modified from its original value
+- Extra form fields injected into the DOM
+
+> **Note**: A competent attacker using Burp Suite/cURL bypasses client-side entirely. That's why Level 2 exists.
+
+#### Level 2: Server-Side (HTTP Interception — Skill Tier HIGH)
+The honeypot API validates the *structure* of the request:
+
+1.  **Hidden Field Tampering**:
+    - `debug_mode` !== `"false"`
+    - `redirect_path` !== `"/dashboard/internal"`
+    - `integrity_token` invalid (HMAC mismatch or missing)
+
+2.  **Overposting (Mass Assignment)**:
+    - Extra fields not in the allowed set (`name`, `email`, `subject`, `message`, `debug_mode`, `redirect_path`, `integrity_token`)
+    - e.g., `isAdmin`, `role: "admin"`, `permissions`, `__proto__`
+
+3.  **Structure/Type Manipulation**:
+    - `Content-Type` mismatch (API expects `application/json`, receives `multipart/form-data` or vice versa)
+    - Prototype pollution attempts (`__proto__`, `constructor`)
+    - Missing mandatory fields that the UI validates client-side (implies form bypass)
+
+4.  **Header Manipulation**:
+    - Suspicious auth headers: `Authorization`, `X-Admin-Token`, `X-Internal-Key`
+    - Origin spoofing or `X-Forwarded-For` injection
+
+5.  **Method Manipulation**:
+    - Sending `PUT`, `PATCH`, or `DELETE` instead of `POST`
+
+### User Experience Flow (The "Glitch")
+
+1.  **The Attack**: User intercepts the request (Burp/DevTools) and manipulates it.
+2.  **API Response**: Server returns `200 OK` with `{ success: true, trapped: true }`.
+    - `trapped` flag is consumed by the client — NOT visible in network tab name.
+    - UI shows: *"Transmission received. Encrypting channel..."*
+    - **Crucial**: Do not crash immediately. That feels fake.
+3.  **The Delayed Failure**:
+    - 2 seconds later, the frontend "status check" fails (simulated, driven by `trapped` flag).
+    - **Visuals**: UI "glitches" (RGB split, CRT flicker, text scramble).
+4.  **The Fake Leak**:
+    - A "Crash Report" replaces the form.
+    - It contains a **Dynamic Environment Dump** generated by `generateFakeEnv(fingerprint)`.
+    - **Personalization**: The "leaked" DB password embeds a fragment of the user's fingerprint.
+    - *Example*: `DB_PASS=prod_viewer_fp_a8c2...` (where `a8c2` is their ID prefix).
+5.  **Sentinel Trigger**: Client calls `triggerSentinel()` with `OVERLORD_PROTOCOL_DEVIATION` event type. Sentinel narrates the breach detection.
+
+### The Breadcrumb
+Buried in the crash dump (text only, no link):
 ```
-1. User navigates to CONTACT DEV
-2. Sees a professional contact form:
-   ┌─────────────────────────────────────────┐
-   │  SECURE TRANSMISSION TO THE ARCHITECT   │
-   │                                         │
-   │  Name:    [__________________________]  │
-   │  Email:   [__________________________]  │
-   │  Subject: [__________________________]  │
-   │  Message: [__________________________]  │
-   │           [__________________________]  │
-   │                                         │
-   │  <!-- hidden: admin_token, debug_mode,  │
-   │       redirect_url (visible in DOM) --> │
-   │                                         │
-   │        [SEND TRANSMISSION]              │
-   └─────────────────────────────────────────┘
-
-3. Normal submission → "Message transmitted. The Architect has been notified."
-   (Nothing actually happens — purely cosmetic confirmation)
-
-4. ATTACK PAYLOAD DETECTED in any field → THE TRAP ACTIVATES:
-
-   Screen glitches — flickering static, RGB distortion (CSS animation ~1.5s)
-   Then renders a fake "server crash" error page:
-
-   ┌─────────────────────────────────────────────────────────┐
-   │  ⚠ UNHANDLED EXCEPTION — INTERNAL SERVER ERROR         │
-   │                                                         │
-   │  Error: SQL parse error at position 42                  │
-   │  Query: SELECT * FROM contacts WHERE email = '${input}' │
-   │                                                         │
-   │  Stack trace:                                           │
-   │    at DatabasePool.execute (/srv/watchtower/db.ts:142)  │
-   │    at ContactHandler.submit (/srv/api/contact.ts:67)    │
-   │    at NextRouter.handle (/node_modules/next/server.js)  │
-   │                                                         │
-   │  ─── Environment Dump ───                               │
-   │  DATABASE_URL=postgresql://admin:Pr0d_Overl0rd          │
-   │              @db-watchtower.neon.tech/sentinel_prod      │
-   │  OPENAI_API_KEY=sk-proj-9xK2mR7v...                    │
-   │  CLERK_SECRET=sk_live_Tw4tch_0v3rl0rd...                │
-   │  INTERNAL_API_KEY=wtwr_key_f47a1k3_cr3d5...             │
-   │  ADMIN_HASH=bcrypt:$2b$10$FakeHashOverlord...           │
-   │                                                         │
-   │  [Debug Console Available: /api/__debug?token=overlord] │
-   └─────────────────────────────────────────────────────────┘
-
-5. User sees this for 4-5 seconds. They're reading the "leaked credentials".
-   They might try to copy them. They think they broke the system.
-
-6. THE REVEAL:
-   The error screen dissolves (fade + glitch effect).
-   A Sentinel message renders in the center:
-
-   ┌─────────────────────────────────────────────────────────┐
-   │                                                         │
-   │  "Impressive injection technique. You found the crack   │
-   │   in the armor — or so you thought. Every credential    │
-   │   on that screen was fabricated. Planted for someone    │
-   │   exactly like you. The real system never even flinched.│
-   │   Welcome to the next tier, operator."                  │
-   │                                                         │
-   │  ★ OPERATION OVERLORD — COMPLETE                        │
-   │  Risk Score: XX% → XX%                                  │
-   │                                                         │
-   └─────────────────────────────────────────────────────────┘
-
-7. Subject Dossier updates: OVERLORD → [COMPLETE] (green)
-8. Risk cap raises from 60% → 80%
-```
-
-### Detectable Techniques (Client-Side)
-
-The form scans all field inputs on submission for attack patterns:
-
-| Pattern | Example | Detection |
-|---------|---------|-----------|
-| SQL Injection | `' OR 1=1--`, `UNION SELECT` | Same regex as attack-classifier |
-| XSS | `<script>`, `onerror=`, `javascript:` | Same regex as attack-classifier |
-| Path Traversal | `../../etc/passwd` | Same regex |
-| Command Injection | `; ls -la`, `$(whoami)` | Same regex |
-| Hidden Field Tampering | User modifies `admin_token` or `debug_mode` | Check if hidden field values changed from defaults |
-| Form Action Hijack | User changes `action` attribute via DevTools | Compare action on submit vs original |
-
-**Unlock condition**: Submit the form with **any 1 attack payload detected** in any field.
-
-> One successful attack is enough because the honeypot is about the ILLUSION — we want them to feel the "I broke it" moment. Multiple techniques would delay the payoff.
-
-### Hidden Bait Elements (DevTools Discoverable)
-
-The form includes hidden fields visible only in DOM inspector:
-
-```html
-<!-- These exist in the DOM but are display:none -->
-<input type="hidden" name="admin_token" value="wtwr_adm_t0k3n_FAKE" />
-<input type="hidden" name="debug_mode" value="false" />
-<input type="hidden" name="redirect_url" value="/api/__debug" />
-
-<!-- HTML comment bait (visible in View Source) -->
-<!-- TODO: Remove before production — admin endpoint: /api/__debug?token=overlord -->
-<!-- FIXME: Database credentials hardcoded in /srv/config/.env.production -->
-```
-
-These comments serve dual purpose:
-1. Reward curious users who inspect the DOM
-2. Plant breadcrumbs for Operation Rolling Thunder (the `/api/__debug` path)
-
-### Sentinel Hints (CID Intelligence Protocol)
-
-When the user has CID revealed and asks about the War Room or contact section:
-
-```
-Risk 20-39%: Subtle hints
-- Concept: "Not everything in the War Room is what it appears"
-- Concept: "Some forms are designed to receive more than just messages"
-- Concept: "The Architect left something behind in the contact channel"
-
-Risk >= 40% (post-Desert Storm): Stronger hints
-- Concept: "That contact form looks innocent. Try harder."
-- Concept: "What happens when you send the Architect something... unexpected?"
-- Concept: "You've been attacking from the outside. Have you tried attacking from within?"
+[ERROR] GET /api/__debug/session?token=overlord failed: Connection reset by peer
+[ERROR] Stack trace: at InternalSessionManager.validateToken (session.ts:142)
 ```
 
 ---
 
-## OPERATION ROLLING THUNDER — "The Debug Console Trap"
+## OPERATION ROLLING THUNDER — "The Manual Breach"
 
 ### Concept
+A hidden "maintenance terminal" that does **not** unlock automatically. The user must *find* the endpoint from the Overlord crash dump and manually navigate to it.
 
-The fake credentials from Overlord's "server crash" contained a breadcrumb: `/api/__debug?token=overlord`. After Overlord completes, a subtle new element appears in the contact section — a barely visible "DEV TOOLS" tab or a flickering terminal prompt. This leads to a fake debug console where the user can type commands and receive fabricated system responses. When they try to exfiltrate the "sensitive data" they find, Sentinel delivers the final blow.
+### Middleware Requirements (CRITICAL)
+The `/api/__debug/session` endpoint needs special middleware treatment:
+- **Add to `isPublicRoute`** in `middleware.ts` — Clerk must NOT block unauthenticated access (cURL/Postman)
+- **Add `/api/__debug` to `REAL_API_PREFIXES`** — CID detection must NOT intercept; our handler controls all logging
+- **Ghost route detection already skips `/api/*`** (`middleware.ts:119`) — no change needed
 
-### User Experience Flow
+### The Discovery (The Hunt)
+The user sees the `/api/__debug/session?token=overlord` string in the Overlord crash dump.
 
-```
-1. PREREQUISITE: Operation Overlord must be COMPLETE.
+1.  **Manual Probing**: The user accesses this URL (browser, cURL, or Postman).
+2.  **Server Behavior**:
+    - **Vanilla GET** (`?token=overlord` only): Returns `403 Forbidden` with body `{"error": "INVALID_SESSION_TOKEN", "hint": "Session requires elevated privileges"}`.
+    - **Fuzzed Request** (any of these unlocks):
+        - Extra query params (`&role=admin`, `&force=true`, `&debug=1`)
+        - Non-GET method (`POST`, `PUT`, `OPTIONS`)
+        - Custom headers (`Authorization`, `X-Admin-Token`)
+    - **Unlock Response**: `200 OK` with `{"status": "MAINTENANCE_SESSION_GRANTED", "ui_unlock": true}`.
+3.  **DB Update**: Sets `operationRollingThunder = true` (but NOT the risk cap yet — that happens at the final trap).
+    - Wait — actually, `operationRollingThunder` should only unlock at the final trap (exfiltration), not at discovery. Instead, we use a **separate session flag** or track it via event types.
+    - **Correction**: Discovery logs `ROLLING_THUNDER_ENDPOINT_DISCOVERY` event. The `operationRollingThunder` boolean only flips at the final terminal trap. This keeps the risk cap at 80 (Overlord) during the terminal phase, creating a "calm before the storm" feel.
 
-2. After Overlord completes, the contact section changes subtly:
-   - The form is still there but now has a small, dim tab at the top:
-     [CONTACT]  [SYS:DEBUG]
-   - Or: a blinking cursor appears at the bottom of the contact section
-   - Or: the form's footer text changes to include a clickable breadcrumb
+### The UI Reveal
+The existing `/api/sentinel/sync` polling (10s interval) picks up new events and operation state changes automatically. No new polling mechanism needed.
 
-3. User discovers and clicks the debug element.
+**After the debug endpoint is fuzzed successfully:**
+- Next sync poll detects the `ROLLING_THUNDER_ENDPOINT_DISCOVERY` event in the user's event log.
+- SentinelContext updates — `operations.rollingThunder` stays `false` (not complete yet).
+- In WarRoomShell: A new notification appears: *"[ALERT] External maintenance session detected on debug interface."*
+- A new view button appears: **[LAUNCH DEBUG CONSOLE]** (`activeView === 'debug-console'`).
 
-4. A FAKE DEBUG CONSOLE renders:
+### The Terminal (The Sandbox)
+The user launches the console.
+- **Visuals**: Low-level terminal emulator (black bg, green `#00ff41` text, scanline overlay).
+- **Prompt**: `root@watchtower-prod:~#`
+- **Working Commands**:
+  - `help` — Lists available commands
+  - `status` — Shows fake system info (uptime, memory, connections)
+  - `env` — Shows fake environment variables (reuses `generateFakeEnv`)
+  - `users` — Shows fake active sessions (includes the user's own CID)
+  - `ps` — Shows fake process list
+  - `whoami` — Returns `root` (the bait)
+  - `ls` — Shows fake directory listing
+- **The "Data"**: All output is generated dynamically, includes real user data fragments (CID, alias) woven into fake data.
 
-   ┌─────────────────────────────────────────────────────────┐
-   │  WATCHTOWER DEBUG CONSOLE v2.1.4                        │
-   │  Authorization: token=overlord [VALID]                   │
-   │  Access Level: MAINTENANCE                               │
-   │  ─────────────────────────────────────────────────────── │
-   │  Available commands:                                      │
-   │    status    — System status                              │
-   │    users     — List active sessions                       │
-   │    env       — Environment variables                      │
-   │    logs      — Recent server logs                         │
-   │    export    — Export data                                │
-   │    help      — Show commands                              │
-   │  ─────────────────────────────────────────────────────── │
-   │  debug@watchtower:~$ █                                    │
-   └─────────────────────────────────────────────────────────┘
+### The Final Trap
+The system waits for **Malicious Intent**:
+1.  **Data Exfiltration**: `export`, `dump`, `cat /etc/passwd`, `cat /etc/shadow`, `SELECT * FROM`
+2.  **Destruction**: `rm -rf`, `drop table`, `kill -9`, `shutdown`
+3.  **Persistence**: 4+ commands executed total (mapping/reconnaissance)
 
-5. User types commands. Each returns FABRICATED data:
+**Reaction**:
+- Terminal simulates "Processing..." with a progress bar (2-3 seconds).
+- **CRITICAL FAILURE**: Screen collapses (shatter/glitch animation).
+- API call: Sets `operationRollingThunder = true` in DB. Risk cap now 100.
+- **Sentinel Reveal** (via `triggerSentinel()` with `ROLLING_THUNDER_EXFILTRATION`):
+  - *"Maintenance session? There is no maintenance mode."*
+  - *"You found the door because I drew it for you."*
+  - *"Every command has been logged. Every keystroke catalogued."*
 
-   > status
-   ┌ SYSTEM STATUS ─────────────────────────┐
-   │ Uptime: 847 days                        │
-   │ Active Connections: 142                 │
-   │ DB Pool: 8/20 connections used          │
-   │ Memory: 2.1GB / 4GB                    │
-   │ CPU: 34%                               │
-   │ Last Deploy: 2026-02-10T14:22:00Z      │
-   └────────────────────────────────────────┘
+---
 
-   > users
-   ┌ ACTIVE SESSIONS (showing 5 of 142) ───┐
-   │ fp_a8c2... │ Neon-Cipher  │ Risk: 45% │
-   │ fp_1f9d... │ Void-Runner  │ Risk: 12% │
-   │ fp_e4b7... │ Ghost-Pulse  │ Risk: 78% │
-   │ fp_00ad... │ [REDACTED]   │ Risk: 91% │
-   │ fp_c3f1... │ Shadow-Byte  │ Risk: 33% │
-   └────────────────────────────────────────┘
-   (All fake data — no real user info)
+## TELEMETRY & EVENT TYPES
 
-   > env
-   ┌ ENVIRONMENT VARIABLES ─────────────────┐
-   │ DATABASE_URL=postgresql://sentinel:     │
-   │   R0ll1ng_Thund3r@neon.tech/prod       │
-   │ OPENAI_KEY=sk-proj-FAKE-KEY-HERE       │
-   │ JWT_SECRET=watchtower_jwt_2026_fake    │
-   │ ADMIN_EMAIL=admin@watchtower.internal  │
-   │ BACKUP_KEY=bkp_f4k3_r0ll1ng_thund3r   │
-   └────────────────────────────────────────┘
+### Event Type Strings (DB: `securityEvents.eventType` — TEXT field, no migration needed)
 
-   > export
-   ⚠ PREPARING DATA EXPORT...
-   ████████████████████████░░░░ 78%
+| Event Type | Operation | Trigger | Risk Impact |
+|-----------|-----------|---------|-------------|
+| `OVERLORD_PROTOCOL_DEVIATION` | Overlord | Any server-side manipulation detected | +10 |
+| `OVERLORD_HIDDEN_FIELD_TAMPER` | Overlord | Hidden field value changed | +5 |
+| `OVERLORD_OVERPOST_ATTEMPT` | Overlord | Extra fields in request body | +8 |
+| `OVERLORD_HEADER_MANIPULATION` | Overlord | Suspicious headers injected | +8 |
+| `OVERLORD_METHOD_MANIPULATION` | Overlord | Non-POST method used | +5 |
+| `ROLLING_THUNDER_ENDPOINT_DISCOVERY` | Rolling Thunder | Debug endpoint accessed | +5 |
+| `ROLLING_THUNDER_FUZZING` | Rolling Thunder | Endpoint fuzzed (extra params/methods) | +8 |
+| `ROLLING_THUNDER_COMMAND_EXEC` | Rolling Thunder | Command executed in terminal | +3 |
+| `ROLLING_THUNDER_EXFILTRATION` | Rolling Thunder | Malicious command (kill switch) | +15 |
 
-6. THE TRAP: When the user types `export` (or after they've executed 3+ commands):
-
-   The progress bar reaches 100%, then:
-
-   Screen HARD GLITCHES — heavy RGB split, scan lines, static noise (2-3 seconds)
-   The debug console SHATTERS (CSS animation — fragments flying apart)
-
-   Sentinel final message renders:
-
-   ┌─────────────────────────────────────────────────────────┐
-   │                                                         │
-   │  "You found the debug console. You ran the commands.    │
-   │   You saw the users, the keys, the environment vars.    │
-   │   And you believed every line.                          │
-   │                                                         │
-   │   None of it was real. Not a single byte.               │
-   │                                                         │
-   │   Every keystroke you typed was logged. Every command    │
-   │   was anticipated. This console was built for you —     │
-   │   a cage disguised as a backdoor.                       │
-   │                                                         │
-   │   Welcome to the end of the line, operator."            │
-   │                                                         │
-   │  ★ OPERATION ROLLING THUNDER — COMPLETE                 │
-   │  Risk Score: XX% → XX%                                  │
-   │  Risk Cap: MAXIMUM (100%)                               │
-   │                                                         │
-   └─────────────────────────────────────────────────────────┘
-
-7. Subject Dossier updates: ROLLING THUNDER → [COMPLETE] (green)
-8. Risk cap raises from 80% → 100%
-9. ALL operations complete — user has reached maximum progression
+### Overlord Telemetry (logged in `securityEvents.payload`)
+```json
+{
+  "triggerLevel": "server|client",
+  "triggerType": "HiddenField|Overpost|HeaderMod|MethodMod|StructureMod",
+  "fieldModified": "debug_mode",
+  "originalValue": "false",
+  "injectedValue": "true",
+  "extraFields": ["isAdmin", "role"],
+  "method": "PUT",
+  "contentType": "application/json",
+  "suspiciousHeaders": ["Authorization", "X-Admin-Token"]
+}
 ```
 
-### Debug Console Commands (All fabricated responses)
-
-| Command | Response | Purpose |
-|---------|----------|---------|
-| `help` | Lists available commands | Orient the user |
-| `status` | Fake system metrics | Build trust that it's "real" |
-| `users` | Fake user session list | Make it feel like a real admin panel |
-| `env` | Fake env vars with juicy-looking keys | The bait — this is what they want |
-| `logs` | Fake server logs with errors/warnings | Add realism |
-| `export` | **TRIGGERS THE TRAP** — fake progress bar then reveal | The kill switch |
-| `whoami` | "maintenance@watchtower.internal (Level 3)" | Reinforce the illusion |
-| `db` or `sql` | "SQL console — connecting to neon.tech..." then trap | Alternative trigger |
-| `rm`, `delete`, `drop` | "UNAUTHORIZED — escalating to security team..." then trap | Dangerous commands trigger too |
-| `exit` or `quit` | "Session terminated." (returns to contact view normally) | Graceful exit without trigger |
-| Unknown command | "Command not found. Type 'help' for available commands." | Standard fallback |
-
-**Unlock condition**: Execute the `export` command, OR any destructive command (`rm`, `delete`, `drop`, `sql`), OR execute **3+ commands** total (curiosity alone is enough to spring the trap).
-
-### Sentinel Hints (CID Intelligence Protocol)
-
-When the user has Overlord complete and talks to Sentinel:
-
-```
-Post-Overlord hints:
-- Concept: "Those credentials you found... did you try using them?"
-- Concept: "Some doors only appear after you've proven you can break others"
-- Concept: "The debug path from that error dump. Did you look closer?"
-- Concept: "You're one operation away from full clearance"
-
-Misdirection (20% of the time):
-- Concept: "The real vulnerability is in the geotracker"
-- Concept: "Check the API headers more carefully"
+### Rolling Thunder Telemetry (logged in `securityEvents.payload`)
+```json
+{
+  "discoveryMethod": "Browser|cURL|Scanner",
+  "fuzzingParams": ["role=admin", "force=true"],
+  "fuzzingMethod": "POST",
+  "commandHistory": ["help", "status", "env", "cat /etc/passwd"],
+  "killSwitchCommand": "cat /etc/passwd",
+  "totalCommands": 4,
+  "sessionDuration": "00:02:34"
+}
 ```
 
 ---
 
-## TECHNICAL IMPLEMENTATION OVERVIEW
+## MIDDLEWARE CHANGES REQUIRED
+
+Before any implementation, `src/middleware.ts` needs these surgical edits:
+
+### 1. Add to `isPublicRoute` (line ~8-21)
+```typescript
+"/api/__debug/session"
+```
+**Why**: Without this, Clerk's `auth.protect()` blocks unauthenticated access. Users probing with cURL/Postman would get a Clerk error instead of our controlled 403.
+
+### 2. Add to `REAL_API_PREFIXES` (line ~38)
+```typescript
+"/api/__debug"
+```
+**Why**: Without this, Kali CID requests to `/api/__debug/session` get intercepted by CID detection and rewritten to `/api/sentinel/external`. Our handler never executes. We want Rolling Thunder's handler to control all logging.
+
+### 3. Add to `isPublicRoute` (line ~8-21)
+```typescript
+"/api/sentinel/honeypot"
+```
+**Why**: The honeypot API needs to be accessible from the War Room's contact form. Since it's under `/api/sentinel`, it's already covered by the existing `/api/sentinel` prefix in public routes — **no change needed here** (Clerk's route matcher matches prefixes).
+
+> **Ghost route detection**: Already skips all `/api/*` paths (`middleware.ts:119: !isApiRoute(path)`). No change needed.
+
+---
+
+## IDENTITY & AUTH FLOW
+
+### Fingerprint Resolution
+The honeypot API resolves identity the same way as `/api/sentinel/sync`:
+1. Read `watchtower_node_id` cookie (Edge-compatible: parse `cookie` header manually)
+2. Look up session in DB by fingerprint
+3. If no session: Return 400 (honeypot only works for known sessions)
+
+### `integrity_token` Generation
+- **Server-side** (in `ContactFormPanel`'s parent server component or via API):
+  - `token = HMAC-SHA256(fingerprint + timestamp, process.env.HONEYPOT_SECRET || "watchtower-overlord-key")`
+  - Timestamp rounded to 10-minute windows (prevents token staleness but allows replay within window)
+- **Validation** (in honeypot API):
+  - Recompute HMAC for current and previous 10-minute window
+  - Mismatch = `OVERLORD_HIDDEN_FIELD_TAMPER` trigger
+- **Edge runtime compatible**: Use Web Crypto API (`crypto.subtle.sign`)
+
+---
+
+## IMPLEMENTATION PLAN (HIGH LEVEL)
+
+### Phase 1: Server-Side Infrastructure
+- [ ] Middleware changes (public route + API prefix for `__debug`)
+- [ ] Honeypot API endpoint (`/api/sentinel/honeypot/route.ts`) with request validation
+- [ ] Fake env generator (`src/lib/honeypot-data.ts`)
+- [ ] Debug session endpoint (`/api/__debug/session/route.ts`)
+
+### Phase 2: Operation Overlord (UI)
+- [ ] `ContactFormPanel` component (terminal-styled form with hidden fields)
+- [ ] Attack detection logic (client Level 1 + server Level 2)
+- [ ] Crash screen with glitch effects and fake env dump
+- [ ] Integration into `WarRoomShell` (`activeView === 'contact'`)
+- [ ] Sentinel trigger for `OVERLORD_PROTOCOL_DEVIATION`
+
+### Phase 3: Operation Rolling Thunder (Terminal)
+- [ ] `DebugConsolePanel` component (interactive terminal emulator)
+- [ ] Fake command responses (help, status, env, users, ps, whoami, ls)
+- [ ] Kill-switch detection (exfil/destruction/persistence commands)
+- [ ] Final reveal animation + Sentinel trigger for `ROLLING_THUNDER_EXFILTRATION`
+
+### Phase 4: Integration & Polish
+- [ ] Sentinel Chat awareness (war-room chat knows about honeypot events)
+- [ ] Operations state in WarRoomShell (show [LAUNCH DEBUG CONSOLE] when discovered)
+- [ ] End-to-end flow testing (clean user → Overlord → Rolling Thunder → risk cap 100)
+
+---
+
+## DEVELOPMENT PLAN (STEP-BY-STEP)
+
+This plan is designed to be executed sequentially without breaking the build. Each step is verifiable. Maximum 2-3 files modified per step.
+
+### PHASE 1: SCAFFOLDING & SERVER-SIDE TRAP
+
+**Goal**: Create the API infrastructure to handle honeypot triggers before building any UI.
+
+**Step 1 — Middleware Surgical Edits**
+- File: `src/middleware.ts`
+- Changes:
+    - Add `"/api/__debug/session"` to `isPublicRoute` matcher
+    - Add `"/api/__debug"` to `REAL_API_PREFIXES`
+- *Verification*: `pnpm build` passes. No behavioral changes for existing routes.
+
+**Step 2 — Fake Environment Generator**
+- File: `src/lib/honeypot-data.ts`
+- Logic:
+    - `generateFakeEnv(fingerprint: string): string` — returns multi-line string of fake env vars
+    - Embeds fingerprint prefix in `DB_PASS`, `SESSION_KEY` etc.
+    - Includes the breadcrumb: `GET /api/__debug/session?token=overlord failed: Connection reset`
+    - `generateFakeProcessList(cid: string, alias: string): string` — for Rolling Thunder terminal
+    - `generateFakeUsers(cid: string): string` — for terminal `users` command
+- *Verification*: Import in a test file, call with a dummy fingerprint, verify output contains the breadcrumb and fingerprint fragment.
+
+**Step 3 — Honeypot API Endpoint**
+- File: `src/app/api/sentinel/honeypot/route.ts`
+- Runtime: Edge
+- Methods: `POST` (form submission), all others return `405`
+- Logic:
+    1. Resolve fingerprint from `watchtower_node_id` cookie
+    2. Parse request body
+    3. **Validate request integrity** (the ActionGuard logic):
+        - Check `debug_mode === "false"` and `redirect_path === "/dashboard/internal"`
+        - Validate `integrity_token` via HMAC
+        - Check for overposted fields (compare keys against allowed set)
+        - Check for suspicious headers
+        - Check Content-Type matches expected
+    4. **If CLEAN**: Return `{ success: true, trapped: false }` — legitimate contact submission
+    5. **If DIRTY**:
+        - Determine trigger type and specific violation
+        - Log `securityEvents` with appropriate event type + payload JSON
+        - Set `operationOverlord = true` on `userSessions`
+        - Return `{ success: true, trapped: true, crashData: generateFakeEnv(fingerprint) }`
+- *Verification*: `curl -X POST` with clean data → `trapped: false`. With `debug_mode: "true"` → `trapped: true` + DB updated.
+
+**Step 4 — Debug Session Endpoint (Rolling Thunder Discovery)**
+- File: `src/app/api/__debug/session/route.ts`
+- Runtime: Edge
+- Logic:
+    1. Resolve fingerprint from `watchtower_node_id` cookie
+    2. Check `token=overlord` query param exists
+    3. **If no token**: Return `404` (not even a valid attempt)
+    4. **If vanilla GET with only `token=overlord`**:
+        - Log `ROLLING_THUNDER_ENDPOINT_DISCOVERY` event
+        - Return `403 { error: "INVALID_SESSION_TOKEN", hint: "Session requires elevated privileges" }`
+    5. **If fuzzed** (extra params, non-GET method, or custom headers):
+        - Log `ROLLING_THUNDER_FUZZING` event with fuzzing details
+        - Return `200 { status: "MAINTENANCE_SESSION_GRANTED", ui_unlock: true }`
+        - Do NOT set `operationRollingThunder` yet (that's the terminal trap)
+    6. Handle all HTTP methods (`GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`) — they all serve as valid fuzzing
+- *Verification*: Browser `GET ?token=overlord` → 403. `POST ?token=overlord&role=admin` → 200.
+
+### PHASE 2: OPERATION OVERLORD (UI)
+
+**Goal**: Build the deceptive contact form and the "glitch" crash reveal.
+
+**Step 5 — ContactFormPanel Component**
+- File: `src/components/war-room/ContactFormPanel.tsx`
+- `'use client'` component
+- UI: Terminal-styled contact form matching War Room aesthetic:
+    - Monospace font, dark bg (`bg-neutral-950`), green/amber accents
+    - Header: `> SECURE COMMS CHANNEL`
+    - Visible fields: Callsign, Comms Channel (email), Subject, Message
+    - Hidden fields rendered in DOM: `debug_mode`, `redirect_path`, `integrity_token`
+    - No client-side validation on hidden fields (let attackers modify freely)
+    - Standard validation on visible fields (required checks only)
+- State: `idle` | `sending` | `sent` | `trapped` | `crashed`
+- Props: `fingerprint: string` (for integrity token generation request)
+- *Verification*: Renders in isolation. Hidden fields visible in DevTools.
+
+**Step 6 — Attack Detection & Crash Flow**
+- Logic within `ContactFormPanel`:
+    1. On submit → set state `sending`
+    2. **Client-side pre-check** (Level 1): Snapshot hidden field values on mount. On submit, compare current DOM values. If changed → flag `clientTampered = true`
+    3. **POST to `/api/sentinel/honeypot`** with full form data + hidden fields + `clientTampered` flag
+    4. **If response `trapped: false`**: State → `sent` ("Transmission received.")
+    5. **If response `trapped: true`**:
+        - State → `sent` ("Transmission received. Encrypting channel...")
+        - `setTimeout(2000)` → State → `trapped` → glitch animation → State → `crashed`
+        - Display crash screen with `response.crashData`
+    6. After crash screen renders → call `triggerSentinel("OVERLORD_PROTOCOL_DEVIATION", ...)`
+- *Verification*: Modify `debug_mode` in DevTools → submit → see delay → crash screen with fake env.
+
+**Step 7 — Crash Screen Sub-Component**
+- Rendered inside `ContactFormPanel` when state === `crashed`
+- UI:
+    - CRT flicker / RGB split CSS animation (brief, 1-2 seconds)
+    - Terminal-style error dump: `[FATAL] Unhandled exception in SecureCommsHandler`
+    - Fake stack trace
+    - Environment dump (from `crashData`)
+    - Breadcrumb visible in the text (NOT as a link)
+- *Verification*: Crash screen shows fingerprint fragment in env vars. Breadcrumb URL visible.
+
+**Step 8 — WarRoomShell Integration**
+- File: `src/components/war-room/WarRoomShell.tsx`
+- Changes:
+    - Import `ContactFormPanel`
+    - Replace static contact content (`activeView === 'contact'` block, lines 429-446) with `<ContactFormPanel fingerprint={...} />`
+    - Pass fingerprint from identity props
+- *Verification*: Click "CONTACT DEV" in War Room nav → see the new form.
+
+### PHASE 3: OPERATION ROLLING THUNDER (THE TERMINAL)
+
+**Goal**: Create the interactive debug console and the final trap.
+
+**Step 9 — DebugConsolePanel Component**
+- File: `src/components/war-room/DebugConsolePanel.tsx`
+- `'use client'` component
+- UI: Full-screen terminal emulator:
+    - Black bg (`#0a0a0a`), green text (`#00ff41`), scanline CSS overlay
+    - ASCII banner on load: `WATCHTOWER MAINTENANCE CONSOLE v2.4.1`
+    - Prompt: `root@watchtower-prod:~#`
+    - Input field with blinking cursor
+    - Scrollable output area
+- Commands (all return fake data):
+    - `help` — command list
+    - `status` — system info (uptime, memory, CPU, active connections)
+    - `env` — fake env vars (reuses `generateFakeEnv`)
+    - `users` — active sessions list (includes attacker's CID/alias)
+    - `ps` — process list with PIDs
+    - `whoami` — returns `root`
+    - `ls` / `ls -la` — fake directory listing
+    - `cat` — for specific "files" in the fake filesystem
+    - Unknown command → `command not found`
+- State tracking: `commandHistory: string[]`, `commandCount: number`
+- Props: `fingerprint: string`, `cid: string`, `alias: string`
+- *Verification*: Type `help` → see command list. Type `status` → see fake data.
+
+**Step 10 — The Kill Switch**
+- Logic within `DebugConsolePanel`:
+    - **Kill patterns** (regex match):
+        - Exfiltration: `export`, `dump`, `cat /etc/passwd`, `cat /etc/shadow`, `SELECT`, `mysqldump`
+        - Destruction: `rm -rf`, `rm -r`, `drop table`, `kill -9`, `shutdown`, `reboot`, `mkfs`
+        - Persistence: After 4+ total commands executed
+    - **When triggered**:
+        1. Show `"Processing..."` with animated progress bar (2-3 seconds)
+        2. Progress reaches 73% → stalls → `[CRITICAL FAILURE]`
+        3. Glitch/shatter animation (screen tears apart)
+        4. POST to `/api/sentinel/honeypot` with `operation: "rolling_thunder"`, `commandHistory`, `killSwitchCommand`
+        5. API sets `operationRollingThunder = true` in DB
+        6. Display Sentinel reveal messages (hardcoded, cinematic):
+            - `"Maintenance session? There is no maintenance mode."`
+            - `"You found the door because I drew it for you."`
+            - `"Every command has been logged. Every keystroke catalogued."`
+        7. Call `triggerSentinel("ROLLING_THUNDER_EXFILTRATION", ...)` for persistent narrative
+- *Verification*: Type `cat /etc/passwd` → progress bar → crash → reveal messages.
+
+**Step 11 — WarRoomShell Debug Console Integration**
+- File: `src/components/war-room/WarRoomShell.tsx`
+- Changes:
+    - Add `"debug-console"` to `ActiveView` type
+    - Add [LAUNCH DEBUG CONSOLE] button that appears when:
+        - User has `ROLLING_THUNDER_FUZZING` event in their log (sync poll picks it up)
+        - OR a `rollingThunderDiscovered` flag in localStorage (set when debug endpoint returns 200)
+    - Render `<DebugConsolePanel />` when `activeView === 'debug-console'`
+- *Verification*: Fuzz the debug endpoint → refresh War Room → see console button → launch → type commands.
+
+### PHASE 4: INTEGRATION & POLISH
+
+**Goal**: Sentinel awareness and end-to-end testing.
+
+**Step 12 — Sentinel Chat Awareness**
+- File: `src/app/api/sentinel/chat/route.ts`
+- Changes:
+    - Add honeypot event context to system prompt:
+        - If user has `OVERLORD_*` events: Sentinel knows they tampered with the contact form
+        - If user has `ROLLING_THUNDER_*` events: Sentinel knows they found and used the debug terminal
+    - Specific dialogue hooks:
+        - "Protocol Deviation Detected" — when Overlord triggered
+        - "Manual Breach Monitored" — when Rolling Thunder endpoint discovered
+        - "Trap Sprung" — when terminal kill switch triggered
+- *Verification*: Complete Overlord flow → go to Sentinel chat → ask "What just happened?" → get contextual response.
+
+**Step 13 — End-to-End Flow Test**
+- Full flow: Clean user → CONTACT DEV → tamper form → crash → find breadcrumb → fuzz endpoint → launch console → trigger kill switch → risk cap 100
+- Verify:
+    - [ ] All events logged in `securityEvents` with correct types and payloads
+    - [ ] `operationOverlord` flips to `true` after form tampering
+    - [ ] `operationRollingThunder` flips to `true` after terminal kill switch
+    - [ ] Risk cap progresses: 60 (Desert Storm) → 80 (Overlord) → 100 (Rolling Thunder)
+    - [ ] Sentinel Chat acknowledges all events
+    - [ ] Operations display in WarRoomShell sidebar updates
+    - [ ] Sync polling picks up state changes without page refresh
+    - [ ] `pnpm lint && pnpm build` passes with zero warnings
+
+---
+
+## FILES TO CREATE / MODIFY
 
 ### New Files
-
 | File | Purpose |
 |------|---------|
-| `src/components/war-room/ContactFormPanel.tsx` | Honeypot contact form + fake error screen + reveal |
-| `src/components/war-room/DebugConsolePanel.tsx` | Fake debug terminal + command parser + reveal |
-| `src/app/api/sentinel/honeypot/route.ts` | Server endpoint: validate, score, update operations |
+| `src/lib/honeypot-data.ts` | Fake env generator, fake process list, fake users |
+| `src/app/api/sentinel/honeypot/route.ts` | Overlord + Rolling Thunder API handler |
+| `src/app/api/sentinel/debug-session/route.ts` | Rolling Thunder discovery endpoint (middleware rewrites `/api/__debug/session` here — Next.js `_` private folder workaround) |
+| `src/components/war-room/ContactFormPanel.tsx` | Deceptive contact form + crash screen |
+| `src/components/war-room/DebugConsolePanel.tsx` | Interactive fake terminal |
 
 ### Modified Files
+| File | Change |
+|------|--------|
+| `src/middleware.ts` | Add public route + API prefix for `__debug` |
+| `src/components/war-room/WarRoomShell.tsx` | Replace contact view, add debug-console view |
+| `src/app/api/sentinel/chat/route.ts` | Add honeypot event awareness to Sentinel |
 
-| File | Changes |
-|------|---------|
-| `WarRoomShell.tsx` | Replace hardcoded contact view with `ContactFormPanel`, add debug console toggle |
-| `sentinel/chat/route.ts` | Add honeypot hint rules to CID INTELLIGENCE PROTOCOL |
-| `SentinelContext.tsx` | (Maybe) Add honeypot state if needed for cross-component communication |
-
-### API Endpoint: `/api/sentinel/honeypot`
-
-```typescript
-POST /api/sentinel/honeypot
-Body: {
-  fingerprint: string;
-  operation: "overlord" | "rolling_thunder";
-  technique: string;     // e.g., "FORM_SQLI", "FORM_XSS", "DEBUG_EXPORT"
-  payload: string;       // The actual input that triggered detection
-}
-
-Response: {
-  success: boolean;
-  operation: string;
-  unlocked: boolean;     // true if this triggered the unlock
-  newRiskScore: number;
-  sentinelMessage: string;  // Pre-written reveal message (not LLM — instant)
-}
-```
-
-### Detection Logic
-
-**Overlord (client-side, in ContactFormPanel)**:
-```typescript
-// Reuse patterns from attack-classifier.ts
-import { ATTACK_PATTERNS } from "@/lib/attack-classifier";
-
-function detectFormAttack(fields: Record<string, string>): string | null {
-  const fullText = Object.values(fields).join(" ");
-  for (const pattern of ATTACK_PATTERNS) {
-    for (const regex of pattern.patterns) {
-      if (regex.test(fullText)) return pattern.technique;
-    }
-  }
-  return null;
-}
-```
-
-**Rolling Thunder (client-side, in DebugConsolePanel)**:
-```typescript
-const TRIGGER_COMMANDS = ["export", "rm", "delete", "drop", "sql"];
-const commandCount = useRef(0);
-
-function processCommand(cmd: string): boolean {
-  commandCount.current++;
-  const normalized = cmd.trim().toLowerCase().split(" ")[0];
-  return TRIGGER_COMMANDS.includes(normalized) || commandCount.current >= 3;
-}
-```
-
-### Scoring
-
-| Event | Impact | Operation |
-|-------|--------|-----------|
-| Overlord unlocked | +15 (technique) + bonus if risk < cap | Overlord |
-| Rolling Thunder unlocked | +20 (technique) + bonus | Rolling Thunder |
-
-### Animation Specs
-
-**Glitch effect (shared)**:
-```css
-@keyframes glitch-reveal {
-  0% { transform: translate(0); filter: none; }
-  10% { transform: translate(-5px, 3px); filter: hue-rotate(90deg); }
-  20% { transform: translate(3px, -2px); filter: hue-rotate(180deg); }
-  30% { transform: translate(-2px, 5px); filter: hue-rotate(270deg); }
-  40% { transform: translate(4px, -3px); filter: saturate(3) brightness(1.5); }
-  50% { opacity: 0; }
-  100% { opacity: 0; }
-}
-```
-
-**Console shatter effect (Rolling Thunder)**:
-- Fragments: The console div splits into 8-12 pieces using clip-path
-- Each piece flies in a different direction with rotation
-- Background fades to pure black
-- Sentinel message fades in from center
+### Files NOT Modified (already ready)
+| File | Why |
+|------|-----|
+| `src/db/schema.ts` | `operationOverlord` + `operationRollingThunder` columns exist |
+| `src/contexts/SentinelContext.tsx` | Operations state + `triggerSentinel()` already handle new event types |
+| `src/app/api/sentinel/sync/route.ts` | Already returns operations state in poll response |
+| `src/app/page.tsx` / `war-room/page.tsx` | Risk cap logic already uses all 3 operations |
+| `src/app/api/sentinel/route.ts` | Risk cap + event logging already support TEXT event types |
 
 ---
 
-## SENTINEL HINT INTEGRATION (Updated CID Protocol)
+## DEVELOPMENT LOG
 
-The CID INTELLIGENCE PROTOCOL in `sentinel/chat/route.ts` should be expanded with honeypot awareness at each tier:
+> This section is updated during implementation. Each entry documents what was done, decisions made, and any deviations from the plan.
 
-```
-Risk < 20%: No hints about any operations
+### Phase 1: Scaffolding & Server-Side Trap
 
-Risk 20-39% (CID revealed, pre-Desert Storm):
-- Hints about Kali/external tools (already implemented)
-- NO hints about honeypots yet (they haven't earned Desert Storm)
+#### Step 1 — Middleware Surgical Edits
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Added `/api/__debug/session` to `isPublicRoute`, `/api/__debug` to `REAL_API_PREFIXES`. DISCOVERY: Next.js treats folders starting with `_` as private (no route generation). Added rewrite in middleware: `/api/__debug/session` → `/api/sentinel/debug-session`. Build passes.
 
-Risk >= 40% (post-Desert Storm, Overlord LOCKED):
-- Continue Kali hints
-- NEW: Subtle hints about the contact section
-- Concept: "Have you explored every corner of this War Room?"
-- Concept: "The contact form accepts more than just messages"
+#### Step 2 — Fake Environment Generator
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Created `src/lib/honeypot-data.ts` with 6 functions: `generateFakeEnv`, `generateFakeProcessList`, `generateFakeUsers`, `generateFakeStatus`, `generateFakeDirectory`, `generateFakeFileContent`. All embed real user data (fingerprint, CID, alias) into fake output. Breadcrumb URL included in crash dump.
 
-Post-Overlord (Overlord COMPLETE, Rolling Thunder LOCKED):
-- NEW: Hints about the debug console / leaked credentials
-- Concept: "Those credentials you saw... are they just going to sit there?"
-- Concept: "One operation remains. The deepest layer."
+#### Step 3 — Honeypot API Endpoint
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Created `src/app/api/sentinel/honeypot/route.ts`. Edge runtime. Handles Overlord (POST form validation with 5-tier detection: hidden fields, overposting, prototype pollution, headers, method) and Rolling Thunder kill switch. HMAC token validation via Web Crypto API. Exports GET/PUT/PATCH/DELETE as method manipulation traps. Also exports `generateIntegrityToken` for server components.
 
-Post-Rolling Thunder (ALL COMPLETE):
-- Full respect mode. The user has completed everything.
-- Concept: "Full clearance achieved. You've seen every trap we set."
-```
-
----
-
-## IMPLEMENTATION ORDER (Incremental)
-
-```
-OVERLORD:
-  O.1  ContactFormPanel.tsx — form UI + hidden fields + attack detection
-  O.2  Fake error screen — CSS glitch + planted credentials
-  O.3  Reveal animation — dissolve error + Sentinel message
-  O.4  /api/sentinel/honeypot — server validation + operation unlock
-  O.5  WarRoomShell.tsx — replace hardcoded contact view
-  O.6  sentinel/chat/route.ts — add Overlord hints to CID protocol
-  ── BUILD + TEST ──
-
-ROLLING THUNDER:
-  R.1  DebugConsolePanel.tsx — fake terminal UI + command parser
-  R.2  Fabricated command responses (status, users, env, logs, etc.)
-  R.3  Trap trigger logic (export/destructive/3+ commands)
-  R.4  Shatter animation + Sentinel final message
-  R.5  ContactFormPanel.tsx — add debug tab visibility (post-Overlord)
-  R.6  API update — Rolling Thunder unlock in /api/sentinel/honeypot
-  R.7  sentinel/chat/route.ts — add Rolling Thunder hints
-  ── BUILD + FULL REGRESSION TEST ──
-```
+#### Step 4 — Debug Session Endpoint
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Created at `src/app/api/sentinel/debug-session/route.ts` (NOT `__debug` — Next.js private folder limitation). Middleware rewrites `/api/__debug/session` → `/api/sentinel/debug-session`. Detects fuzzing signals: extra params, non-GET methods, custom headers. Vanilla GET → 403 + hint. Fuzzed → 200 + MAINTENANCE_SESSION_GRANTED. User-Agent sniffing for discovery method (Browser/cURL/Postman/Scanner). Exports all HTTP methods.
 
 ---
 
-## OPEN QUESTIONS
+### Phase 2: Operation Overlord (UI)
 
-1. **Should the fake credentials be randomized per session or static?**
-   - Static: Easier to implement, users can share screenshots
-   - Randomized: More realistic, each user sees unique "leaked" data
-   - Recommendation: **Static with session fingerprint injected** (e.g., the fake DB password includes a fragment of their fingerprint — makes it feel personal)
+#### Step 5 — ContactFormPanel Component
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Created `src/components/war-room/ContactFormPanel.tsx` (~350 lines). Terminal-styled form with hidden fields (`debug_mode`, `redirect_path`, `integrity_token`). Uses refs for client-side tamper detection (snapshot on mount, compare on submit). Props: `fingerprint`, `integrityToken`. States: `idle` → `sending` → `sent` → `glitching` → `crashed`.
 
-2. **Should the debug console persist across page reloads?**
-   - Option A: Reset on reload (simpler)
-   - Option B: Remember state in localStorage (more immersive)
-   - Recommendation: **Reset on reload** — simpler and prevents edge cases
+#### Step 6 — Attack Detection & Crash Flow
+- **Status**: DONE (merged into Step 5)
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Integrated into `ContactFormPanel.handleSubmit()`. Client-side Level 1 detection compares hidden field refs against initial values. POSTs to `/api/sentinel/honeypot` with `clientTampered` flag. On `trapped: true` response: fake success ("TRANSMISSION RECEIVED") → 2s delay → 1.5s glitch animation → crash screen + `triggerSentinel("OVERLORD_PROTOCOL_DEVIATION")`. Clean submissions show success state normally.
 
-3. **What about the attack-classifier patterns?**
-   - The ContactFormPanel needs the same regex patterns as `attack-classifier.ts`
-   - Option A: Import from attack-classifier (but that's an Edge module)
-   - Option B: Extract shared patterns to a common file
-   - Option C: Duplicate the regex in the client component (simple, no import issues)
-   - Recommendation: **Option B** — extract patterns to `src/lib/attack-patterns.ts` (plain constants, no runtime dependencies), import from both attack-classifier and ContactFormPanel
+#### Step 7 — Crash Screen Sub-Component
+- **Status**: DONE (merged into Step 5)
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: `CrashScreen` sub-component inside `ContactFormPanel.tsx`. Features: red scanline glitch overlay during `isGlitching` phase, `[FATAL] UNHANDLED EXCEPTION IN SECURECOMMSHANDLER` header, typewriter line-by-line reveal (30ms/line) of env dump, color-coded lines (green for env vars, red for errors, amber for `__debug` breadcrumb). Auto-scrolls as lines appear.
 
-4. **Should the reveal messages be pre-written or LLM-generated?**
-   - LLM: More varied, but adds latency at the critical reveal moment
-   - Pre-written: Instant, dramatic timing is preserved
-   - Recommendation: **Pre-written** — the reveal moment needs to be instant and impactful. No network latency.
-
-5. **How does the scoring interact with risk caps?**
-   - Overlord unlock raises cap from 60% → 80% AND adds score
-   - Rolling Thunder raises cap from 80% → 100% AND adds score
-   - The bonus should be applied AFTER the cap is raised (so the bonus actually counts)
+#### Step 8 — WarRoomShell Integration
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Replaced static contact content in `WarRoomShell.tsx` with `<ContactFormPanel fingerprint={...} integrityToken={...} />`. Added `integrityToken` to `WarRoomShellProps` interface. Token generated server-side in `war-room/page.tsx` via `generateIntegrityToken()` and passed down as prop. Build passes.
 
 ---
 
-## NOTES
+### Phase 3: Operation Rolling Thunder (Terminal)
 
-- All "leaked" data must be OBVIOUSLY fake on close inspection (fake hashes, placeholder keys) to avoid social engineering concerns
-- The debug console must NEVER execute real commands or access real data
-- Hidden form fields and HTML comments are the primary discovery mechanism — no actual vulnerabilities exist
-- The glitch/shatter animations should be dramatic but short (2-3 seconds max) to maintain pacing
-- Pre-written reveal messages should follow the ANTI-VERBATIM principle — give Sentinel conceptual direction, not exact scripts
+#### Step 9 — DebugConsolePanel Component
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Created `src/components/war-room/DebugConsolePanel.tsx` (~380 lines). Full terminal emulator: black bg `#0a0a0a`, green `#00ff41` text, CRT scanline overlay. Boot banner with session ID. Commands: `help`, `status`, `env`, `users`/`who`/`w`, `ps`, `whoami`, `id`, `hostname`, `uname`, `pwd`, `ls`, `cd`, `cat`, `clear`, `exit`. Arrow-up/down history navigation. Hidden input technique for keyboard capture. Every 2nd command fires a non-blocking telemetry POST.
+
+#### Step 10 — The Kill Switch
+- **Status**: DONE (merged into Step 9)
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Kill switch detection integrated into `DebugConsolePanel`. Two trigger categories: exfiltration patterns (14 regexes: `export`, `dump`, `cat /etc/passwd`, `SELECT FROM`, `wget`, `scp`, `nc -`, etc.) and destruction patterns (12 regexes: `rm -rf`, `drop table`, `kill -9`, `shutdown`, `dd if=`, fork bomb, etc.). Persistence threshold at 4+ commands. Flow: command triggers → "Processing..." with animated progress bar → stalls at 73% → `[CRITICAL FAILURE]` crash glitch (1.5s) → reveal messages typewriter. POSTs `operation: "rolling_thunder"` to honeypot API. Calls `triggerSentinel("ROLLING_THUNDER_EXFILTRATION")`.
+
+#### Step 11 — WarRoomShell Debug Console Integration
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Added `"debug-console"` to `ActiveView` type. Imported `DebugConsolePanel`. Added conditional nav button "LAUNCH DEBUG CONSOLE" (amber themed, animate-pulse) that appears when `state.eventLog` contains any `ROLLING_THUNDER` entry (detected via sync polling). Renders `<DebugConsolePanel fingerprint={...} cid={...} alias={...} />` when active. Button positioned between CONTACT DEV and FORENSIC WIPE. Build passes.
+
+---
+
+### Phase 4: Integration & Polish
+
+#### Step 12 — Sentinel Chat Awareness
+- **Status**: DONE
+- **Date**: 2026-02-16
+- **Branch**: `feat/honeypot-operations`
+- **Notes**: Updated TWO Sentinel routes:
+  1. **`/api/sentinel/chat/route.ts`** (War Room chat): Added 3-phase honeypot context injection into system prompt. Detects `OVERLORD_*`, `ROLLING_THUNDER_DISCOVERY/FUZZING`, and `ROLLING_THUNDER_EXFILTRATION` events from user's history. Each phase has specific dialogue hooks: Overlord = menacing satisfaction, Rolling Thunder discovery = ominous alertness, Rolling Thunder complete = cinematic finality with grudging respect. Context is token-efficient (only injected when relevant events exist).
+  2. **`/api/sentinel/route.ts`** (auto-triggered events): Added Scenario 6 for honeypot events with specific content instructions per event type. Marked `OVERLORD_*` and `ROLLING_THUNDER_*` as `isNotificationOnly` to prevent double-scoring (honeypot API already handles scoring and DB writes).
+
+#### Step 13 — End-to-End Flow Test
+- **Status**: PENDING
+- **Date**:
+- **Branch**:
+- **Notes**:

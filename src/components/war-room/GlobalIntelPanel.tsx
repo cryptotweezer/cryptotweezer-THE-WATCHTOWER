@@ -249,7 +249,7 @@ export default function GlobalIntelPanel() {
                                 <span className="text-zinc-400 font-mono truncate">
                                     {i + 1}. {tech.technique}
                                 </span>
-                                <span className="text-cyan-400 font-mono font-bold ml-2">
+                                <span className="text-white font-mono font-bold ml-2">
                                     {tech.count}
                                 </span>
                             </div>
@@ -275,11 +275,11 @@ export default function GlobalIntelPanel() {
                                             minute: '2-digit'
                                         })}
                                     </span>
-                                    <span className="text-cyan-400 truncate">
+                                    <span className="text-white truncate">
                                         {event.alias}
                                     </span>
                                 </div>
-                                <span className="text-orange-400 font-mono ml-2 truncate">
+                                <span className="text-neutral-500 font-mono ml-2 truncate">
                                     {event.eventType}
                                 </span>
                             </div>

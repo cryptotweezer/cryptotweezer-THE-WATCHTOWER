@@ -644,3 +644,108 @@
 *   Operation Overlord and Rolling Thunder implementation (Phase 3).
 *   Consider SSE upgrade if polling proves insufficient at scale.
 
+
+### [2026-02-12] Debugging: Routing Probe Telemetry Fix
+**👤 Author**: Antigravity + Lead Architect
+**🎯 Goal**: Resolve "Silent Sentinel" issue for Routing Probes (`ROUTING_PROBE_HEURISTICS`) and reset environment.
+**✅ Accomplished**:
+*   **Routing Probe Streaming Fix**:
+    *   **Root Cause**: `SentinelContext.tsx` forced `nonStreaming: true` for routing probes, which bypassed the standard chat history update logic.
+    *   **Fix**: Removed the override, allowing routing probes to use the standard streaming path.
+    *   **Result**: Sentinel now mocks improved routing attempts (e.g., `/admin`, `/config`) with full streaming text in the "LIVE CONNECTION" terminal.
+*   **Debugging Tools Created**:
+    *   `src/scripts/check-fingerprint.ts`: Investigates existing session state.
+    *   `src/scripts/setup-test-session.ts`: Creates isolated test sessions.
+    *   `src/scripts/debug-routing.ts`: Simulates full API interaction (streaming & non-streaming) to verify backend responses without browser UI.
+*   **Database Reset**:
+    *   Updated `src/scripts/reset-db.ts` to include `research_leaderboard` for a complete "Tabula Rasa" wipe.
+    *   Executed full database purge to clear all `security_events` and `user_sessions`.
+**🚧 Next Steps**:
+*   Verify the fix in the live application (navigate to `/admin`).
+*   Continue with Phase 2 (Kali CID Refinement).
+
+
+### [2026-02-12] UI Standardization: Electric Cyan Protocol
+**👤 Author**: Antigravity + Lead Architect
+**🎯 Goal**: Standardize War Room UI colors to "Electric Cyan" (`#00f2ff`) for cohesive branding.
+**✅ Accomplished**:
+*   **War Room Shell (`WarRoomShell.tsx`)**:
+    *   **Sentinel Uplink**: Updated header text and pulse dot from standard blue to `#00f2ff`.
+    *   **Identity Node**: Updated Shield icon, "LIVE" indicator, and Net Address text to `#00f2ff`.
+    *   **Navigation**: Verified active state links and "Back to Home" button usage of `#00f2ff`.
+*   **Visual Consistency**: Ensured all "Safe/System" indicators now match the specific aquamarine shade requested by the user, distinguishing them from the standard blue previously used.
+**🚧 Next Steps**:
+*   Continue with Phase 2 (Kali CID Refinement).
+
+
+### [2026-02-12] UI Color Correction: Blue-500 Protocol
+**👤 Author**: Antigravity + Lead Architect
+**🎯 Goal**: Correct War Room UI colors to match the original "Sentinel Uplink" blue (`blue-500`) instead of Electric Cyan (`#00f2ff`).
+**✅ Accomplished**:
+*   **War Room Shell (`WarRoomShell.tsx`)**:
+    *   **Sentinel Uplink**: Reverted/Confirmed usage of `text-blue-500` / `bg-blue-500`.
+    *   **Identity Node**: Updated Shield icon, "LIVE" indicator, and Net Address text to `blue-500`.
+    *   **Navigation**: Updated active state links, "Back to Home" button, and Contact Dev button to `blue-500`.
+*   **Result**: All primary indicators are now unified under the standard Tailwind `blue-500` palette, replacing the `cyan` and `#00f2ff` variants.
+**🚧 Next Steps**:
+*   Continue with Phase 2 (Kali CID Refinement).
+
+
+### [2026-02-12] Home Page UI: War Room Button Refinement
+**👤 Author**: Antigravity
+**🎯 Goal**: Refine "War Room" button hover state on Home page to be text-only (no box/shadow) with `blue-500` color.
+**✅ Accomplished**:
+*   **HomeTerminal (`HomeTerminal.tsx`)**:
+    *   **SignedIn State**: Removed hover shadow/glow. Changed hover text color to `blue-500`.
+    *   **SignedOut State**: Removed border, background, and shadow effects. Changed hover text color to `blue-500`.
+*   **Result**: The "War Room" link is now a clean, text-only element that turns standard blue on hover, matching the requested aesthetic.
+**🚧 Next Steps**:
+*   Resume Phase 2 (Kali CID Refinement).
+
+
+### [2026-02-12] War Room UI: Forensic Wipe Alignment
+**👤 Author**: Antigravity
+**🎯 Goal**: Correct alignment of "FORENSIC WIPE" button in War Room navigation.
+**✅ Accomplished**:
+*   **WarRoomShell (`WarRoomShell.tsx`)**:
+    *   Removed `mt-4` from the Forensic Wipe button container.
+    *   Button now aligns perfectly with the vertical rhythm of the other navigation items (`gap-2`).
+*   **Result**: The navigation panel is now visually consistent with no awkward gaps.
+**🚧 Next Steps**:
+*   Resume Phase 2 (Kali CID Refinement).
+
+### [2026-02-12] Geo Tracker UI: Alignment and Color Correction
+**👤 Author**: Antigravity
+**🎯 Goal**: Correct alignment of "FORENSIC WIPE" button in War Room navigation.
+**✅ Accomplished**:
+*   **WarRoomShell (`WarRoomShell.tsx`)**:
+    *   Removed `mt-4` from the Forensic Wipe button container.
+    *   Button now aligns perfectly with the vertical rhythm of the other navigation items (`gap-2`).
+*   **Result**: The Geo Tracker now fully aligns with the system's "Sentinel Uplink" blue aesthetic.
+*   **Correction**: Removed the "LIVE" text indicator from the Geo Tracker header per user request ("elimina ese live que agregaste").
+**🚧 Next Steps**:
+*   Resume Phase 2 (Kali CID Refinement).
+
+### [2026-02-16] Phase 3: The Honeypot Operations & Risk Calibration
+**👤 Author**: Antigravity
+**🎯 Goal**: Implement "Operation Overlord" and "Operation Rolling Thunder" honeypots, integrate Kali CID narrative, and rebalance risk scoring.
+**✅ Accomplished**:
+*   **Operation Overlord (The Trap)**:
+    *   Implemented full `POST /api/sentinel/honeypot` with hidden field tampering (`debug_mode`, `redirect_path`), overposting detection, and HMAC integrity token validation.
+    *   Added fake crash dump generator (`generateFakeEnv`) on trapped requests.
+*   **Operation Rolling Thunder (The Kill Switch)**:
+    *   Implemented `GET /api/__debug/session` fuzzing detection. Vanilla access returns 403; Fuzzed (`?token=overlord&role=admin`) grants access.
+    *   Simulated "Kill Switch" execution (`cat /etc/shadow` in debug console) triggering `ROLLING_THUNDER_EXFILTRATION` event.
+*   **Kali CID Integration (Desert Storm)**:
+    *   Implemented full external attack classification (SQLi, XSS, Path Traversal) in `api/sentinel/external/route.ts`.
+    *   Added "Operation Desert Storm" milestone (3 unique external attacks) with narrative feedback.
+    *   Visuals: `OVERLORD_` and `ROLLING_THUNDER_` events now appear **RED** and bold in War Room & Terminal logs.
+*   **Risk Score Rebalancing (The 90% Protocol)**:
+    *   **Global Cap**: Enforced strict **90% Hard Cap** across all files (`route.ts`, `page.tsx`, `WarRoomShell.tsx`, `useSentinelManager.ts`), reserving final 10% for future Phase 4.
+    *   **Impact Tuning**: Reduced Heuristics (+2%), External (+3%), and increased Injection (+5%) for balanced progression.
+    *   **Cleanup**: Removed legacy `100%` caps and `20%` tiers. Risk is now cumulative but capped at 90%.
+*   **Documentation**:
+    *   Created `docs/honeypots.md` (Design) and `docs/Kali_testing.md` (Simulation Guide).
+**🚧 Next Steps**:
+*   **Final Verification**: Test the Rolling Thunder Kill Switch end-to-end.
+*   **Phase 4**: Consideration of "Red Team" features or "Dark Mode" unlock at >90%.

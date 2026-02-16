@@ -34,7 +34,7 @@ export async function GET(req: Request) {
         let riskCap = 40;
         if (session.operationDesertStorm) riskCap = 60;
         if (session.operationOverlord) riskCap = 80;
-        if (session.operationRollingThunder) riskCap = 100;
+        if (session.operationRollingThunder) riskCap = 90;
 
         // Query new events since cursor
         let events: {

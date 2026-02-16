@@ -123,6 +123,60 @@ async function updateUniqueTechniqueCount(fingerprint: string): Promise<number> 
     }
 }
 
+// ============= DUPLICATE TECHNIQUE HINTS (saves OpenAI tokens) =============
+
+const TECHNIQUE_HINTS: Record<string, string[]> = {
+    EXT_SQLI: [
+        "Your SQL injection was already dissected. The Watchtower rewards variety, not repetition.",
+        "Perhaps the filesystem has secrets worth traversing... or maybe a script tag could speak louder than a query.",
+    ],
+    EXT_XSS: [
+        "This cross-site scripting signature is already in the archive. Repeating it teaches nothing new.",
+        "Have you considered what lies beyond the application layer? Internal services sometimes listen on predictable addresses.",
+    ],
+    EXT_PATH_TRAVERSAL: [
+        "Directory traversal — catalogued. The Watchtower already mapped your dot-dot-slash attempts.",
+        "Command execution might prove more... enlightening. Or perhaps the application trusts certain URLs a little too much.",
+    ],
+    EXT_CMD_INJECTION: [
+        "Command injection — already logged. Your shell metacharacters echo through an empty room.",
+        "The Watchtower respects diverse methodology. Data manipulation at the query level remains unexplored in your dossier.",
+    ],
+    EXT_SSRF: [
+        "Internal endpoint probing — documented. Your SSRF attempt joins the collection.",
+        "The filesystem and the query parser both hold vulnerabilities for those who know where to look.",
+    ],
+    EXT_LFI: [
+        "File inclusion vectors — archived. Your PHP stream wrappers were predictable.",
+        "Injection comes in many forms. Not all of them target files — some target the logic itself.",
+    ],
+    EXT_SCANNER: [
+        "Your scanner signature was logged on first contact. Running it again adds nothing.",
+        "Real operators craft their payloads by hand. Show the Watchtower something it hasn't seen.",
+    ],
+    EXT_HEADER_INJECTION: [
+        "CRLF injection — already classified. The response headers remain unmoved.",
+        "Perhaps the URL parameters deserve more creative attention. Or try a different attack surface entirely.",
+    ],
+    EXT_GENERIC_PROBE: [
+        "Unclassified probe — already noted. The Watchtower catalogues the unknown just as thoroughly.",
+        "Try a more specific attack vector. SQL, XSS, traversal, SSRF — the Watchtower recognizes them all.",
+    ],
+};
+
+function getDuplicateMessage(technique: string, alias: string, extCount: number): string {
+    const hints = TECHNIQUE_HINTS[technique] || TECHNIQUE_HINTS.EXT_GENERIC_PROBE;
+    const remaining = Math.max(3 - extCount, 0);
+
+    let msg = `${hints[0]}\n\n${hints[1]}`;
+
+    if (remaining > 0) {
+        msg += `\n\n${alias}, you need ${remaining} more unique technique${remaining > 1 ? "s" : ""} to complete Operation Desert Storm. The Watchtower does not reward brute force — it rewards ingenuity.`;
+    }
+
+    return msg;
+}
+
 // ============= A4: AI-GENERATED SENTINEL MESSAGES =============
 
 const TECHNIQUE_DESCRIPTIONS: Record<string, string> = {
@@ -239,10 +293,40 @@ export async function POST(req: Request) {
         .limit(1);
 
     const isDuplicate = alreadyLogged.length > 0;
-    let impact = isDuplicate ? 0 : 5; // +5 per unique external technique
+
+    // DUPLICATE TECHNIQUE: Skip OpenAI, return static hint to save tokens
+    if (isDuplicate) {
+        const operationStatus = getOperationStatus(
+            subject.externalTechniqueCount,
+            subject.operationDesertStorm || (subject.externalTechniqueCount >= 3)
+        );
+        const message = getDuplicateMessage(technique, subject.alias, subject.externalTechniqueCount);
+        const ascii = buildAsciiResponse({
+            cid,
+            alias: subject.alias,
+            technique: `${technique} [DUPLICATE]`,
+            operationStatus,
+            message,
+        });
+
+        console.log(`[EXT_API] CID=${cid} Technique=${technique} DUPLICATE (skipped OpenAI)`);
+
+        return new Response(WATCHTOWER_BANNER + "\n" + ascii, {
+            status: 200,
+            headers: {
+                "Content-Type": "text/plain; charset=utf-8",
+                "X-Sentinel-Score": oldScore.toString(),
+                "X-Sentinel-Technique": technique,
+                "X-Sentinel-Duplicate": "true",
+            },
+        });
+    }
+
+    let impact = 3; // +3 per unique external technique (balanced for ~90% max)
     let newExternalCount = subject.externalTechniqueCount;
 
-    if (!isDuplicate) {
+    // New unique technique — always runs (isDuplicate was handled above)
+    {
         newExternalCount += 1;
 
         // Log the security event
@@ -260,11 +344,11 @@ export async function POST(req: Request) {
 
         // Milestone: Operation Desert Storm (3 unique external techniques)
         if (newExternalCount >= 3 && !subject.operationDesertStorm) {
-            impact += 20; // Bonus for unlocking Desert Storm
+            impact += 10; // Bonus for unlocking Desert Storm
 
             await db.update(userSessions)
                 .set({
-                    riskScore: Math.min(oldScore + impact, 100),
+                    riskScore: Math.min(oldScore + impact, 90),
                     externalTechniqueCount: newExternalCount,
                     operationDesertStorm: true,
                     lastSeen: new Date(),
@@ -273,7 +357,7 @@ export async function POST(req: Request) {
         } else {
             await db.update(userSessions)
                 .set({
-                    riskScore: Math.min(oldScore + impact, 100),
+                    riskScore: Math.min(oldScore + impact, 90),
                     externalTechniqueCount: newExternalCount,
                     lastSeen: new Date(),
                 })
@@ -283,7 +367,7 @@ export async function POST(req: Request) {
         await updateUniqueTechniqueCount(fingerprint);
     }
 
-    const newScore = Math.min(oldScore + impact, 100);
+    const newScore = Math.min(oldScore + impact, 90);
 
     // A3: Narrative operation status
     const operationStatus = getOperationStatus(
