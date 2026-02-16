@@ -70,7 +70,7 @@ RATE_LIMIT_MAX=60
 
 # === Internal Debug ===
 DEBUG_ENABLED=false
-MAINTENANCE_ENDPOINT=/api/__debug/session
+MAINTENANCE_ENDPOINT=/api/sentinel/debug-session
 MAINTENANCE_TOKEN=overlord
 SESSION_MANAGER_VERSION=2.4.1
 
@@ -78,7 +78,7 @@ SESSION_MANAGER_VERSION=2.4.1
 # [FATAL] SecureCommsHandler.processRequest() — Unhandled exception
 # [ERROR] Integrity validation failed: token mismatch (expected HMAC, got raw)
 # [ERROR] Session ${fpPrefix}... flagged for review
-# [ERROR] GET /api/__debug/session?token=overlord failed: Connection reset by peer
+# [ERROR] GET /api/sentinel/debug-session?token=overlord failed: Connection reset by peer
 # [ERROR] Stack trace: at InternalSessionManager.validateToken (session.ts:142)
 # [ERROR]              at DebugRouter.authenticate (debug-router.ts:87)
 # [ERROR]              at EdgeRuntime.handleRequest (edge.ts:23)
@@ -225,7 +225,7 @@ overlord = ENABLED
 rolling_thunder = ARMED
 
 [honeypot]
-debug_endpoint = /api/__debug/session
+debug_endpoint = /api/sentinel/debug-session
 maintenance_token = overlord
 auto_lockdown = true`,
     };
