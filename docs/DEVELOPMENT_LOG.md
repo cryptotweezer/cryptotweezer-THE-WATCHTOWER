@@ -748,4 +748,23 @@
     *   Created `docs/honeypots.md` (Design) and `docs/Kali_testing.md` (Simulation Guide).
 **🚧 Next Steps**:
 *   **Final Verification**: Test the Rolling Thunder Kill Switch end-to-end.
-*   **Phase 4**: Consideration of "Red Team" features or "Dark Mode" unlock at >90%.
+### [2026-02-16] Phase 3: Honeypot Debugging & Risk Stabilization
+**👤 Author**: Antigravity
+**🎯 Goal**: Resolve Risk Score synchronization issues and finalize Honeypot pathing for deployment.
+**✅ Accomplished**:
+*   **Risk Score Desynchronization Fix**:
+    *   **Identified Root Cause**: `SentinelContext.tsx` contained shadowed, aggressive risk scoring logic (+8% Injection) that ignored the server's conservative model (+5%).
+    *   **Resolution**: Updated `SentinelContext.tsx` to mirror the database's "Source of Truth" values exactly: Inspection +2%, Injection +5%, DOM +2%.
+    *   **Result**: Zero desync between UI and Database on page reload.
+*   **Honeypot Pathing Correction**:
+    *   **Issue**: The "leaked" log in Operation Overlord pointed to `/api/__debug/session` (aesthetic only), confusing the user.
+    *   **Fix**: Updated `src/lib/honeypot-data.ts` to point to the real functional endpoint `/api/sentinel/debug-session`.
+    *   **Verification**: User successfully navigated the breadcrumb trail, fuzzed the endpoint, and executed the Kill Switch.
+*   **Honeypot Logic Hardening**:
+    *   **False Positive Fix**: Removed `x-forwarded-host` from `SUSPICIOUS_HEADERS` in `honeypot/route.ts`. Vercel/Next.js automatically adds this header, causing valid form submissions to be flagged as attacks.
+    *   **Integrity Alignment**: Forced `war-room/page.tsx` to generate HMAC tokens using the `watchtower_node_id` cookie (if present) instead of the Arcjet fingerprint. This ensures the API route (which relies on the cookie for identity) can successfully validate the token.
+*   **Deployment**:
+    *   Direct push to `main` (commits `1c3bff6`, `d8c4c49`, and new fix) for immediate Vercel update.
+**🚧 Next Steps**:
+*   **Phase 4**: Advanced Adversary Simulation (External Kali Attacks).
+

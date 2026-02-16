@@ -71,7 +71,10 @@ export default async function WarRoomPage() {
     const fullLogs = await getSessionLogs(identity.fingerprint);
 
     // Honeypot: Generate integrity token for Operation Overlord contact form
-    const integrityToken = await generateIntegrityToken(fingerprint);
+    // CRITICAL: Use the cookie ID if available, as the API route relies on it for identity.
+    // This prevents mismatch if page uses Arcjet FP but API uses Cookie.
+    const cookieId = cookieStore.get("watchtower_node_id")?.value;
+    const integrityToken = await generateIntegrityToken(cookieId || fingerprint);
 
     return <WarRoomShell identity={identity} operations={operations} initialLogs={fullLogs} invokePath={invokePath} integrityToken={integrityToken} />;
 }

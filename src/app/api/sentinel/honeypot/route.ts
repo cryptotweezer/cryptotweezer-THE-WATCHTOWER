@@ -27,7 +27,6 @@ const SUSPICIOUS_HEADERS = [
     "x-admin-token",
     "x-internal-key",
     "x-debug",
-    "x-forwarded-host",
 ];
 
 // ============= HMAC TOKEN VALIDATION =============
