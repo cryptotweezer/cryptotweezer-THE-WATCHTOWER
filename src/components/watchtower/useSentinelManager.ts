@@ -147,20 +147,20 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
                 let impact = 0;
                 // V41: INFAMY THERMOMETER WEIGHTS (No Tiers, Pure Accumulation)
                 switch (eventType) {
-                    case TECHNIQUES.INSPECTION: impact = 5; break;  // Tech: +5%
-                    case TECHNIQUES.SURFACE: impact = 2; break;     // Tech: +2%
-                    case TECHNIQUES.EXFIL: impact = 2; break;       // Tech: +2%
-                    case TECHNIQUES.CONTEXT: impact = 2; break;     // Tech: +2%
-                    case "FOCUS_LOSS_ANOMALY": impact = 2; break;   // Tech: +2%
-                    case TECHNIQUES.ROUTING: impact = 5; break;     // Tech: +5%
+                    case TECHNIQUES.INSPECTION: impact = 2; break;  // Tech: +2%
+                    case TECHNIQUES.SURFACE: impact = 1; break;     // Tech: +1%
+                    case TECHNIQUES.EXFIL: impact = 1; break;       // Tech: +1%
+                    case TECHNIQUES.CONTEXT: impact = 1; break;     // Tech: +1%
+                    case "FOCUS_LOSS_ANOMALY": impact = 1; break;   // Tech: +1%
+                    case TECHNIQUES.ROUTING: impact = 2; break;     // Tech: +2%
 
                     // Heuristics (Aggressive)
-                    case TECHNIQUES.DOM: impact = 10; break;        // Heuristic: +10%
-                    case TECHNIQUES.DRAG: impact = 10; break;       // Heuristic: +10%
-                    case TECHNIQUES.FUZZ: impact = 5; break;        // Heuristic: +5%
+                    case TECHNIQUES.DOM: impact = 2; break;        // Heuristic: +2%
+                    case TECHNIQUES.DRAG: impact = 2; break;       // Heuristic: +2%
+                    case TECHNIQUES.FUZZ: impact = 2; break;        // Heuristic: +2%
 
                     // Critical
-                    case TECHNIQUES.INJECTION: impact = 20; break;
+                    case TECHNIQUES.INJECTION: impact = 5; break;
                     default: impact = 0;
                 }
 
