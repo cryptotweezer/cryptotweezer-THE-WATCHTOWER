@@ -87,7 +87,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                             <SignedIn>
                                 <Link
                                     href="/war-room"
-                                    className="font-mono text-white text-sm tracking-widest transition-all duration-300 hover:text-[#00f2ff] hover:shadow-[0_0_10px_rgba(0,242,255,0.5)] p-8 lg:p-0"
+                                    className="font-mono text-white text-sm tracking-widest transition-all duration-300 hover:text-blue-500 p-8 lg:p-0"
                                 >
                                     WAR ROOM
                                 </Link>
@@ -100,7 +100,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
 
                             <SignedOut>
                                 <SignInButton mode="modal" forceRedirectUrl="/war-room">
-                                    <button className="font-mono text-neutral-400 text-sm tracking-widest transition-all duration-300 hover:text-blue-500 hover:border-blue-500/50 border border-transparent px-4 py-2 rounded hover:shadow-[0_0_15px_rgba(59,130,246,0.4)] uppercase">
+                                    <button className="font-mono text-neutral-400 text-sm tracking-widest transition-all duration-300 hover:text-blue-500 uppercase">
                                         War Room
                                     </button>
                                 </SignInButton>
@@ -153,9 +153,9 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                             </h3>
                             <div className="font-mono text-xs flex-1 overflow-y-auto scrollbar-none pr-1">
                                 {state.eventLog.slice(0, 10).map((log, idx) => {
-                                    const isExternal = log.includes("DETECTED: [EXT_");
+                                    const isExternal = log.includes("DETECTED: [EXT_") || log.includes("DETECTED: [OVERLORD_") || log.includes("DETECTED: [ROLLING_THUNDER_");
                                     return (
-                                    <p key={idx} className={`${isExternal ? "text-red-500 font-bold" : "text-[#FFFFFF]"} whitespace-normal break-words leading-tight mb-2 opacity-90 hover:opacity-100`}>{log}</p>
+                                        <p key={idx} className={`${isExternal ? "text-red-500 font-bold" : "text-[#FFFFFF]"} whitespace-normal break-words leading-tight mb-2 opacity-90 hover:opacity-100`}>{log}</p>
                                     );
                                 })}
 

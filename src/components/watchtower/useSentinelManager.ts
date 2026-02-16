@@ -169,8 +169,8 @@ export default function useSentinelManager({ identity, invokePath }: SentinelMan
 
                 let newScore = currentScore + impact;
 
-                // V41: NO CAPS. Only 100% Limit.
-                newScore = Math.min(newScore, 100);
+                // Global cap: 90% max (Rolling Thunder unlocks the ceiling)
+                newScore = Math.min(newScore, 90);
 
                 LOG_RISK("INFAMY_UPDATE", { event: eventType, current: currentScore, impact, new: newScore });
 

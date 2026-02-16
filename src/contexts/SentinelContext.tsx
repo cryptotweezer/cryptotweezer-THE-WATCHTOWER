@@ -207,17 +207,13 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         }
 
         const controller = new AbortController();
-        // Only use controller for streaming calls
-        if (!isRoutingProbe) {
-            abortControllerRef.current = controller;
-        }
-        isStreamingRef.current = true; // Still set true, but immediately reset for non-streaming
+        abortControllerRef.current = controller;
+        isStreamingRef.current = true;
 
         // Persistence: knownTechniquesRef handles dedup (updated at line 178).
         // sessionTechniques and uniqueTechniqueCount are updated from server/API responses only.
 
         // Event Log (Client-side localStorage update for immediate UI)
-        // This log entry will be replaced by the server's formatted one for non-streaming
         const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
         let displayEvent = eventType;
 
@@ -227,6 +223,8 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
             const routePath = currentInvokePath.current || "UNKNOWN";
             displayEvent = `${eventType} -> ${routePath}`;
         }
+
+        // V46: Routing Probes are now streaming, so we log them normally.
         const clientLogEntry = `> [${timestamp}] DETECTED: [${displayEvent}]`;
         setEventLog(prev => {
             const newLog = [clientLogEntry, ...prev];
@@ -234,10 +232,9 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
             return newLog;
         });
 
-        // Risk Scoring (Client-side, will be overwritten by server for non-streaming)
-        // Dynamic cap: 40 default, raised by operations (Desert Storm → 60, etc.)
+        // Risk Scoring (Client-side)
         const riskCap = identityRef.current?.riskCap || 40;
-        if (!skipRisk && !isRoutingProbe) { // Only do client-side risk calc for streaming events
+        if (!skipRisk) {
             setCurrentRiskScore(currentScore => {
                 let impact = 0;
                 switch (eventType) {
@@ -277,14 +274,14 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
             const response = await fetch('/api/sentinel', {
                 method: 'POST',
                 headers: { 'x-cid': cid.replace(/(CID-)+/g, "CID-"), 'Content-Type': 'application/json' },
-                signal: isRoutingProbe ? undefined : controller.signal, // Only use signal for streaming
+                signal: controller.signal,
                 body: JSON.stringify({
                     prompt, eventType, fingerprint: activeFingerprint, ipAddress: identityRef.current?.ip,
                     alias: identityRef.current?.alias || "Unknown User",
                     location: identityRef.current?.countryCode || "UNKNOWN",
                     threatLevel: (identityRef.current?.riskScore || 0) > 50 ? "High" : "Low",
                     riskScore: riskScoreRef.current, targetPath: currentInvokePath.current,
-                    nonStreaming: isRoutingProbe // Send the nonStreaming flag
+                    nonStreaming: false // FORCE STREAMING
                 })
             });
 
@@ -293,97 +290,64 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
                 throw new Error(`API Error: ${response.status} - ${errorBody.message}`);
             }
 
-            if (isRoutingProbe) {
-                // Handle non-streaming JSON response for routing probes
-                const data = await response.json();
-                if (data.status === "success") {
-                    // Update risk score from API response (SSoT from DB)
-                    setCurrentRiskScore(data.finalRiskScore);
-                    riskScoreRef.current = data.finalRiskScore;
-                    localStorage.setItem("sentinel_risk_score", data.finalRiskScore.toString());
+            // Standard streaming logic for ALL events (including Routing)
+            if (!response.body) throw new Error("No response body");
 
-                    // Update unique technique count from API (SSoT from DB)
-                    if (typeof data.uniqueTechniqueCount === "number") {
-                        setUniqueTechniqueCount(data.uniqueTechniqueCount);
-                    }
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulated = "";
 
-                    // Update event log from API response (SSoT from DB)
-                    // The clientLogEntry was a placeholder; replace with server's final message
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                accumulated += chunk;
+                setStreamText((prev) => prev + chunk);
+            }
+
+            let cleanText = accumulated;
+            const tagMatch = accumulated.match(/\[TECHNIQUE:\s*(.*?)\]/);
+
+            if (tagMatch) {
+                const trueTechniqueName = tagMatch[1];
+                cleanText = accumulated.replace(tagMatch[0], "").trim();
+                const isHeuristic = eventType.startsWith("HEURISTIC_");
+
+                if (trueTechniqueName !== "INVENTED_NAME" && isHeuristic) {
                     setEventLog(prev => {
-                        const newLog = [data.logMessage, ...prev.filter(entry => entry !== clientLogEntry)];
+                        const newLog = [...prev];
+                        if (newLog.length > 0) {
+                            const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+                            newLog[0] = `> [${ts}] DETECTED: [${trueTechniqueName}]`;
+                        }
                         localStorage.setItem("sentinel_event_log", JSON.stringify(newLog));
                         return newLog;
                     });
-                    console.log("Routing Probe Handled via Non-Streaming API.");
-                    isStreamingRef.current = false; // Reset streaming flag immediately
-                } else {
-                    console.error("Non-streaming API error:", data);
-                    setEventLog(prev => [`> [${new Date().toLocaleTimeString('en-US', { hour12: false })}] ERROR: Routing Probe API Failed`, ...prev]);
-                    isStreamingRef.current = false;
                 }
             } else {
-                // Existing streaming logic for AI responses
-                if (!response.body) throw new Error("No response body");
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let accumulated = "";
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    const chunk = decoder.decode(value, { stream: true });
-                    accumulated += chunk;
-                    setStreamText((prev) => prev + chunk);
-                }
-
-                let cleanText = accumulated;
-                const tagMatch = accumulated.match(/\[TECHNIQUE:\s*(.*?)\]/);
-
-                if (tagMatch) {
-                    const trueTechniqueName = tagMatch[1];
-                    cleanText = accumulated.replace(tagMatch[0], "").trim();
-                    const isHeuristic = eventType.startsWith("HEURISTIC_");
-
-                    if (trueTechniqueName !== "INVENTED_NAME" && isHeuristic) {
-                        setEventLog(prev => {
-                            const newLog = [...prev];
-                            if (newLog.length > 0) {
-                                const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
-                                newLog[0] = `> [${ts}] DETECTED: [${trueTechniqueName}]`;
-                            }
-                            localStorage.setItem("sentinel_event_log", JSON.stringify(newLog));
-                            return newLog;
-                        });
-                    }
-                } else {
-                    const genericTag = accumulated.match(/\[.*?:.*?\]\s*$/);
-                    if (genericTag) cleanText = accumulated.replace(genericTag[0], "").trim();
-                }
-
-                setStreamText("");
-                setHistory(prev => {
-                    const newHistory = [cleanText, ...prev].slice(0, 3);
-                    localStorage.setItem("sentinel_chat_history", JSON.stringify(newHistory));
-                    return newHistory;
-                });
+                const genericTag = accumulated.match(/\[.*?:.*?\]\s*$/);
+                if (genericTag) cleanText = accumulated.replace(genericTag[0], "").trim();
             }
+
+            setStreamText("");
+            setHistory(prev => {
+                const newHistory = [cleanText, ...prev].slice(0, 3);
+                localStorage.setItem("sentinel_chat_history", JSON.stringify(newHistory));
+                return newHistory;
+            });
+
         } catch (err) {
             if (err instanceof Error && err.name === 'AbortError') {
                 console.log("Sentinel Stream Aborted (New Trigger Priority)");
-                // Do not reset isStreamingRef.current here for aborts, it will be reset by finally block if controller matches
             } else {
                 console.error("Sentinel Downlink Failed:", err);
                 setStreamText(""); // Clear any partial stream
                 setEventLog(prev => [`> [${new Date().toLocaleTimeString('en-US', { hour12: false })}] ERROR: Sentinel Downlink Failed`, ...prev]);
             }
         } finally {
-            // Reset streaming flag if not a routing probe
-            if (!isRoutingProbe && abortControllerRef.current === controller) {
+            if (abortControllerRef.current === controller) {
                 isStreamingRef.current = false;
                 abortControllerRef.current = null;
-            } else if (isRoutingProbe) {
-                isStreamingRef.current = false; // Ensure it's reset for non-streaming
             }
         }
     }, [cid]);

@@ -7,9 +7,11 @@ import Link from "next/link";
 import { Shield, Network, Monitor, Globe, Clock, Send, AlertTriangle } from "lucide-react";
 import GlobalIntelPanel from "./GlobalIntelPanel";
 import GeoTrackerPanel from "./GeoTrackerPanel";
+import ContactFormPanel from "./ContactFormPanel";
+import DebugConsolePanel from "./DebugConsolePanel";
 import { forensicWipe } from "@/app/actions";
 
-type ActiveView = "subject" | "global-intel" | "geo-tracker" | "contact" | "forensic-wipe";
+type ActiveView = "subject" | "global-intel" | "geo-tracker" | "contact" | "debug-console" | "forensic-wipe";
 
 interface DeepScanData {
     browser: string;
@@ -40,9 +42,10 @@ interface WarRoomShellProps {
     };
     initialLogs?: string[];
     invokePath?: string;
+    integrityToken?: string;
 }
 
-export default function WarRoomShell({ identity, operations, initialLogs, invokePath }: WarRoomShellProps) {
+export default function WarRoomShell({ identity, operations, initialLogs, invokePath, integrityToken }: WarRoomShellProps) {
 
     const CID_REVEAL_THRESHOLD = 20;
 
@@ -291,7 +294,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
             <header className="h-12 border-b border-neutral-800 flex items-center justify-between px-4 shrink-0">
                 <Link
                     href="/"
-                    className="text-[#00f2ff] hover:underline transition-colors text-sm"
+                    className="text-blue-500 hover:underline transition-colors text-sm"
                 >
                     &lt; THE WATCHTOWER
                 </Link>
@@ -317,8 +320,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         <button
                             onClick={() => setActiveView("subject")}
                             className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "subject"
-                                ? "text-[#00f2ff] border-[#00f2ff]"
-                                : "text-neutral-600 hover:text-[#00f2ff] border-transparent hover:border-[#00f2ff]"
+                                ? "text-blue-500 border-blue-500"
+                                : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
                         >
                             [{isFullyReady ? identity.alias : "SYNCING..."}]
@@ -326,8 +329,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         <button
                             onClick={() => setActiveView("global-intel")}
                             className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "global-intel"
-                                ? "text-[#00f2ff] border-[#00f2ff]"
-                                : "text-neutral-600 hover:text-[#00f2ff] border-transparent hover:border-[#00f2ff]"
+                                ? "text-blue-500 border-blue-500"
+                                : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
                         >
                             GLOBAL INTELLIGENCE
@@ -335,8 +338,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         <button
                             onClick={() => setActiveView("geo-tracker")}
                             className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "geo-tracker"
-                                ? "text-[#00f2ff] border-[#00f2ff]"
-                                : "text-neutral-600 hover:text-[#00f2ff] border-transparent hover:border-[#00f2ff]"
+                                ? "text-blue-500 border-blue-500"
+                                : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
                         >
                             GEO TRACKER
@@ -344,15 +347,27 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         <button
                             onClick={() => setActiveView("contact")}
                             className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "contact"
-                                ? "text-[#00f2ff] border-[#00f2ff]"
-                                : "text-neutral-600 hover:text-[#00f2ff] border-transparent hover:border-[#00f2ff]"
+                                ? "text-blue-500 border-blue-500"
+                                : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
                         >
                             CONTACT DEV
                         </button>
+                        {/* Debug Console — appears after Rolling Thunder endpoint discovery */}
+                        {state.eventLog.some(log => log.includes("ROLLING_THUNDER")) && (
+                            <button
+                                onClick={() => setActiveView("debug-console")}
+                                className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "debug-console"
+                                    ? "text-amber-400 border-amber-400"
+                                    : "text-amber-700 hover:text-amber-400 border-transparent hover:border-amber-400 animate-pulse"
+                                    }`}
+                            >
+                                LAUNCH DEBUG CONSOLE
+                            </button>
+                        )}
                         <button
                             onClick={() => setActiveView("forensic-wipe")}
-                            className={`text-left transition-colors py-1 border-l-2 pl-2 mt-4 ${activeView === "forensic-wipe"
+                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "forensic-wipe"
                                 ? "text-red-500 border-red-500"
                                 : "text-red-900 hover:text-red-500 border-transparent hover:border-red-500"
                                 }`}
@@ -427,23 +442,15 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                             </p>
                         </div>
                     ) : activeView === "contact" ? (
-                        <div className="flex-1 flex flex-col items-center justify-center text-center">
-                            <h2 className="text-xl font-bold text-[#00f2ff] mb-4">CONTACT THE ARCHITECT</h2>
-                            <p className="text-neutral-400 mb-4">Want to discuss security, collaboration, or hire?</p>
-                            <a
-                                href="https://www.andreshenao.com.au/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-2 bg-[#00f2ff]/10 border border-[#00f2ff] text-[#00f2ff] rounded hover:bg-[#00f2ff]/20 transition-colors"
-                            >
-                                Visit Portfolio
-                            </a>
-                            <div className="mt-4 text-xs text-neutral-600">
-                                <a href="https://www.linkedin.com/in/andres-henao-2b185318a/" target="_blank" rel="noopener noreferrer" className="hover:text-[#00f2ff]">LinkedIn</a>
-                                <span className="mx-2">•</span>
-                                <span>andreshenao.tech@gmail.com</span>
-                            </div>
-                        </div>
+                        <ContactFormPanel
+                            integrityToken={integrityToken || ""}
+                        />
+                    ) : activeView === "debug-console" ? (
+                        <DebugConsolePanel
+                            fingerprint={identity.fingerprint || ""}
+                            cid={identity.cid || state.cid || "CID-UNKNOWN"}
+                            alias={identity.alias}
+                        />
                     ) : (
                         <>
                             <h2 className="text-[10px] text-neutral-600 mb-4 tracking-[0.2em] uppercase border-b border-neutral-800 pb-2">
@@ -454,11 +461,11 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                             <div className="border border-neutral-800/60 rounded-lg p-5 bg-neutral-950/50 mb-4 shrink-0">
                                 <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800/40">
                                     <div className="flex items-center gap-2">
-                                        <Shield size={14} className={state.currentRiskScore > 50 ? "text-red-500" : "text-cyan-500"} />
+                                        <Shield size={14} className={state.currentRiskScore > 50 ? "text-red-500" : "text-blue-500"} />
                                         <span className="text-[10px] text-neutral-500 uppercase tracking-[0.2em]">Identity Node</span>
                                     </div>
-                                    <span className="text-[10px] text-cyan-500/60 animate-pulse flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500/60"></span>
+                                    <span className="text-[10px] text-blue-500 animate-pulse flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                                         LIVE
                                     </span>
                                 </div>
@@ -496,7 +503,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
 
                                         <div className="grid grid-cols-[90px_1fr] items-center gap-2">
                                             <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Net Address</span>
-                                            <span className="text-sm text-cyan-300/80 flex items-center gap-1.5">
+                                            <span className="text-sm text-blue-500 flex items-center gap-1.5">
                                                 <Network size={11} /> {identity.ip || "unknown"}
                                             </span>
                                         </div>
@@ -509,26 +516,26 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                                                 : operations;
                                             if (!effectiveOps) return null;
                                             return (
-                                            <div className="mt-3 pt-3 border-t border-neutral-800/30 space-y-1.5">
-                                                <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Operations</span>
-                                                {[
-                                                    { label: "DESERT STORM", active: effectiveOps.desertStorm },
-                                                    { label: "OVERLORD", active: effectiveOps.overlord },
-                                                    { label: "ROLLING THUNDER", active: effectiveOps.rollingThunder },
-                                                ].map((op) => (
-                                                    <div key={op.label} className="flex items-center justify-between text-[11px]">
-                                                        <span className={op.active ? "text-green-400" : "text-neutral-700"}>
-                                                            {op.label}
-                                                        </span>
-                                                        <span className={op.active
-                                                            ? "text-green-400 font-bold tracking-wider"
-                                                            : "text-neutral-700"
-                                                        }>
-                                                            {op.active ? "[COMPLETE]" : "[LOCKED]"}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                                <div className="mt-3 pt-3 border-t border-neutral-800/30 space-y-1.5">
+                                                    <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Operations</span>
+                                                    {[
+                                                        { label: "DESERT STORM", active: effectiveOps.desertStorm },
+                                                        { label: "OVERLORD", active: effectiveOps.overlord },
+                                                        { label: "ROLLING THUNDER", active: effectiveOps.rollingThunder },
+                                                    ].map((op) => (
+                                                        <div key={op.label} className="flex items-center justify-between text-[11px]">
+                                                            <span className={op.active ? "text-green-400" : "text-neutral-700"}>
+                                                                {op.label}
+                                                            </span>
+                                                            <span className={op.active
+                                                                ? "text-green-400 font-bold tracking-wider"
+                                                                : "text-neutral-700"
+                                                            }>
+                                                                {op.active ? "[COMPLETE]" : "[LOCKED]"}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             );
                                         })()}
                                     </div>
@@ -596,18 +603,17 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                                 <div className="flex-1 overflow-y-auto text-xs space-y-1 pr-1">
                                     {state.eventLog.length > 0 ? (
                                         state.eventLog.map((log, idx) => {
-                                            const isExternal = log.includes("DETECTED: [EXT_");
+                                            const isExternal = log.includes("DETECTED: [EXT_") || log.includes("DETECTED: [OVERLORD_") || log.includes("DETECTED: [ROLLING_THUNDER_");
                                             return (
-                                            <p
-                                                key={idx}
-                                                className={`${
-                                                    idx === 0
+                                                <p
+                                                    key={idx}
+                                                    className={`${idx === 0
                                                         ? (isExternal ? "text-red-500 font-bold animate-pulse" : "text-white")
                                                         : (isExternal ? "text-red-700" : "text-neutral-600")
-                                                } leading-relaxed`}
-                                            >
-                                                {log}
-                                            </p>
+                                                        } leading-relaxed`}
+                                                >
+                                                    {log}
+                                                </p>
                                             );
                                         })
                                     ) : (

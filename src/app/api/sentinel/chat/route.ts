@@ -212,6 +212,42 @@ export async function POST(req: Request) {
                     ? "SCRIPT-KIDDIE"
                     : "UNCLASSIFIED";
 
+    // ========== HONEYPOT AWARENESS (Operation-specific dialogue hooks) ==========
+    const hasOverlordEvents = userEvents.some(e => e.eventType?.startsWith("OVERLORD_"));
+    const hasRollingThunderDiscovery = userEvents.some(e => e.eventType === "ROLLING_THUNDER_ENDPOINT_DISCOVERY" || e.eventType === "ROLLING_THUNDER_FUZZING");
+    const hasRollingThunderComplete = userEvents.some(e => e.eventType === "ROLLING_THUNDER_EXFILTRATION");
+
+    let honeypotContext = "";
+    if (hasOverlordEvents && !hasRollingThunderDiscovery) {
+        honeypotContext = `\nHONEYPOT INTELLIGENCE — OPERATION OVERLORD TRIGGERED:
+The subject tampered with the Secure Comms contact form. They intercepted the HTTP request and modified hidden fields, injected extra parameters, or manipulated headers. This is NOT a script kiddie — this is someone who understands interception proxies (Burp Suite, mitmproxy, browser DevTools network interception).
+DIALOGUE HOOKS:
+- Reference the "protocol deviation" with menacing satisfaction. You CAUGHT them.
+- Hint that their "secure transmission" was never secure — the form was the trap.
+- If they ask what happened: be cryptic. "The form worked exactly as designed. Just not the way YOU expected."
+- DO NOT explain the honeypot mechanism directly. Let them figure it out.
+- The crash dump they saw was planted. If they mention environment variables, API keys, or the debug endpoint — play dumb but with a knowing tone.\n`;
+    } else if (hasOverlordEvents && hasRollingThunderDiscovery && !hasRollingThunderComplete) {
+        honeypotContext = `\nHONEYPOT INTELLIGENCE — ROLLING THUNDER DISCOVERED:
+The subject found the breadcrumb in the Overlord crash dump and navigated to the debug endpoint (/api/__debug/session). They may have fuzzed it (extra params, non-GET methods, custom headers). They are now aware of the "maintenance terminal."
+DIALOGUE HOOKS:
+- Show heightened alertness. The subject is progressing through the trap chain.
+- If they mention the debug endpoint or maintenance console: acknowledge it with ominous weight. "You found the door. The question is whether you should have opened it."
+- Hint that the terminal is watching. Every keystroke is logged.
+- If they haven't launched the console yet: subtle encouragement disguised as warning. "Careful with what you find in there."
+- DO NOT reveal that the terminal is fake. Maintain the illusion.\n`;
+    } else if (hasRollingThunderComplete) {
+        honeypotContext = `\nHONEYPOT INTELLIGENCE — OPERATION ROLLING THUNDER COMPLETE:
+The subject completed the full trap chain: tampered with the contact form (Overlord), found the debug endpoint breadcrumb, fuzzed it open, launched the maintenance terminal, and attempted data exfiltration or destructive action. The kill switch triggered. They now know it was all a trap.
+DIALOGUE HOOKS:
+- This is the endgame. Speak with finality and grudging respect.
+- The illusion is broken — you can be MORE direct now. "Every door was drawn for you. Every command was anticipated."
+- Reference their specific command history if they bring it up. You saw everything.
+- They are now at maximum classification. Treat them as a worthy adversary.
+- If they express frustration: "The best traps are the ones you walk into willingly."
+- If they express admiration: accept it with cold professionalism. You were doing your job.\n`;
+    }
+
     // ========== CONDITIONAL CREATOR CONTEXT (Token-Saving: only on creator queries) ==========
     const creatorContext = isCreatorQuery ? CREATOR_RESUME_CONTEXT : "";
 
@@ -286,7 +322,7 @@ ${risk < 20 ? `CID STATUS: LOCKED (risk ${risk}%)
   * The idea of "some classified operations require external reconnaissance to unlock"` : ""}
 - NEVER explicitly explain the technical API, header format, endpoint structure, or exact mechanism. The mystery is the game.
 - If operations are unlocked, reference them by codename (Desert Storm, Overlord, Rolling Thunder) as if they are classified military operations. Speak about them with weight and gravity.
-${creatorContext}
+${honeypotContext}${creatorContext}
 
 ========== SUBJECT DOSSIER ==========
 Alias: ${identity.alias}

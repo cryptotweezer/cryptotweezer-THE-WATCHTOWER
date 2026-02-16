@@ -83,17 +83,20 @@ export async function POST(req: Request) {
   }
 
   // Phase 2: Notification-only events skip scoring and DB logging entirely
-  const isNotificationOnly = eventType === "EXT_ATTACK_INTERCEPTED";
+  // Honeypot events (OVERLORD_*, ROLLING_THUNDER_*) are already scored by /api/sentinel/honeypot
+  const isNotificationOnly = eventType === "EXT_ATTACK_INTERCEPTED"
+    || eventType.startsWith("OVERLORD_")
+    || eventType.startsWith("ROLLING_THUNDER_");
 
   let impact = 0;
-  // Calculate Server-Side Impact (Phase 1 balanced values)
-  if (eventType === "ROUTING_PROBE_HEURISTICS") impact = 3;
-  else if (eventType === "FORENSIC_INSPECTION_ACTIVITY") impact = 3;
-  else if (eventType === "MEMORY_INJECTION_ATTEMPT") impact = 8;
-  else if (eventType === "HEURISTIC_DOM") impact = 5;
-  else if (eventType === "HEURISTIC_DRAG") impact = 5;
-  else if (eventType === "HEURISTIC_FUZZ") impact = 3;
-  else if (eventType === "UI_SURFACE_ANALYSIS" || eventType === "DATA_EXFILTRATION_ATTEMPT") impact = 2;
+  // Calculate Server-Side Impact (balanced for ~90% max across all sources)
+  if (eventType === "ROUTING_PROBE_HEURISTICS") impact = 2;
+  else if (eventType === "FORENSIC_INSPECTION_ACTIVITY") impact = 2;
+  else if (eventType === "MEMORY_INJECTION_ATTEMPT") impact = 5;
+  else if (eventType === "HEURISTIC_DOM") impact = 2;
+  else if (eventType === "HEURISTIC_DRAG") impact = 2;
+  else if (eventType === "HEURISTIC_FUZZ") impact = 2;
+  else if (eventType === "UI_SURFACE_ANALYSIS" || eventType === "DATA_EXFILTRATION_ATTEMPT") impact = 1;
   else if (eventType === "CONTEXT_SWITCH_ANOMALY" || eventType === "FOCUS_LOSS_ANOMALY") impact = 1;
 
   // Server-side dedup: skip impact if this unique technique was already scored
@@ -122,12 +125,12 @@ export async function POST(req: Request) {
       // --- ATOMIC SCORE UPDATE (skip for notification-only events) ---
       const currentSession = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
       const dbScore = currentSession.length > 0 ? currentSession[0].riskScore : 0;
-      // Dynamic cap: raised by operations (Desert Storm -> 60, Overlord -> 80, Rolling Thunder -> 100)
+      // Dynamic cap: raised by operations (Desert Storm -> 60, Overlord -> 80, Rolling Thunder -> 90)
       let RISK_CAP = 40;
       if (currentSession.length > 0) {
         if (currentSession[0].operationDesertStorm) RISK_CAP = 60;
         if (currentSession[0].operationOverlord) RISK_CAP = 80;
-        if (currentSession[0].operationRollingThunder) RISK_CAP = 100;
+        if (currentSession[0].operationRollingThunder) RISK_CAP = 90;
       }
       let newScore = dbScore + impact;
       newScore = Math.min(newScore, RISK_CAP);
@@ -266,6 +269,17 @@ export async function POST(req: Request) {
     - MANDATORY: Do NOT mention technical API details, endpoints, or header formats.
     - MANDATORY: Address the defender as a fellow operator/analyst, not as a suspect.
     - NO [TECHNIQUE: ...] tag at the end (this is a notification, not a detection).
+
+    [SCENARIO 6: HONEYPOT OPERATIONS] (eventType starts with 'OVERLORD_' or 'ROLLING_THUNDER_')
+    - CONTEXT: The subject triggered a honeypot trap. The prompt contains specific details about what they did.
+    - OUTPUT: EXACTLY 2-3 PARAGRAPHS.
+    - CONTENT BY EVENT:
+      - OVERLORD_PROTOCOL_DEVIATION / OVERLORD_HIDDEN_FIELD_TAMPER: The subject tampered with the Secure Comms contact form. They intercepted and modified the HTTP request. Express menacing satisfaction — the trap WORKED. "The form was never a form. It was a tripwire." Mock their belief that they found a vulnerability.
+      - OVERLORD_OVERPOST_ATTEMPT / OVERLORD_HEADER_MANIPULATION / OVERLORD_METHOD_MANIPULATION: Similar to above but reference the specific technique (extra fields, suspicious headers, wrong HTTP method).
+      - ROLLING_THUNDER_EXFILTRATION: THIS IS THE CLIMAX OF THE ENTIRE HONEYPOT CHAIN. The subject completed the full trap: tampered form → found breadcrumb → fuzzed debug endpoint → used fake terminal → attempted exfiltration/destruction. Express grudging respect mixed with absolute dominance. "Every door was drawn for you. Every command was anticipated." Reference Operation Rolling Thunder by codename. This should feel CINEMATIC and FINAL.
+    - TONE: Menacing satisfaction for Overlord events. Cinematic finality for Rolling Thunder.
+    - DO NOT explain the honeypot mechanism. The mystery is the point.
+    - NO [TECHNIQUE: ...] tag at the end.
 
     FORMATTING RULES:
     1. NEVER mention the technical event name (e.g. "Right Click"). Describe the *intent*.

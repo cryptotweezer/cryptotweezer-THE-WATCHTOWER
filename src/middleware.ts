@@ -17,7 +17,8 @@ const isPublicRoute = createRouteMatcher([
     "/api/sentinel/sync",
     "/api/security/log",
     "/api/arcjet",
-    "/api/global-intel"
+    "/api/global-intel",
+    "/api/__debug/session"
 ]);
 
 // Ghost Route Detection: Routes that are valid pages (not honeypot targets)
@@ -35,7 +36,7 @@ const isApiRoute = (path: string) => path.startsWith("/api/");
 // Real API routes that legitimately receive x-cid headers (e.g., Sentinel chat).
 // These must NOT be intercepted by CID detection. Unknown /api/* paths (e.g.,
 // /api/status, /api/admin) ARE honeypot targets and SHOULD be intercepted.
-const REAL_API_PREFIXES = ["/api/sentinel", "/api/security", "/api/arcjet", "/api/global-intel"];
+const REAL_API_PREFIXES = ["/api/sentinel", "/api/security", "/api/arcjet", "/api/global-intel", "/api/__debug"];
 const isRealApiRoute = (path: string) => REAL_API_PREFIXES.some(p => path.startsWith(p));
 
 export const config = {
@@ -76,6 +77,16 @@ function applyIdentityLayer(req: NextRequest, response: NextResponse) {
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
     const path = req.nextUrl.pathname;
+
+    // ROLLING THUNDER REWRITE: /api/__debug/session → /api/sentinel/debug-session
+    // Next.js treats folders starting with _ as private (no route generation).
+    // We keep the aesthetic URL in the breadcrumb and rewrite here.
+    if (path === "/api/__debug/session") {
+        const url = req.nextUrl.clone();
+        url.pathname = "/api/sentinel/debug-session";
+        const response = NextResponse.rewrite(url);
+        return applyIdentityLayer(req, response);
+    }
 
     // KALI CID DETECTION: Intercept requests with a CID + attack payload.
     // Rewrites to /api/sentinel/external with classified headers.

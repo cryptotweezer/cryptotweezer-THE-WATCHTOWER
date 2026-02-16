@@ -4,6 +4,7 @@ import { getSession, getSessionLogs, getUniqueTechniquesForSession, resolveFinge
 import { runArcjetSecurity } from "@/lib/arcjet";
 import { logArcjetDetection } from "@/lib/security";
 import { currentUser } from "@clerk/nextjs/server";
+import { generateIntegrityToken } from "@/lib/honeypot-data";
 
 import WarRoomShell from "@/components/war-room/WarRoomShell";
 
@@ -41,7 +42,7 @@ export default async function WarRoomPage() {
     let riskCap = 40;
     if (session.operationDesertStorm) riskCap = 60;
     if (session.operationOverlord) riskCap = 80;
-    if (session.operationRollingThunder) riskCap = 100;
+    if (session.operationRollingThunder) riskCap = 90;
 
     // Operation milestones
     const operations = {
@@ -69,5 +70,8 @@ export default async function WarRoomPage() {
     // WAR ROOM: FULL HISTORICAL ACCESS (no limit)
     const fullLogs = await getSessionLogs(identity.fingerprint);
 
-    return <WarRoomShell identity={identity} operations={operations} initialLogs={fullLogs} invokePath={invokePath} />;
+    // Honeypot: Generate integrity token for Operation Overlord contact form
+    const integrityToken = await generateIntegrityToken(fingerprint);
+
+    return <WarRoomShell identity={identity} operations={operations} initialLogs={fullLogs} invokePath={invokePath} integrityToken={integrityToken} />;
 }

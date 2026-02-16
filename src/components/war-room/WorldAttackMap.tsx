@@ -116,14 +116,14 @@ function WorldAttackMap({ attacksByCountry = [], pulsingCountries }: WorldAttack
         >
             {/* Header */}
             <div className="p-3 border-b border-cyan-900/30 flex items-center justify-between shrink-0">
-                <h3 className="text-xs font-mono text-cyan-500/60 tracking-wider uppercase flex items-center gap-2">
+                <h3 className="text-xs font-mono text-blue-500 tracking-wider uppercase flex items-center gap-2">
                     <span
-                        className="w-1.5 h-1.5 rounded-full animate-pulse"
-                        style={{ backgroundColor: CYAN, boxShadow: `0 0 6px ${CYAN}` }}
+                        className="w-1.5 h-1.5 rounded-full animate-pulse bg-blue-500"
+                        style={{ boxShadow: `0 0 6px #3b82f6` }}
                     />
                     GLOBAL ATTACK ORIGINS
                 </h3>
-                <span className="text-[10px] font-mono text-zinc-700 tracking-wider">LIVE</span>
+
             </div>
 
             {/* Map — fills parent height */}
@@ -139,8 +139,8 @@ function WorldAttackMap({ attacksByCountry = [], pulsingCountries }: WorldAttack
                     <Graticule stroke={`rgba(${CYAN_RGB}, 0.06)`} strokeWidth={0.3} />
 
                     <Geographies geography={GEO_URL}>
-                        {({ geographies }: { geographies: { id: string; rsmKey: string; [key: string]: unknown }[] }) =>
-                            geographies.map((geo: { id: string; rsmKey: string; [key: string]: unknown }) => {
+                        {({ geographies }: { geographies: { id: string; rsmKey: string;[key: string]: unknown }[] }) =>
+                            geographies.map((geo: { id: string; rsmKey: string;[key: string]: unknown }) => {
                                 const geoId = geo.id;
                                 const attacks = geoId ? countryAttackMap[geoId] : undefined;
                                 const isPulsing = geoId ? pulsingNumericIds.has(geoId) : false;
