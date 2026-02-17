@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function Footer() {
     return (
-        <footer className="w-full border-t border-blue-500/20 bg-neutral-950/80 backdrop-blur-sm mt-0 pt-12 pb-1">
+        <footer className="w-full bg-neutral-950/80 backdrop-blur-sm mt-0 pt-12 pb-1">
             <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-8">
 
                 {/* Left Side: Brand & Context */}
@@ -15,6 +15,22 @@ export default function Footer() {
                     <h2 className="text-white font-bold text-xl tracking-tight">
                         SecOps | SOC | <span className="text-blue-500">THE WATCHTOWER</span>
                     </h2>
+                    <a
+                        href="https://www.andreshenao.com.au/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-blue-400 text-xs tracking-wider uppercase font-mono transition-colors block mt-2"
+                    >
+                        www.andreshenao.com.au
+                    </a>
+                    <a
+                        href="https://www.linkedin.com/in/andres-henao-2b185318a/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-blue-400 text-xs tracking-wider uppercase font-mono transition-colors block mt-2"
+                    >
+                        LinkedIn
+                    </a>
                 </div>
 
                 {/* Right Side: Legal Links */}

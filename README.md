@@ -1,64 +1,130 @@
-🛰️ THE WATCHTOWER: DIGITAL TWIN III
-"live threat-hunting node."
+# 🛰️ THE WATCHTOWER
+> **"Every byte is a witness. Every click is a signature."** — *Sentinel-02*
 
-The Watchtower is an Active Defense & SecOps Infrastructure designed to serve as the "Boss Final" for any attacker. Unlike static sites, this platform breathes, monitors, and reacts. It captures real-time attack telemetry, analyzes threat patterns with AI, and dissects adversary persistence through a high-fidelity deception system.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-ACTIVE_DEFENSE-red.svg)
+![Next.js](https://img.shields.io/badge/Next.js-15.1-black)
+![Arcjet](https://img.shields.io/badge/Secured_by-Arcjet-orange)
 
-🏛️ THE VISION (RE-ENGINEERED)
-The project functions as an Infamy Laboratory. We don't just teach security; we enforce it. The system classifies visitors into two authorization levels based on their intent and footprint:
+## 📜 Executive Summary
 
-The Adversary: Hackers, scripts, and the curious. They face a hostile perimeter managed by Sentinel-02 (the resident AI). They must earn their status by bypassing logic and memory traps to reach a 100% Risk Score.
+**The Watchtower** is a **Live Threat-Hunting Infrastructure**. Designed as an "Active Defense" node, it serves as a honey-net for capturing, analyzing, and neutralizing adversarial interaction.
 
-The Authorized Observer (Recruiter): Activated via the ?clearance=RECRUITER parameter. The system enters Briefing Mode, revealing the underlying technical architecture, stack details, and engineering processes behind the shield.
+Unlike static web applications, The Watchtower breathes. It classifies visitors based on their intent and footprint:
 
-🛡️ ACTIVE DEFENSE MODULES
-The Terminal (Home): Forensic HUD featuring Deep Scan metadata, DevTools detection, and the Infamy Engine.
+**The Adversary**: Automated scripts and unauthorized human actors who face a hostile, adaptive perimeter.
 
-The War Room (Dashboard): Command center with global threat heatmaps, real-time traffic pulses, and a dynamic Stress Meter.
+The system employs **Sentinel-02**, an AI-driven security core that engages with threats in real-time, effectively turning the attackers into the content.
 
-The Triple Lock (Honeypots):
+---
 
-Binary-Ghost: Client-side memory tampering trap via JS Proxy.
+## 🏗️ Technical Architecture
 
-Shadow-Field: API Over-posting detection (JSON attribute injection).
+The project is built on the **Elite Stack**, focusing on edge performance, type safety, and active security.
 
-Ghost-Key: Social engineering bait hidden within source code comments.
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Core Framework** | **Next.js 15** (App Router) | Server Components, React Server Actions. |
+| **Security Layer** | **Arcjet** | WAF, Bot Detection, Rate Limiting, Fingerprinting. |
+| **Database** | **Neon** (Serverless Postgres) | Scalable, branching SQL database. |
+| **ORM** | **Drizzle** | TypeScript-first schema definition and query builder. |
+| **Intelligence** | **Vercel AI SDK** | LLM orchestration for Sentinel-02 personality. |
+| **Styling** | **Tailwind CSS v4** | Utility-first styling with deeply custom design tokens. |
+| **Deployment** | **Vercel Edge** | Global low-latency distribution. |
 
-The Ghost Layer: A UI Hijack system triggered by critical intrusions. It replaces standard error pages (404s) with a corrupted interface and persistent visual counter-attacks.
+---
 
-Wall of Infamy: An immutable "deface" wall where only Adversaries who reach 100% Risk can leave their permanent signature.
+## 🛡️ Active Defense Modules
 
-🤖 AI-HUMAN COLLABORATION (.claude/skills)
-This repository is optimized for AI-assisted development. We use a Modular Skills system to ensure that any agent (Sentinel-02, Cursor, or Gemini) maintains total project consistency.
+### 1. The Triple Lock (Honeypots)
+A multi-layered trap system designed to separate humans from bots, and curious devs from malicious actors.
+*   **Binary-Ghost**: Client-side memory tampering detection via JavaScript Proxies.
+*   **Shadow-Field**: Hidden form layers detecting API over-posting and attribute injection.
+*   **Ghost-Key**: Social engineering bait embedded in source comments and non-existent routes.
 
-🧠 project-context.md: The "brain" of the Sentinel and product vision.
+### 2. The War Room (Dashboard)
+A real-time command center accessible only to authorized personnel (or persistent hackers).
+*   **Global Heatmap**: Visualizes threat origins in real-time.
+*   **Live Sensor Feed**: Streaming telemetry of blocked requests and heuristic triggers.
+*   **Infamy Engine**: Tracks the "Risk Score" of every session, unlocking features as potential threats escalate.
 
-🚨 ai-protocol.md: Security and quality gates for code generation.
+### 3. Wall of Infamy
+A persistent "High Score" ledger.
+*   **Mechanic**: Users who reach a **90% Risk Score** unlock the ability to leave a permanent message.
+*   **Persistence**: These entries survive "Forensic Wipes," immortalizing the most persistent adversaries.
 
-📜 archivist.md: Immutable historical log maintained in DEVELOPMENT_LOG.md.
+---
 
-🛠️ THE ELITE STACK
-Core: Next.js 15+ (App Router, Server Actions).
+## 🚀 Installation & Setup
 
-Shield: Arcjet (WAF, Bot Detection, Fingerprinting, Rate Limiting).
+### Prerequisites
+*   Node.js 20+
+*   pnpm
+*   Neon Database Account
+*   Arcjet Account
+*   Clerk Account (Auth)
 
-Data: Neon Postgres (Serverless) + Drizzle ORM (Type-safe Logs).
+### 1. Clone & Install
+```bash
+git clone https://github.com/your-username/digital-twin-3.git
+cd digital-twin-3
+pnpm install
+```
 
-Intelligence: Vercel AI SDK (Sentinel-02 Personality Engine).
+### 2. Environment Configuration
+Create a `.env` file with the following keys:
+```env
+DATABASE_URL="postgresql://..."
+ARCJET_KEY="aj_..."
+CLERK_SECRET_KEY="sk_..."
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_..."
+OPENAI_API_KEY="sk-..."
+```
 
-Deployment: Vercel Edge Runtime (Low-latency Active Defense).
+### 3. Database Migration
+Initialize the database schema:
+```bash
+pnpm db:generate
+pnpm db:migrate
+```
 
-🚀 IMPLEMENTATION STATUS (PHASE PROGRESSION)
-[x] Phase 1: Infrastructure & Handshake Protocol.
+### 4. Run Development Server
+```bash
+pnpm dev
+```
+Access the comprehensive system at `http://localhost:3000`.
 
-[x] Phase 2: Terminal Home & Basic Sensors (20% Hard Cap).
+---
 
-[ ] Phase 3: War Room Dashboard & Global Telemetry.
+## 🤖 AI-Human Protocol
+This repository is engineered for **AI-Assisted Development**.
+*   **`docs/`**: Contains the "brain" of the project (`honeypots.md`, `plan.md`).
+*   **`src/scripts/`**: Automation tools for database management.
+*   **Sentinel Context**: The AI agents (Sentinel-02) share a unified memory of the project state to ensure consistency across dev sessions.
 
-[ ] Phase 4: Implementation of The Triple Lock (Honeypots).
+---
 
-[ ] Phase 5: Wall of Infamy & Ghost Layer Final Hardening.
+## ⚖️ Legal Compliance & Terms of Use
 
-⚠️ LEGAL NOTICE
-This is a cybersecurity research environment. By interacting with this platform, you consent to the monitoring, analysis, and logging of your behavior, network signature, and metadata for security and educational purposes.
+### 1. Research & Educational Purpose
+This infrastructure is strictly a **Cybersecurity Research Laboratory**. All "active defense" mechanisms (e.g., honeypots, fingerprinting, deception layers) are deployed for the sole purpose of analyzing adversarial behavior patterns and developing threat intelligence heuristics.
 
-"Every byte is a witness. Every click is a signature." — Sentinel-02.
+### 2. Consent to Monitoring (Banner)
+> **WARNING: UNCOMPLICATED ACCESS PROHIBITED**
+> By connecting to this network node (`THE WATCHTOWER`), you explicitly consent to the following:
+> *   **Full Packet Capture**: All traffic, including headers, payloads, and metadata, is logged.
+> *   **Behavioral Analysis**: Session interactions are analyzed to generate usability and security risk scores.
+> *   **Attribution**: IP addresses and device fingerprints are collected for security auditing purposes.
+
+### 3. Liability Disclaimer
+The maintainers of this repository assume **NO LIABILITY** for any consequences resulting from interactions with this system. This includes, but is not limited to:
+*   Browser instability caused by heavy client-side JavaScript execution (honeypots).
+*   Blocklisting of IP addresses due to detected malicious activity.
+*   Psychological distress caused by the "Active Defense" narratives or simulated system crashes.
+
+### 4. Privacy & Data Handling (GDPR/CCPA)
+While this system acts as a honeypot, we adhere to data minimization principles:
+*   Data is retained for **security auditing only**.
+*   Personally Identifiable Information (PII) is not targeted, except where voluntarily provided (e.g., contact forms) or where public IP attribution is required for defense.
+
+> *Unauthorized access attempts are logged and may be reported to relevant ISP abuse teams.*

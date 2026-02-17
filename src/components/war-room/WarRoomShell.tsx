@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useSentinel } from "@/contexts/SentinelContext";
 import Link from "next/link";
+import Image from "next/image";
 import { Shield, Network, Monitor, Globe, Clock, Send, AlertTriangle } from "lucide-react";
 import GlobalIntelPanel from "./GlobalIntelPanel";
 import GeoTrackerPanel from "./GeoTrackerPanel";
@@ -328,12 +329,17 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
         <div className="h-screen w-screen bg-black text-white font-mono overflow-hidden flex flex-col">
             {/* Header */}
             <header className="h-12 border-b border-neutral-800 flex items-center justify-between px-4 shrink-0">
-                <Link
-                    href="/"
-                    className="text-blue-500 hover:underline transition-colors text-sm"
-                >
-                    &lt; THE WATCHTOWER
-                </Link>
+                <div className="flex items-center gap-4">
+                    <Link href="/" className="relative w-24 h-8 hover:opacity-80 transition-opacity">
+                        <Image
+                            src="/logo_white.png"
+                            alt="The Watchtower Logo"
+                            fill
+                            className="object-contain object-left"
+                            priority
+                        />
+                    </Link>
+                </div>
                 <h1 className="text-xs tracking-[0.3em] text-neutral-400 uppercase">
                     Global Command Center (GCC)
                 </h1>
