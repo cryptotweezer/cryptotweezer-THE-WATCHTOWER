@@ -243,11 +243,11 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
                     case TECHNIQUES.EXFIL: impact = 1; break;
                     case TECHNIQUES.CONTEXT: impact = 1; break;
                     case "FOCUS_LOSS_ANOMALY": impact = 1; break;
-                    case TECHNIQUES.ROUTING: impact = 2; break;
+                    case TECHNIQUES.ROUTING: impact = 3; break;
                     case TECHNIQUES.DOM: impact = 2; break;
                     case TECHNIQUES.DRAG: impact = 2; break;
-                    case TECHNIQUES.FUZZ: impact = 2; break;
-                    case TECHNIQUES.INJECTION: impact = 5; break;
+                    case TECHNIQUES.FUZZ: impact = 3; break;
+                    case TECHNIQUES.INJECTION: impact = 10; break;
                     default: impact = 0;
                 }
                 if (NON_UNIQUE_EVENTS.includes(eventType) && eventType !== TECHNIQUES.ROUTING) return currentScore;
@@ -667,7 +667,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         isDevToolsOpenRef.current = isDevToolsOpen;
     }, [isDevToolsOpen]);
 
-    // FORENSIC DETECTION (DevTools)
+    // FORENSIC DETECTION (DevTools) — fires ONCE per session, never resets
     useEffect(() => {
         if (isDevToolsOpen) {
             if (!hasLoggedForensic.current) {
@@ -677,7 +677,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         } else {
             isGuardStateRef.current = true;
             lastFocusTimeRef.current = Date.now();
-            hasLoggedForensic.current = false;
+            // NOTE: hasLoggedForensic is NOT reset here. Once detected, it's done forever.
         }
     }, [isDevToolsOpen, triggerSentinel]);
 
@@ -715,6 +715,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
 
         const handleContextMenu = (e: MouseEvent) => {
             e.preventDefault();
+            if (knownTechniquesRef.current.includes(TECHNIQUES.SURFACE)) return;
             if (Date.now() - lastFocusTimeRef.current < 300) return;
             if (isGuardStateRef.current) {
                 isGuardStateRef.current = false;
@@ -724,6 +725,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         };
 
         const handleVisibilityChange = () => {
+            if (knownTechniquesRef.current.includes(TECHNIQUES.CONTEXT)) return;
             if (isDevToolsOpenRef.current) return;
             if (document.hidden) {
                 triggerSentinel("Searching for tutorials? Interesting...", TECHNIQUES.CONTEXT);
@@ -731,6 +733,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         };
 
         const handleBlur = () => {
+            if (knownTechniquesRef.current.includes(TECHNIQUES.FOCUS)) return;
             if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
             blurTimerRef.current = setTimeout(() => {
                 processCorrelatedEvent('BLUR', "Multitasking? Focus on the terminal.", TECHNIQUES.FOCUS);
@@ -751,7 +754,10 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
             processCorrelatedEvent('RESIZE', "Security Alert: Resize.", TECHNIQUES.SURFACE);
         };
 
-        const handleClipboard = () => triggerSentinel("Security Alert: Exfiltration.", TECHNIQUES.EXFIL);
+        const handleClipboard = () => {
+            if (knownTechniquesRef.current.includes(TECHNIQUES.EXFIL)) return;
+            triggerSentinel("Security Alert: Exfiltration.", TECHNIQUES.EXFIL);
+        };
 
         const handleFocus = () => {
             lastFocusTimeRef.current = Date.now();
@@ -820,6 +826,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         let resetTimer: NodeJS.Timeout | null = null;
 
         const handleDrag = (e: DragEvent) => {
+            if (knownTechniquesRef.current.includes(TECHNIQUES.DRAG)) return;
             triggerSentinel(
                 `HEURISTIC: Anomalous Drag Interaction on [${(e.target as HTMLElement).tagName}]. Subject testing physics engine.`,
                 TECHNIQUES.DRAG
@@ -827,6 +834,7 @@ export function SentinelProvider({ children }: { children: ReactNode }) {
         };
 
         const handleFuzzing = () => {
+            if (knownTechniquesRef.current.includes(TECHNIQUES.FUZZ)) return;
             if (clickCount === 0) {
                 resetTimer = setTimeout(() => { clickCount = 0; }, 1000);
             }

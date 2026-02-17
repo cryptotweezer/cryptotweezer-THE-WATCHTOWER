@@ -322,52 +322,46 @@ export async function POST(req: Request) {
         });
     }
 
-    let impact = 3; // +3 per unique external technique (balanced for ~90% max)
-    let newExternalCount = subject.externalTechniqueCount;
+    const newExternalCount = subject.externalTechniqueCount + 1;
 
-    // New unique technique — always runs (isDuplicate was handled above)
-    {
-        newExternalCount += 1;
+    // Dynamic impact: first 2 techniques = +5, third (Desert Storm) = +10
+    const isDesertStormTrigger = newExternalCount >= 3 && !subject.operationDesertStorm;
+    const impact = isDesertStormTrigger ? 10 : 5;
 
-        // Log the security event
-        await db.insert(securityEvents).values({
-            fingerprint,
-            eventType: technique,
-            payload: payload.substring(0, 500),
-            riskScoreImpact: impact,
-            actionTaken: "Flagged" as const,
-            ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0] || "External",
-            location: req.headers.get("x-vercel-ip-country") || "EXTERNAL",
-            route: new URL(req.url).pathname,
-            timestamp: new Date(),
-        });
+    // Dynamic risk cap (same as Sentinel API)
+    let riskCap = 40;
+    if (subject.operationDesertStorm) riskCap = 60;
+    if (subject.operationOverlord) riskCap = 80;
+    if (subject.operationRollingThunder) riskCap = 90;
+    // If THIS request triggers Desert Storm, raise cap NOW (flag before score)
+    if (isDesertStormTrigger) riskCap = 60;
 
-        // Milestone: Operation Desert Storm (3 unique external techniques)
-        if (newExternalCount >= 3 && !subject.operationDesertStorm) {
-            impact += 10; // Bonus for unlocking Desert Storm
+    const newScore = Math.min(oldScore + impact, riskCap);
 
-            await db.update(userSessions)
-                .set({
-                    riskScore: Math.min(oldScore + impact, 90),
-                    externalTechniqueCount: newExternalCount,
-                    operationDesertStorm: true,
-                    lastSeen: new Date(),
-                })
-                .where(eq(userSessions.fingerprint, fingerprint));
-        } else {
-            await db.update(userSessions)
-                .set({
-                    riskScore: Math.min(oldScore + impact, 90),
-                    externalTechniqueCount: newExternalCount,
-                    lastSeen: new Date(),
-                })
-                .where(eq(userSessions.fingerprint, fingerprint));
-        }
+    // Log the security event
+    await db.insert(securityEvents).values({
+        fingerprint,
+        eventType: technique,
+        payload: payload.substring(0, 500),
+        riskScoreImpact: impact,
+        actionTaken: "Flagged" as const,
+        ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0] || "External",
+        location: req.headers.get("x-vercel-ip-country") || "EXTERNAL",
+        route: new URL(req.url).pathname,
+        timestamp: new Date(),
+    });
 
-        await updateUniqueTechniqueCount(fingerprint);
-    }
+    // Update session: score + external count + milestone flag
+    await db.update(userSessions)
+        .set({
+            riskScore: newScore,
+            externalTechniqueCount: newExternalCount,
+            ...(isDesertStormTrigger ? { operationDesertStorm: true } : {}),
+            lastSeen: new Date(),
+        })
+        .where(eq(userSessions.fingerprint, fingerprint));
 
-    const newScore = Math.min(oldScore + impact, 90);
+    await updateUniqueTechniqueCount(fingerprint);
 
     // A3: Narrative operation status
     const operationStatus = getOperationStatus(

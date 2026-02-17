@@ -43,6 +43,13 @@
       "when": 1770788317563,
       "tag": "0005_brainy_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1771314227774,
+      "tag": "0006_lyrical_spyke",
+      "breakpoints": true
     }
   ]
 }

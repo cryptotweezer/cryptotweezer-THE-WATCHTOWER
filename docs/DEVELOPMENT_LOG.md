@@ -765,6 +765,126 @@
     *   **Integrity Alignment**: Forced `war-room/page.tsx` to generate HMAC tokens using the `watchtower_node_id` cookie (if present) instead of the Arcjet fingerprint. This ensures the API route (which relies on the cookie for identity) can successfully validate the token.
 *   **Deployment**:
     *   Direct push to `main` (commits `1c3bff6`, `d8c4c49`, and new fix) for immediate Vercel update.
+    *   **⚠️ CRITICAL ISSUE (PENDING)**: The Honeypot "False Positive" fix was **unsuccessful**. Normal users are still receiving the "Crash Dump" response upon form submission.
+    *   **Action Required**: Deep debugging of the `Overlord` detection logic (likely Header vs Body parsing or Edge Runtime specific header handling) is required in the next session. **Feature is currently unstable.**
 **🚧 Next Steps**:
 *   **Phase 4**: Advanced Adversary Simulation (External Kali Attacks).
+
+### [2026-02-17] Honeypot False Positive Fix — HMAC Token Removal
+**👤 Author**: Antigravity + Lead Architect (Claude Opus 4.6)
+**🎯 Goal**: Fix Operation Overlord false positive — normal form submissions were being trapped.
+**✅ Accomplished**:
+*   **Root Cause #1**: The HMAC `integrity_token` validation caused false positives due to fingerprint resolution mismatch between server component (`cookieStore.get()`) and Edge API (raw cookie header regex). Fix: Removed token validation entirely.
+*   **Root Cause #2 (CRITICAL)**: Prototype pollution check used `"constructor" in body` — the `in` operator checks the **prototype chain**, and `constructor` exists on `Object.prototype`. This means `"constructor" in {}` is ALWAYS `true`. Every single JSON payload triggered the violation. Fix: Replaced with `Object.prototype.hasOwnProperty.call(body, "constructor")` which only checks own properties.
+*   **Fix Applied** (`src/app/api/sentinel/honeypot/route.ts`):
+    *   Removed `validateIntegrityToken()` function and HMAC validation block.
+    *   Fixed prototype pollution detection: `in` operator → `hasOwnProperty.call()` for `__proto__`, `constructor`, `prototype`.
+    *   Detection now relies purely on **behavior-based checks**: hidden field value changes, overposting (own properties only), suspicious headers, method manipulation, and client-side tamper detection.
+*   **Build**: `pnpm lint && pnpm build` — zero warnings, zero errors.
+**📁 Files Modified**: `src/app/api/sentinel/honeypot/route.ts`
+**🚧 Next Steps**:
+*   Implement alias change feature.
+*   Implement Wall of Infamy.
+
+### [2026-02-17] Alias Change Feature
+**👤 Author**: Antigravity + Lead Architect (Claude Opus 4.6)
+**🎯 Goal**: Allow users to customize their alias from the War Room Identity Card.
+**✅ Accomplished**:
+*   **Server Action** (`src/app/actions.ts`): Created `updateAlias(fingerprint, newAlias)` — validates 2-24 chars, alphanumeric + spaces/hyphens/underscores only. Updates `userSessions.alias` in DB.
+*   **UI** (`src/components/war-room/WarRoomShell.tsx`):
+    *   Alias text in Identity Card is now **clickable** (hover turns blue, cursor pointer).
+    *   Click switches to inline input field with blue border. Pre-selects current alias text.
+    *   **Enter** saves, **Escape** cancels, **blur** saves (standard inline-edit UX).
+    *   Validation errors display in red below the input.
+    *   Nav panel "[Alias]" button reflects the new alias immediately.
+*   **Build**: `pnpm lint && pnpm build` — zero warnings, zero errors.
+**📁 Files Modified**: `src/app/actions.ts`, `src/components/war-room/WarRoomShell.tsx`
+**🚧 Next Steps**:
+*   Implement Wall of Infamy.
+
+### [2026-02-17] Wall of Infamy — Permanent Legacy System
+**👤 Author**: Antigravity + Lead Architect (Claude Opus 4.6)
+**🎯 Goal**: Create a "Wall of Infamy" where users who reach 90% threat level can leave a permanent message that survives Forensic Wipe.
+**✅ Accomplished**:
+*   **Schema** (`src/db/schema.ts`): Added `infamy_wall` table — `id` (UUID), `fingerprint` (TEXT, NO FK constraint), `alias` (snapshot), `message`, `riskScore` (snapshot), `createdAt`. No FK ensures rows persist even after user wipes their session.
+*   **Migration**: Generated `drizzle/0006_lyrical_spyke.sql` and applied to Neon via `pnpm db:generate && pnpm db:migrate`.
+*   **Server Actions** (`src/app/actions.ts`):
+    *   `postInfamyMessage(fingerprint, message)` — validates 1-280 chars, no HTML tags, verifies `riskScore >= 90` from DB (SSoT), enforces one message per fingerprint. Snapshots alias and risk score at time of posting.
+    *   `getInfamyMessages()` — returns all entries ordered by `createdAt DESC`, limit 100.
+*   **UI Component** (`src/components/war-room/WallOfInfamyPanel.tsx`):
+    *   Red-themed panel with skull icon header.
+    *   **Post form**: Textarea (280 char limit) + "ENGRAVE" button — only visible if `riskScore >= 90` and user hasn't posted yet.
+    *   **Locked state**: Shows "REACH 90% THREAT LEVEL TO UNLOCK" with current progress.
+    *   **Posted state**: Shows green confirmation "YOUR MARK HAS BEEN ENGRAVED PERMANENTLY".
+    *   **Message list**: Cards with alias, risk badge, date, and message. Red-tinted borders with hover effect.
+*   **WarRoomShell Integration**:
+    *   Added "WALL OF INFAMY" to nav panel (red-themed, between CONTACT DEV and debug console).
+    *   Renders `<WallOfInfamyPanel>` in center panel when active.
+*   **Build**: `pnpm lint && pnpm build` — zero warnings, zero errors.
+**📁 Files Created**: `src/components/war-room/WallOfInfamyPanel.tsx`, `drizzle/0006_lyrical_spyke.sql`
+**📁 Files Modified**: `src/db/schema.ts`, `src/app/actions.ts`, `src/components/war-room/WarRoomShell.tsx`
+**🚧 Next Steps**:
+*   Manual testing of all 3 features end-to-end.
+*   Deploy to Vercel.
+
+### [2026-02-17] Scoring Dedup & DB Error Resilience
+**👤 Author**: Antigravity + Lead Architect (Claude Opus 4.6)
+**🎯 Goal**: Fix repeated scoring on honeypots and sensors, fix heuristic event naming bug, and add DB error resilience to prevent 500 crashes.
+**✅ Accomplished**:
+*   **Honeypot Operation Dedup** (`src/app/api/sentinel/honeypot/route.ts`):
+    *   Added early return check: if `session.operationOverlord === true`, Overlord submissions return `trapped: false` without scoring.
+    *   Same for Rolling Thunder: if `session.operationRollingThunder === true`, skip scoring entirely.
+    *   Method manipulation handler also checks `operationOverlord` flag before scoring.
+    *   Result: Each honeypot operation scores exactly once per user, regardless of repeated triggers.
+*   **Sentinel API Heuristic Event Naming Fix** (`src/app/api/sentinel/route.ts`):
+    *   **Root Cause**: The `onFinish` callback was logging heuristic events with GPT-invented names (e.g., `PHANTOM_NODE_PROBE` instead of `HEURISTIC_DOM`). Server-side dedup checks for the original event type in DB, so renamed events bypassed dedup on subsequent triggers.
+    *   **Fix**: `onFinish` now always logs with the ORIGINAL `eventType`, not the GPT-invented name. Invented names remain display-only via the `[TECHNIQUE: ...]` tag in chat output.
+*   **Client Sensor Strict One-Fire Policy** (`src/contexts/SentinelContext.tsx`):
+    *   Removed `hasLoggedForensic.current = false` reset when devtools close — was allowing re-detection on close/reopen.
+    *   Added `knownTechniquesRef.current.includes(TECHNIQUE)` early-return guards to ALL sensor callbacks: `handleContextMenu`, `handleVisibilityChange`, `handleBlur`, `handleClipboard`, `handleDrag`, `handleFuzzing`.
+    *   Result: Each sensor technique fires exactly once per session. Re-triggering the same action produces no API call and no Sentinel response.
+*   **DB Error Resilience (Graceful Degradation)**:
+    *   `src/app/page.tsx`: Wrapped session lookup and related DB calls in try/catch. On failure, falls through to Gatekeeper handshake (pending identity) instead of crashing.
+    *   `src/app/war-room/page.tsx`: Wrapped ALL DB calls in try/catch. On failure, redirects to `/` instead of showing raw error page.
+    *   `src/lib/security.ts`: `getThreatCount()` now returns `0` on DB failure instead of throwing.
+    *   Result: Neon free tier connection exhaustion (ETIMEDOUT) no longer crashes the app. Users see degraded state instead of 500 errors.
+*   **Plan Documentation** (`docs/plan.md`): Documented all 4 problems with root cause analysis and solution strategy before implementation.
+*   **Build**: `pnpm lint && pnpm build` — zero warnings, zero errors.
+**📁 Files Modified**: `src/app/api/sentinel/honeypot/route.ts`, `src/app/api/sentinel/route.ts`, `src/contexts/SentinelContext.tsx`, `src/app/page.tsx`, `src/app/war-room/page.tsx`, `src/lib/security.ts`, `docs/plan.md`
+**🚧 Next Steps**:
+*   End-to-end testing of all scoring dedup (honeypots, sensors, heuristics).
+*   Verify DB resilience under connection pressure.
+*   Deploy to Vercel.
+
+### [2026-02-17] Risk Score Rebalance — The 90% Progression Path
+**👤 Author**: Antigravity + Lead Architect (Claude Opus 4.6)
+**🎯 Goal**: Rebalance ALL risk scoring so users follow a clear, designed progression from 0% to exactly 90% (Wall of Infamy unlock).
+**✅ Accomplished**:
+*   **Progression Design** (documented in `docs/plan.md`):
+    *   Phase 1 — Browser Recon: **20 pts** (CID reveal at 20%)
+    *   Phase 2 — Prompt Injection: **10 pts** (score 30%)
+    *   Phase 3 — Kali/Desert Storm: **20 pts** (5+5+10, score 40%, cap → 60)
+    *   Phase 4 — Operation Overlord: **20 pts** (score 60%, cap → 80)
+    *   Phase 5 — Rolling Thunder: **20 pts** (score 80%, cap → 90)
+    *   **Total: exactly 90%** → Wall of Infamy unlocked
+*   **Server-Side Impacts** (`src/app/api/sentinel/route.ts`):
+    *   `ROUTING_PROBE_HEURISTICS`: 2 → **3** (x3 = 9 pts, highest browser impact)
+    *   `HEURISTIC_FUZZ`: 2 → **3** (rapid clicking)
+    *   `MEMORY_INJECTION_ATTEMPT`: 5 → **10** (prompt injection in Sentinel chat)
+    *   All others unchanged (FORENSIC=2, DRAG=2, DOM=2, SURFACE=1, EXFIL=1, CONTEXT=1, FOCUS=1)
+*   **Client-Side Impacts** (`src/contexts/SentinelContext.tsx`):
+    *   Mirrored all server changes to maintain sync (ROUTING=3, FUZZ=3, INJECTION=10)
+*   **Kali/External Scoring** (`src/app/api/sentinel/external/route.ts`):
+    *   Replaced flat +3/technique + +10 milestone bonus with: techniques 1-2 = **+5**, technique 3 (Desert Storm) = **+10**
+    *   Added dynamic risk cap (40/60/80/90 based on operation flags) instead of hardcoded 90
+    *   Desert Storm flag set BEFORE score update so cap applies immediately
+*   **Honeypot Scoring** (`src/app/api/sentinel/honeypot/route.ts`):
+    *   **Overlord**: Replaced per-violation variable scoring (5-10 per violation, summed) with flat **+20** on first trap. Cap set to 80 (flag before score).
+    *   **Rolling Thunder**: Replaced +10 risk / +15 event with flat **+20**. Cap set to 90 (flag before score).
+    *   **Method Manipulation**: Replaced +5 with flat **+20** (same as Overlord — it triggers the same operation).
+*   **Build**: `pnpm lint && pnpm build` — zero warnings, zero errors.
+**📁 Files Modified**: `src/app/api/sentinel/route.ts`, `src/contexts/SentinelContext.tsx`, `src/app/api/sentinel/external/route.ts`, `src/app/api/sentinel/honeypot/route.ts`, `docs/plan.md`
+**🚧 Next Steps**:
+*   Full end-to-end test of the 90% progression path.
+*   Deploy to Vercel.
 

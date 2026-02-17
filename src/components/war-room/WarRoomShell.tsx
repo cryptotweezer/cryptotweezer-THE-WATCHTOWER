@@ -9,9 +9,10 @@ import GlobalIntelPanel from "./GlobalIntelPanel";
 import GeoTrackerPanel from "./GeoTrackerPanel";
 import ContactFormPanel from "./ContactFormPanel";
 import DebugConsolePanel from "./DebugConsolePanel";
-import { forensicWipe } from "@/app/actions";
+import WallOfInfamyPanel from "./WallOfInfamyPanel";
+import { forensicWipe, updateAlias } from "@/app/actions";
 
-type ActiveView = "subject" | "global-intel" | "geo-tracker" | "contact" | "debug-console" | "forensic-wipe";
+type ActiveView = "subject" | "global-intel" | "geo-tracker" | "contact" | "wall-of-infamy" | "debug-console" | "forensic-wipe";
 
 interface DeepScanData {
     browser: string;
@@ -57,6 +58,13 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
     const [deepScan, setDeepScan] = useState<DeepScanData | null>(null);
     const [activeView, setActiveView] = useState<ActiveView>("subject");
     const [isWiping, setIsWiping] = useState(false);
+
+    // Alias editing state
+    const [isEditingAlias, setIsEditingAlias] = useState(false);
+    const [aliasInput, setAliasInput] = useState(identity.alias);
+    const [displayAlias, setDisplayAlias] = useState(identity.alias);
+    const [aliasError, setAliasError] = useState("");
+    const aliasInputRef = useRef<HTMLInputElement>(null);
 
     // Chat state
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -256,6 +264,34 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
         }
     };
 
+    // Alias editing handlers
+    const handleAliasEdit = () => {
+        setIsEditingAlias(true);
+        setAliasInput(displayAlias);
+        setAliasError("");
+        setTimeout(() => aliasInputRef.current?.select(), 50);
+    };
+
+    const handleAliasSave = async () => {
+        if (!identity.fingerprint) return;
+        const result = await updateAlias(identity.fingerprint, aliasInput);
+        if (result.success && result.alias) {
+            setDisplayAlias(result.alias);
+            setIsEditingAlias(false);
+            setAliasError("");
+        } else {
+            setAliasError(result.error || "Failed");
+        }
+    };
+
+    const handleAliasKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") handleAliasSave();
+        if (e.key === "Escape") {
+            setIsEditingAlias(false);
+            setAliasError("");
+        }
+    };
+
     // Wait for mount
     if (!isMounted) return null;
 
@@ -324,7 +360,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
                         >
-                            [{isFullyReady ? identity.alias : "SYNCING..."}]
+                            [{isFullyReady ? displayAlias : "SYNCING..."}]
                         </button>
                         <button
                             onClick={() => setActiveView("global-intel")}
@@ -352,6 +388,15 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                                 }`}
                         >
                             CONTACT DEV
+                        </button>
+                        <button
+                            onClick={() => setActiveView("wall-of-infamy")}
+                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "wall-of-infamy"
+                                ? "text-red-500 border-red-500"
+                                : "text-red-900 hover:text-red-500 border-transparent hover:border-red-500"
+                                }`}
+                        >
+                            WALL OF INFAMY
                         </button>
                         {/* Debug Console — appears after Rolling Thunder endpoint discovery */}
                         {state.eventLog.some(log => log.includes("ROLLING_THUNDER")) && (
@@ -397,7 +442,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                 </section>
 
                 {/* CENTER: Dynamic Content based on activeView */}
-                <section className={`bg-black p-4 flex flex-col ${activeView === "global-intel" ? "overflow-y-auto cyber-scrollbar" : "overflow-hidden"}`}>
+                <section className={`bg-black p-4 flex flex-col ${activeView === "global-intel" || activeView === "wall-of-infamy" ? "overflow-y-auto cyber-scrollbar" : "overflow-hidden"}`}>
                     {activeView === "geo-tracker" ? (
                         <GeoTrackerPanel />
                     ) : activeView === "global-intel" ? (
@@ -445,6 +490,10 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         <ContactFormPanel
                             integrityToken={integrityToken || ""}
                         />
+                    ) : activeView === "wall-of-infamy" ? (
+                        <WallOfInfamyPanel
+                            fingerprint={identity.fingerprint || ""}
+                        />
                     ) : activeView === "debug-console" ? (
                         <DebugConsolePanel
                             fingerprint={identity.fingerprint || ""}
@@ -475,9 +524,33 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                                     <div className="space-y-3">
                                         <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">
                                             <span className="text-[10px] uppercase text-neutral-600 tracking-wider">Alias</span>
-                                            <span className="text-lg font-bold text-white tracking-tight truncate">
-                                                {isFullyReady ? identity.alias : "---"}
-                                            </span>
+                                            {isEditingAlias ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1">
+                                                        <input
+                                                            ref={aliasInputRef}
+                                                            type="text"
+                                                            value={aliasInput}
+                                                            onChange={(e) => setAliasInput(e.target.value)}
+                                                            onKeyDown={handleAliasKeyDown}
+                                                            onBlur={handleAliasSave}
+                                                            maxLength={24}
+                                                            className="bg-neutral-900 border border-blue-500/50 text-white font-bold text-lg px-2 py-0 rounded focus:outline-none focus:border-blue-500 w-full tracking-tight"
+                                                        />
+                                                    </div>
+                                                    {aliasError && (
+                                                        <span className="text-red-500 text-[9px]">{aliasError}</span>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span
+                                                    onClick={handleAliasEdit}
+                                                    className="text-lg font-bold text-white tracking-tight truncate cursor-pointer hover:text-blue-400 transition-colors"
+                                                    title="Click to change alias"
+                                                >
+                                                    {isFullyReady ? displayAlias : "---"}
+                                                </span>
+                                            )}
                                         </div>
 
                                         <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">

@@ -74,8 +74,13 @@ export async function logArcjetDetection(
 // Fetch total threat count
 export async function getThreatCount() {
     noStore();
-    const result = await db.select({ count: sql<number>`count(*)` }).from(securityEvents);
-    return result[0].count;
+    try {
+        const result = await db.select({ count: sql<number>`count(*)` }).from(securityEvents);
+        return result[0].count;
+    } catch (err) {
+        console.error("[DB] getThreatCount failed:", err);
+        return 0;
+    }
 }
 
 // Fetch recent threats for dashboard

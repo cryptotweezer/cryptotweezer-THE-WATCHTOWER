@@ -27,53 +27,58 @@ export default async function Home() {
   // Ghost Route Detection: Read the path set by middleware rewrite
   const rawPath = headersList.get("x-watchtower-ghost-path") || "/";
 
-  // GET-only session lookup — no creation until Gatekeeper handshake
-  const session = await getSession(fingerprint, user?.id);
+  // DB calls wrapped in try/catch — never show raw DB errors to users
+  try {
+    // GET-only session lookup — no creation until Gatekeeper handshake
+    const session = await getSession(fingerprint, user?.id);
 
-  if (session) {
-    // Existing session — full identity flow
-    const uniqueTechniques = await getUniqueTechniquesForSession(session.fingerprint);
-    const initialLogs = await getSessionLogs(session.fingerprint, 10);
+    if (session) {
+      // Existing session — full identity flow
+      const uniqueTechniques = await getUniqueTechniquesForSession(session.fingerprint);
+      const initialLogs = await getSessionLogs(session.fingerprint, 10);
 
-    // Log Arcjet detections (non-blocking telemetry)
-    if (arcjetResult.isDenied) {
-      logArcjetDetection(arcjetResult, session.fingerprint, ip, countryCode);
+      // Log Arcjet detections (non-blocking telemetry)
+      if (arcjetResult.isDenied) {
+        logArcjetDetection(arcjetResult, session.fingerprint, ip, countryCode);
+      }
+
+      // Dynamic risk cap based on operation milestones
+      let riskCap = 40;
+      if (session.operationDesertStorm) riskCap = 60;
+      if (session.operationOverlord) riskCap = 80;
+      if (session.operationRollingThunder) riskCap = 90;
+
+      const identity = {
+        alias: session.alias,
+        fingerprint: session.fingerprint,
+        cid: session.cid,
+        riskScore: session.riskScore,
+        ip: ip,
+        countryCode: countryCode,
+        sessionTechniques: uniqueTechniques,
+        uniqueTechniqueCount: session.uniqueTechniqueCount,
+        riskCap,
+        operations: {
+          desertStorm: session.operationDesertStorm,
+          overlord: session.operationOverlord,
+          rollingThunder: session.operationRollingThunder,
+        },
+      };
+
+      return (
+        <HomeTerminal
+          threatCount={threatCount}
+          identity={identity}
+          invokePath={rawPath}
+          initialLogs={initialLogs}
+        />
+      );
     }
-
-    // Dynamic risk cap based on operation milestones
-    let riskCap = 40;
-    if (session.operationDesertStorm) riskCap = 60;
-    if (session.operationOverlord) riskCap = 80;
-    if (session.operationRollingThunder) riskCap = 90;
-
-    const identity = {
-      alias: session.alias,
-      fingerprint: session.fingerprint,
-      cid: session.cid,
-      riskScore: session.riskScore,
-      ip: ip,
-      countryCode: countryCode,
-      sessionTechniques: uniqueTechniques,
-      uniqueTechniqueCount: session.uniqueTechniqueCount,
-      riskCap,
-      operations: {
-        desertStorm: session.operationDesertStorm,
-        overlord: session.operationOverlord,
-        rollingThunder: session.operationRollingThunder,
-      },
-    };
-
-    return (
-      <HomeTerminal
-        threatCount={threatCount}
-        identity={identity}
-        invokePath={rawPath}
-        initialLogs={initialLogs}
-      />
-    );
+  } catch (err) {
+    console.error("[DB] Home page DB query failed — rendering with empty state:", err);
   }
 
-  // No session — pass fingerprint for Gatekeeper handshake
+  // No session OR DB failure — pass fingerprint for Gatekeeper handshake
   const pendingIdentity = {
     alias: "",
     fingerprint: fingerprint,

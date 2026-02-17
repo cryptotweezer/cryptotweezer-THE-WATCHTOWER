@@ -61,7 +61,17 @@ export const securityEvents = pgTable("security_events", {
 });
 
 
-// 3. Hall of Fame (Gamification)
+// 3. Wall of Infamy (Permanent Legacy — survives Forensic Wipe)
+export const infamyWall = pgTable("infamy_wall", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    fingerprint: text("fingerprint").notNull(), // Snapshot — NO FK (persists after wipe)
+    alias: text("alias").notNull(),             // Snapshot of alias at time of posting
+    message: text("message").notNull(),
+    riskScore: integer("risk_score").notNull(), // Snapshot of risk score at time of posting
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 4. Hall of Fame (Gamification)
 export const researchLeaderboard = pgTable("research_leaderboard", {
     id: uuid("id").defaultRandom().primaryKey(),
     fingerprint: text("fingerprint").references(() => userSessions.fingerprint).notNull(),

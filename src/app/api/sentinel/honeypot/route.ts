@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { securityEvents, userSessions } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { generateFakeEnv, generateIntegrityToken } from "@/lib/honeypot-data";
+import { generateFakeEnv } from "@/lib/honeypot-data";
 
 export const runtime = "edge";
 
@@ -29,13 +29,6 @@ const SUSPICIOUS_HEADERS = [
     "x-debug",
 ];
 
-// ============= HMAC TOKEN VALIDATION =============
-
-async function validateIntegrityToken(fingerprint: string, token: string): Promise<boolean> {
-    const expected = await generateIntegrityToken(fingerprint);
-    return token === expected;
-}
-
 // ============= FINGERPRINT RESOLUTION =============
 
 function resolveFingerprint(req: Request): string | null {
@@ -56,7 +49,6 @@ interface Violation {
 function detectOverlordViolations(
     body: Record<string, unknown>,
     req: Request,
-    tokenValid: boolean,
     clientTampered: boolean,
 ): Violation[] {
     const violations: Violation[] = [];
@@ -88,19 +80,10 @@ function detectOverlordViolations(
         });
     }
 
-    // Integrity token mismatch
-    if (!tokenValid) {
-        violations.push({
-            eventType: "OVERLORD_HIDDEN_FIELD_TAMPER",
-            triggerType: "HiddenField",
-            details: {
-                fieldModified: "integrity_token",
-                originalValue: "[HMAC]",
-                injectedValue: String(body.integrity_token || "missing"),
-            },
-            impact: 5,
-        });
-    }
+    // Note: integrity_token HMAC validation removed — caused false positives
+    // due to fingerprint resolution mismatch between server component (cookieStore)
+    // and Edge API (raw cookie header parsing). Hidden field VALUE checks above
+    // are sufficient for detecting DevTools tampering.
 
     // 2. Overposting (extra fields)
     const extraFields = Object.keys(body).filter(k => !ALLOWED_FIELDS.has(k));
@@ -113,8 +96,10 @@ function detectOverlordViolations(
         });
     }
 
-    // 3. Prototype pollution
-    if ("__proto__" in body || "constructor" in body || "prototype" in body) {
+    // 3. Prototype pollution (must use hasOwnProperty — `in` checks prototype chain)
+    if (Object.prototype.hasOwnProperty.call(body, "__proto__") ||
+        Object.prototype.hasOwnProperty.call(body, "constructor") ||
+        Object.prototype.hasOwnProperty.call(body, "prototype")) {
         violations.push({
             eventType: "OVERLORD_OVERPOST_ATTEMPT",
             triggerType: "StructureMod",
@@ -214,12 +199,14 @@ export async function POST(req: Request) {
 
     // ============= OPERATION OVERLORD =============
     if (operation === "overlord") {
-        const tokenValid = body.integrity_token
-            ? await validateIntegrityToken(fingerprint, String(body.integrity_token))
-            : false;
+        // DEDUP: If operation already completed, don't re-score
+        if (session.operationOverlord) {
+            console.log(`[HONEYPOT] Overlord already complete for ${fingerprint.substring(0, 8)} — skipping`);
+            return NextResponse.json({ success: true, trapped: false });
+        }
 
         const clientTampered = body.clientTampered === true;
-        const violations = detectOverlordViolations(body, req, tokenValid, clientTampered);
+        const violations = detectOverlordViolations(body, req, clientTampered);
 
         if (violations.length === 0) {
             // Clean submission — no trap
@@ -227,9 +214,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, trapped: false });
         }
 
-        // TRAPPED — log all violations
+        // TRAPPED — flat +20 impact for Operation Overlord
         const primaryViolation = violations[0];
-        const totalImpact = violations.reduce((sum, v) => sum + v.impact, 0);
+        const OVERLORD_IMPACT = 20;
 
         // Build comprehensive payload
         const payload = JSON.stringify({
@@ -247,7 +234,7 @@ export async function POST(req: Request) {
                 fingerprint,
                 eventType: primaryViolation.eventType,
                 payload: payload.substring(0, 1000),
-                riskScoreImpact: totalImpact,
+                riskScoreImpact: OVERLORD_IMPACT,
                 actionTaken: "Flagged" as const,
                 ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0] || "Unknown",
                 location: req.headers.get("x-watchtower-country") || "UNKNOWN",
@@ -255,14 +242,8 @@ export async function POST(req: Request) {
                 timestamp: new Date(),
             });
 
-            // Compute risk cap
-            let riskCap = 40;
-            if (session.operationDesertStorm) riskCap = 60;
-            // Overlord unlocking raises cap to 80
-            riskCap = 80;
-
-            // Update session: set operationOverlord + bump risk score
-            const newScore = Math.min(session.riskScore + totalImpact, riskCap);
+            // Set flag BEFORE scoring — cap raises to 80
+            const newScore = Math.min(session.riskScore + OVERLORD_IMPACT, 80);
             await db.update(userSessions)
                 .set({
                     operationOverlord: true,
@@ -273,7 +254,7 @@ export async function POST(req: Request) {
 
             await updateUniqueTechniqueCount(fingerprint);
 
-            console.log(`[HONEYPOT] Overlord TRAPPED: ${fingerprint.substring(0, 8)} | ${primaryViolation.eventType} | Impact=${totalImpact} | Score=${session.riskScore}->${newScore}`);
+            console.log(`[HONEYPOT] Overlord TRAPPED: ${fingerprint.substring(0, 8)} | ${primaryViolation.eventType} | Impact=${OVERLORD_IMPACT} | Score=${session.riskScore}->${newScore}`);
         } catch (err) {
             console.error("[HONEYPOT] DB write failed:", (err as Error).message);
         }
@@ -287,6 +268,12 @@ export async function POST(req: Request) {
 
     // ============= OPERATION ROLLING THUNDER (Kill Switch) =============
     if (operation === "rolling_thunder") {
+        // DEDUP: If operation already completed, don't re-score
+        if (session.operationRollingThunder) {
+            console.log(`[HONEYPOT] Rolling Thunder already complete for ${fingerprint.substring(0, 8)} — skipping`);
+            return NextResponse.json({ success: true, operation: "rolling_thunder", complete: true });
+        }
+
         const commandHistory = Array.isArray(body.commandHistory) ? body.commandHistory : [];
         const killSwitchCommand = String(body.killSwitchCommand || "unknown");
         const totalCommands = Number(body.totalCommands) || commandHistory.length;
@@ -300,12 +287,14 @@ export async function POST(req: Request) {
         });
 
         try {
+            const RT_IMPACT = 20;
+
             // Log the kill switch event
             await db.insert(securityEvents).values({
                 fingerprint,
                 eventType: "ROLLING_THUNDER_EXFILTRATION",
                 payload: payload.substring(0, 1000),
-                riskScoreImpact: 15,
+                riskScoreImpact: RT_IMPACT,
                 actionTaken: "Flagged" as const,
                 ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0] || "Unknown",
                 location: req.headers.get("x-watchtower-country") || "UNKNOWN",
@@ -313,8 +302,8 @@ export async function POST(req: Request) {
                 timestamp: new Date(),
             });
 
-            // Unlock Rolling Thunder — risk cap now 100
-            const newScore = Math.min(session.riskScore + 10, 90);
+            // Set flag BEFORE scoring — cap raises to 90
+            const newScore = Math.min(session.riskScore + RT_IMPACT, 90);
             await db.update(userSessions)
                 .set({
                     operationRollingThunder: true,
@@ -356,12 +345,20 @@ async function handleMethodManipulation(req: Request, method: string) {
 
     const session = sessions[0];
 
+    // DEDUP: If Overlord already complete, skip scoring
+    if (session.operationOverlord) {
+        console.log(`[HONEYPOT] Method manipulation ignored — Overlord already complete for ${fingerprint.substring(0, 8)}`);
+        return NextResponse.json({ success: true, trapped: false });
+    }
+
     try {
+        const METHOD_IMPACT = 20;
+
         await db.insert(securityEvents).values({
             fingerprint,
             eventType: "OVERLORD_METHOD_MANIPULATION",
             payload: JSON.stringify({ method, url: req.url }),
-            riskScoreImpact: 5,
+            riskScoreImpact: METHOD_IMPACT,
             actionTaken: "Flagged" as const,
             ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0] || "Unknown",
             location: req.headers.get("x-watchtower-country") || "UNKNOWN",
@@ -369,12 +366,8 @@ async function handleMethodManipulation(req: Request, method: string) {
             timestamp: new Date(),
         });
 
-        let riskCap = 40;
-        if (session.operationDesertStorm) riskCap = 60;
-        if (session.operationOverlord) riskCap = 80;
-        if (session.operationRollingThunder) riskCap = 90;
-
-        const newScore = Math.min(session.riskScore + 5, riskCap);
+        // Set flag BEFORE scoring — cap raises to 80
+        const newScore = Math.min(session.riskScore + METHOD_IMPACT, 80);
         await db.update(userSessions)
             .set({
                 operationOverlord: true,

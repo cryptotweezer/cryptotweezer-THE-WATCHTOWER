@@ -90,12 +90,12 @@ export async function POST(req: Request) {
 
   let impact = 0;
   // Calculate Server-Side Impact (balanced for ~90% max across all sources)
-  if (eventType === "ROUTING_PROBE_HEURISTICS") impact = 2;
+  if (eventType === "ROUTING_PROBE_HEURISTICS") impact = 3;
   else if (eventType === "FORENSIC_INSPECTION_ACTIVITY") impact = 2;
-  else if (eventType === "MEMORY_INJECTION_ATTEMPT") impact = 5;
+  else if (eventType === "MEMORY_INJECTION_ATTEMPT") impact = 10;
   else if (eventType === "HEURISTIC_DOM") impact = 2;
   else if (eventType === "HEURISTIC_DRAG") impact = 2;
-  else if (eventType === "HEURISTIC_FUZZ") impact = 2;
+  else if (eventType === "HEURISTIC_FUZZ") impact = 3;
   else if (eventType === "UI_SURFACE_ANALYSIS" || eventType === "DATA_EXFILTRATION_ATTEMPT") impact = 1;
   else if (eventType === "CONTEXT_SWITCH_ANOMALY" || eventType === "FOCUS_LOSS_ANOMALY") impact = 1;
 
@@ -296,26 +296,25 @@ export async function POST(req: Request) {
     model: openai('gpt-4o'),
     system: systemPrompt,
     prompt: prompt || `Analyze intrusion vector: ${targetPath || "Unknown Layer"}`,
-    onFinish: async ({ text }) => {
+    onFinish: async () => {
       // Skip DB logging for notification-only events (already logged by /api/sentinel/external)
       if (isNotificationOnly) return;
 
-      let finalEventType = eventType;
-      const techniqueMatch = text.match(/\[TECHNIQUE:\s*(.*?)\]/);
-      if (techniqueMatch && techniqueMatch[1] && techniqueMatch[1] !== "INVENTED_NAME") {
-        finalEventType = techniqueMatch[1];
-      }
-      dbEventTypeToLog = finalEventType === 'IDENTITY_REVEAL_PROTOCOL' ? 'IDENTITY_REVEAL' : finalEventType;
+      // CRITICAL: Always log with the ORIGINAL event type, not the GPT-invented name.
+      // GPT renames HEURISTIC_* events (e.g., "PHANTOM_NODE_PROBE") which breaks
+      // server-side dedup (it checks for the original name in DB).
+      // The invented name is display-only (shown in the UI event log via [TECHNIQUE: ...] tag).
+      dbEventTypeToLog = eventType === 'IDENTITY_REVEAL_PROTOCOL' ? 'IDENTITY_REVEAL' : eventType;
 
       await logSecurityEvent(
         fingerprint,
         dbEventTypeToLog,
-        logPayload, // Use the original payload
+        logPayload,
         impact,
         ipAddress,
         location,
         targetPath,
-        new Date() // Use a new timestamp for the streaming onFinish log
+        new Date()
       );
       await updateUniqueTechniqueCount(fingerprint);
     }

@@ -21,60 +21,64 @@ export default async function WarRoomPage() {
     const fingerprint = resolveFingerprint(arcjetResult.fingerprint, headersList, cookieStore);
     const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
 
-    // GET-only — no session creation. Must go through Gatekeeper first.
-    const session = await getSession(fingerprint, user?.id);
+    // DB calls wrapped in try/catch — redirect home on failure instead of showing raw error
+    try {
+        // GET-only — no session creation. Must go through Gatekeeper first.
+        const session = await getSession(fingerprint, user?.id);
 
-    if (!session) {
+        if (!session) {
+            redirect("/");
+        }
+
+        const uniqueTechniques = await getUniqueTechniquesForSession(session.fingerprint);
+
+        // Extract country code from middleware header
+        const countryCode = headersList.get("x-watchtower-country") || "UNKNOWN";
+
+        // Log Arcjet detections (non-blocking — just telemetry)
+        if (arcjetResult.isDenied) {
+            logArcjetDetection(arcjetResult, session.fingerprint, ip, countryCode);
+        }
+
+        // Dynamic risk cap based on operation milestones
+        let riskCap = 40;
+        if (session.operationDesertStorm) riskCap = 60;
+        if (session.operationOverlord) riskCap = 80;
+        if (session.operationRollingThunder) riskCap = 90;
+
+        // Operation milestones
+        const operations = {
+            desertStorm: session.operationDesertStorm,
+            overlord: session.operationOverlord,
+            rollingThunder: session.operationRollingThunder,
+        };
+
+        const identity = {
+            alias: session.alias,
+            fingerprint: session.fingerprint,
+            cid: session.cid,
+            riskScore: session.riskScore,
+            ip: ip,
+            countryCode: countryCode,
+            sessionTechniques: uniqueTechniques,
+            uniqueTechniqueCount: session.uniqueTechniqueCount,
+            riskCap,
+            operations,
+        };
+
+        // Ghost Route Detection: Read path set by middleware rewrite
+        const invokePath = headersList.get("x-watchtower-ghost-path") || undefined;
+
+        // WAR ROOM: FULL HISTORICAL ACCESS (no limit)
+        const fullLogs = await getSessionLogs(identity.fingerprint);
+
+        // Honeypot: Generate integrity token for Operation Overlord contact form
+        const cookieId = cookieStore.get("watchtower_node_id")?.value;
+        const integrityToken = await generateIntegrityToken(cookieId || fingerprint);
+
+        return <WarRoomShell identity={identity} operations={operations} initialLogs={fullLogs} invokePath={invokePath} integrityToken={integrityToken} />;
+    } catch (err) {
+        console.error("[DB] War Room page DB query failed — redirecting home:", err);
         redirect("/");
     }
-
-    const uniqueTechniques = await getUniqueTechniquesForSession(session.fingerprint);
-
-    // Extract country code from middleware header
-    const countryCode = headersList.get("x-watchtower-country") || "UNKNOWN";
-
-    // Log Arcjet detections (non-blocking — just telemetry)
-    if (arcjetResult.isDenied) {
-        logArcjetDetection(arcjetResult, session.fingerprint, ip, countryCode);
-    }
-
-    // Dynamic risk cap based on operation milestones
-    let riskCap = 40;
-    if (session.operationDesertStorm) riskCap = 60;
-    if (session.operationOverlord) riskCap = 80;
-    if (session.operationRollingThunder) riskCap = 90;
-
-    // Operation milestones
-    const operations = {
-        desertStorm: session.operationDesertStorm,
-        overlord: session.operationOverlord,
-        rollingThunder: session.operationRollingThunder,
-    };
-
-    const identity = {
-        alias: session.alias,
-        fingerprint: session.fingerprint,
-        cid: session.cid,
-        riskScore: session.riskScore,
-        ip: ip,
-        countryCode: countryCode,
-        sessionTechniques: uniqueTechniques,
-        uniqueTechniqueCount: session.uniqueTechniqueCount,
-        riskCap,
-        operations,
-    };
-
-    // Ghost Route Detection: Read path set by middleware rewrite
-    const invokePath = headersList.get("x-watchtower-ghost-path") || undefined;
-
-    // WAR ROOM: FULL HISTORICAL ACCESS (no limit)
-    const fullLogs = await getSessionLogs(identity.fingerprint);
-
-    // Honeypot: Generate integrity token for Operation Overlord contact form
-    // CRITICAL: Use the cookie ID if available, as the API route relies on it for identity.
-    // This prevents mismatch if page uses Arcjet FP but API uses Cookie.
-    const cookieId = cookieStore.get("watchtower_node_id")?.value;
-    const integrityToken = await generateIntegrityToken(cookieId || fingerprint);
-
-    return <WarRoomShell identity={identity} operations={operations} initialLogs={fullLogs} invokePath={invokePath} integrityToken={integrityToken} />;
 }
