@@ -96,15 +96,14 @@ Access the comprehensive system at `http://localhost:3000`.
 
 ---
 
-## 🤖 AI-Human Protocol
-This repository is engineered for **AI-Assisted Development**.
-*   **`docs/`**: Contains the "brain" of the project (`honeypots.md`, `plan.md`).
-*   **`src/scripts/`**: Automation tools for database management.
-*   **Sentinel Context**: The AI agents (Sentinel-02) share a unified memory of the project state to ensure consistency across dev sessions.
+## ⚖️ Legal & Compliance Suite
 
----
+The Watchtower operates under a strict legal framework compatible with GDPR and international cybersecurity research standards.
 
-## ⚖️ Legal Compliance & Terms of Use
+*   [**Legal Notice**](/legal): Research purpose and liability disclaimers.
+*   [**Privacy Policy**](/privacy): Data collection, retention, and forensic rights.
+*   [**Terms of Service**](/terms): Rules of engagement for Red Teamers.
+*   [**Cookies Policy**](/cookies): Technical storage registry (Arcjet, Clerk, Sentinel).
 
 ### 1. Research & Educational Purpose
 This infrastructure is strictly a **Cybersecurity Research Laboratory**. All "active defense" mechanisms (e.g., honeypots, fingerprinting, deception layers) are deployed for the sole purpose of analyzing adversarial behavior patterns and developing threat intelligence heuristics.
