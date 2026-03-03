@@ -27,6 +27,8 @@ curl -A "CID-900-I nikto/2.5" https://the-watchtower.vercel.app/
 # 5. Referer — AHORA FUNCIONA
 curl -H "Referer: CID-900-I" https://the-watchtower.vercel.app/
 
+&role=admin
+
 ---
 
 # Honeypot Operations — Flow Test Guide (Step-by-Step)
