@@ -9,6 +9,7 @@ const isPublicRoute = createRouteMatcher([
     "/",
     "/favicon.ico",
     "/cookies",
+    "/guide",
     "/legal",
     "/privacy",
     "/terms",
@@ -22,7 +23,7 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 // Ghost Route Detection: Routes that are valid pages (not honeypot targets)
-const VALID_PAGES = ["/", "/cookies", "/legal", "/privacy", "/terms", "/war-room"];
+const VALID_PAGES = ["/", "/cookies", "/guide", "/legal", "/privacy", "/terms", "/war-room"];
 
 const isStaticOrInternal = (path: string) =>
     path.startsWith("/_next") ||
