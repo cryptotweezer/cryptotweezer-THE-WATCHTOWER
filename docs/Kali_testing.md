@@ -45,7 +45,7 @@ curl -A "CID-900-I nikto/2.5" https://the-watchtower.vercel.app/
 **5. Referer Header**:
 ```bash
 curl -H "Referer: CID-900-I" https://the-watchtower.vercel.app/
-```
+
 
 ### Catalogued External Techniques
 Provide The Watchtower with at least **3 unique attack signatures** to complete Operation Desert Storm.
