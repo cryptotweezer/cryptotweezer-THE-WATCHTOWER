@@ -3,9 +3,15 @@
 import { db } from "@/db";
 import { userSessions, securityEvents } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { runArcjetSecurity } from "@/lib/arcjet";
+import { cookies } from "next/headers";
 
+export async function performHandshake(_clientFingerprint: string) {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
 
-export async function performHandshake(fingerprint: string) {
+    const cookieStore = await cookies();
+    const fingerprint = cookieStore.get("watchtower_node_id")?.value;
     if (!fingerprint) return { success: false, error: "No Fingerprint" };
 
     try {
@@ -56,7 +62,12 @@ export async function performHandshake(fingerprint: string) {
     }
 }
 
-export async function syncUserIdentity(clerkId: string, fingerprint: string) {
+export async function syncUserIdentity(clerkId: string, _clientFingerprint: string) {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
+
+    const cookieStore = await cookies();
+    const fingerprint = cookieStore.get("watchtower_node_id")?.value;
     if (!clerkId || !fingerprint) return { success: false, error: "Missing Credentials" };
 
     try {

@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { CID_REGEX } from "@/lib/attack-classifier";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { runArcjetSecurity } from "@/lib/arcjet";
 
 export const runtime = "edge";
 
@@ -231,6 +232,11 @@ Generate a unique Sentinel interception message for this specific attack. Be cre
 // ============= ROUTE HANDLERS =============
 
 export async function POST(req: Request) {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) {
+        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
     // Read headers set by middleware rewrite (or direct curl)
     const cid = req.headers.get("x-sentinel-cid");
     const technique = req.headers.get("x-sentinel-technique") || "EXT_GENERIC_PROBE";
