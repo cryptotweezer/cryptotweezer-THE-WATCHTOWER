@@ -3,7 +3,7 @@ import { securityEvents, userSessions } from "@/db/schema";
 import { sql, desc, gte, inArray, like } from "drizzle-orm";
 import { runArcjetSecurity } from "@/lib/arcjet";
 
-export const runtime = "edge";
+
 
 // Stress state thresholds (events per hour, GLOBAL across all users)
 // A single user generates ~10-15 events/hour normally.

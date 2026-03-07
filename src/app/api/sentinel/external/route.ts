@@ -7,7 +7,7 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { runArcjetSecurity } from "@/lib/arcjet";
 
-export const runtime = "edge";
+
 
 // ============= A1: ASCII BANNER =============
 const WATCHTOWER_BANNER = `

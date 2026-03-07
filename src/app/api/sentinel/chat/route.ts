@@ -7,7 +7,7 @@ import { CREATOR_RESUME_CONTEXT } from "@/lib/resume-context";
 import { runArcjetChatSecurity } from "@/lib/arcjet";
 import { cookies, headers } from "next/headers";
 
-export const runtime = "edge";
+
 
 // Keywords that trigger creator context injection
 const CREATOR_KEYWORDS = [

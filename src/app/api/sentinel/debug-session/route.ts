@@ -3,7 +3,7 @@ import { securityEvents, userSessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
+
 
 // ============= FINGERPRINT RESOLUTION =============
 
