@@ -131,3 +131,42 @@ export async function runArcjetChatSecurity(): Promise<ArcjetResult> {
     }
 }
 
+/**
+ * Specifically protects the Honeypot Endpoints from DoS (allows bots & payloads, strictly enforces rate limits).
+ */
+export async function runArcjetHoneypotSecurity(): Promise<ArcjetResult> {
+    const ajKey = process.env.ARCJET_KEY;
+
+    if (!ajKey || ajKey === "aj_mock_key" || ajKey.length < 10) {
+        return { fingerprint: null, isDenied: false, threatType: null, isBot: false, isRateLimited: false, isShieldTriggered: false };
+    }
+
+    // Rate limit ONLY. Intentionally bypasses Bot Detection and Shield WAF.
+    const ajHoneypot = arcjet({
+        key: ajKey,
+        rules: [
+            slidingWindow({ mode: "LIVE", interval: "1m", max: 60 }),
+        ],
+    });
+
+    const headersList = await headers();
+    const req = {
+        headers: headersList,
+        ip: headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1",
+    };
+
+    try {
+        const decision = await ajHoneypot.protect(req as Parameters<typeof ajHoneypot.protect>[0]);
+        return {
+            fingerprint: (decision as ArcjetDecision & { fingerprint?: string }).fingerprint || null,
+            isDenied: decision.isDenied(),
+            threatType: decision.isDenied() ? "ARCJET_RATE_LIMITED" : null,
+            isBot: false,
+            isRateLimited: decision.isDenied(),
+            isShieldTriggered: false,
+        };
+    } catch (error) {
+        console.error("[ARCJET HONEYPOT] Security check failed:", error);
+        return { fingerprint: null, isDenied: false, threatType: null, isBot: false, isRateLimited: false, isShieldTriggered: false };
+    }
+}

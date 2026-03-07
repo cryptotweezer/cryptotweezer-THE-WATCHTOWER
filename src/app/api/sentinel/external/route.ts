@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { CID_REGEX } from "@/lib/attack-classifier";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { runArcjetSecurity } from "@/lib/arcjet";
+import { runArcjetHoneypotSecurity } from "@/lib/arcjet";
 
 
 
@@ -232,9 +232,11 @@ Generate a unique Sentinel interception message for this specific attack. Be cre
 // ============= ROUTE HANDLERS =============
 
 export async function POST(req: Request) {
-    const ajResult = await runArcjetSecurity();
-    if (ajResult.isDenied) {
-        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    const ajResult = await runArcjetHoneypotSecurity();
+    // Only block on Rate Limit to prevent DoS. We INTENTIONALLY allow 
+    // Bots (curl/sqlmap/etc) and Shield WAF triggers into this honeypot route.
+    if (ajResult.isRateLimited) {
+        return NextResponse.json({ error: "Rate limit exceeded. Too many probes." }, { status: 429 });
     }
 
     // Read headers set by middleware rewrite (or direct curl)
