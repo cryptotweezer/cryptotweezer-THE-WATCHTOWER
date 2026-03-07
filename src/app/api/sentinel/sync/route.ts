@@ -3,7 +3,7 @@ import { securityEvents, userSessions } from "@/db/schema";
 import { eq, and, desc, gt } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
+
 
 export async function GET(req: Request) {
     // Resolve fingerprint from cookie (Edge-compatible — parse from raw header)

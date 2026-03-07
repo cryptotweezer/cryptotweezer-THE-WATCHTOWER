@@ -5,6 +5,8 @@ import { securityEvents, userSessions } from '@/db/schema';
 import { checkAndIncrementRoutingProbe } from '@/lib/session';
 import { eq, sql, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { runArcjetSecurity } from '@/lib/arcjet';
+import { cookies, headers } from 'next/headers';
 
 // Define interface for request body to improve type inference
 interface SentinelRequestBody {
@@ -60,16 +62,31 @@ async function updateUniqueTechniqueCount(fingerprint: string): Promise<number> 
   }
 }
 
-export const runtime = 'edge';
+
 
 export async function POST(req: Request) {
+  const ajResult = await runArcjetSecurity();
+  if (ajResult.isDenied) {
+    console.warn(`[ARCJET] API Request Blocked: ${ajResult.threatType}`);
+    return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   console.log("Sentinel API triggered");
-  const { prompt, eventType, targetPath, riskScore, alias, fingerprint, ipAddress, location, nonStreaming } = await req.json() as SentinelRequestBody;
+  const { prompt, eventType, targetPath, riskScore, alias, nonStreaming } = await req.json() as SentinelRequestBody;
+
+  const cookieStore = await cookies();
+  const fingerprint = cookieStore.get("watchtower_node_id")?.value;
+  const headersList = await headers();
+  const ipAddress = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
+  const location = headersList.get("x-vercel-ip-country") || "UNKNOWN";
 
   let currentRisk = Math.min(riskScore || 0, 100);
-  const cid = req.headers.get("x-cid") || "UNKNOWN";
+  const cid = headersList.get("x-cid") || "UNKNOWN";
 
-  if (!fingerprint || fingerprint === 'unknown') {
+  if (!fingerprint) {
     console.warn("API Rejected: Unknown Identity");
     return new Response("Identity Verification Failed", { status: 400 });
   }

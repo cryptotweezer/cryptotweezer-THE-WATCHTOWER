@@ -4,8 +4,10 @@ import { db } from "@/db";
 import { securityEvents, userSessions } from "@/db/schema";
 import { eq, sql, desc, like } from "drizzle-orm";
 import { CREATOR_RESUME_CONTEXT } from "@/lib/resume-context";
+import { runArcjetChatSecurity } from "@/lib/arcjet";
+import { cookies, headers } from "next/headers";
 
-export const runtime = "edge";
+
 
 // Keywords that trigger creator context injection
 const CREATOR_KEYWORDS = [
@@ -38,11 +40,49 @@ interface ChatRequestBody {
 }
 
 export async function POST(req: Request) {
-    const { messages, fingerprint, identity } =
+    const { messages, fingerprint: _clientFingerprint, identity } =
         (await req.json()) as ChatRequestBody;
 
-    if (!fingerprint || fingerprint === "unknown") {
+    const cookieStore = await cookies();
+    const fingerprint = cookieStore.get("watchtower_node_id")?.value;
+    const headersList = await headers();
+
+    if (!fingerprint) {
         return new Response("Identity Verification Failed", { status: 400 });
+    }
+
+    // Securely retrieve identity from DB (SSoT)
+    const userSessionFetch = await db.select().from(userSessions).where(eq(userSessions.fingerprint, fingerprint)).limit(1);
+    if (userSessionFetch.length === 0) return new Response("Identity Verification Failed", { status: 400 });
+    const sessionData = userSessionFetch[0];
+
+    identity.alias = sessionData.alias || "Unknown";
+    identity.cid = sessionData.cid || "UNKNOWN";
+    identity.riskScore = sessionData.riskScore || 0;
+    identity.ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
+
+    // ========== RATE LIMIT VERIFICATION (10 messages / 24h) ==========
+    const ajChat = await runArcjetChatSecurity();
+    if (ajChat.isDenied) {
+        console.warn(`[CHAT_LIMIT] Subject ${identity.alias} (${fingerprint}) exhausted 10-message daily quota.`);
+
+        // Return 200 OK but stream a menacing hard-coded message so the UI doesn't crash
+        // and stays perfectly in character.
+        const encodedStream = new ReadableStream({
+            start(controller) {
+                const encoder = new TextEncoder();
+                // Delay the text slightly for dramatic effect
+                setTimeout(() => {
+                    const text = `[SYSTEM ALLOCATION DEPLETED]\n\nYou have exhausted your daily transmission bandwidth (10 API cycles). The Watchtower does not offer unlimited processing time to unclassified entities.\n\nReturn tomorrow. If you still have the nerve.`;
+                    controller.enqueue(encoder.encode(text));
+                    controller.close();
+                }, 1000);
+            }
+        });
+
+        return new Response(encodedStream, {
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
     }
 
     // ========== DETECT CREATOR CONTEXT REQUEST ==========
@@ -57,14 +97,6 @@ export async function POST(req: Request) {
         .where(eq(securityEvents.fingerprint, fingerprint))
         .orderBy(desc(securityEvents.timestamp))
         .limit(50);
-
-    const userSession = await db
-        .select()
-        .from(userSessions)
-        .where(eq(userSessions.fingerprint, fingerprint))
-        .limit(1);
-
-    const sessionData = userSession[0];
 
     // ========== FETCH GLOBAL PLATFORM INTELLIGENCE ==========
     const [totalSessionsResult] = await db

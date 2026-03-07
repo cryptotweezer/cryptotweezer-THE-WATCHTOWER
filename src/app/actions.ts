@@ -4,12 +4,21 @@ import { db } from "@/db";
 import { securityEvents, userSessions, infamyWall } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { getOrCreateSession, getSessionLogs, getUniqueTechniquesForSession } from "@/lib/session";
+import { runArcjetSecurity } from "@/lib/arcjet";
+import { cookies } from "next/headers";
 
 /**
  * Real handshake — creates the session in DB when the user clicks the Gatekeeper.
  * Returns the full identity object for client hydration.
  */
-export async function performHandshake(fingerprint: string, clerkId?: string | null) {
+export async function performHandshake(_clientFingerprint: string, clerkId?: string | null) {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) return { identity: null, initialLogs: [], error: "Rate limit exceeded" };
+
+    const cookieStore = await cookies();
+    const fingerprint = cookieStore.get("watchtower_node_id")?.value;
+    if (!fingerprint) return { identity: null, initialLogs: [], error: "Unauthorized: Missing secure session fingerprint" };
+
     const session = await getOrCreateSession(fingerprint, clerkId || undefined);
     const uniqueTechniques = await getUniqueTechniquesForSession(session.fingerprint);
     const logs = await getSessionLogs(session.fingerprint, 10);
@@ -32,7 +41,14 @@ export async function performHandshake(fingerprint: string, clerkId?: string | n
  * Update Alias — allows user to customize their identity.
  * Validates: 2-24 chars, alphanumeric + spaces/hyphens/underscores only.
  */
-export async function updateAlias(fingerprint: string, newAlias: string) {
+export async function updateAlias(_clientFingerprint: string, newAlias: string) {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
+
+    const cookieStore = await cookies();
+    const fingerprint = cookieStore.get("watchtower_node_id")?.value;
+    if (!fingerprint) return { success: false, error: "Unauthorized: Missing secure session fingerprint" };
+
     const trimmed = newAlias.trim();
 
     if (trimmed.length < 2 || trimmed.length > 24) {
@@ -58,7 +74,14 @@ export async function updateAlias(fingerprint: string, newAlias: string) {
  * Post to Wall of Infamy — permanent legacy that survives Forensic Wipe.
  * Requires risk score >= 90. One message per fingerprint.
  */
-export async function postInfamyMessage(fingerprint: string, message: string) {
+export async function postInfamyMessage(_clientFingerprint: string, message: string) {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
+
+    const cookieStore = await cookies();
+    const fingerprint = cookieStore.get("watchtower_node_id")?.value;
+    if (!fingerprint) return { success: false, error: "Unauthorized: Missing secure session fingerprint" };
+
     const trimmed = message.trim();
 
     if (trimmed.length < 1 || trimmed.length > 280) {
@@ -110,6 +133,9 @@ export async function postInfamyMessage(fingerprint: string, message: string) {
  * Get all Wall of Infamy messages — visible to all War Room users.
  */
 export async function getInfamyMessages() {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) return [];
+
     try {
         const messages = await db.select().from(infamyWall)
             .orderBy(desc(infamyWall.createdAt))
@@ -126,7 +152,14 @@ export async function getInfamyMessages() {
  * Deletes security events first (FK constraint), then the session itself.
  * NOTE: infamy_wall entries are NOT deleted (no FK — permanent legacy).
  */
-export async function forensicWipe(fingerprint: string) {
+export async function forensicWipe(_clientFingerprint: string) {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
+
+    const cookieStore = await cookies();
+    const fingerprint = cookieStore.get("watchtower_node_id")?.value;
+    if (!fingerprint) return { success: false, error: "Unauthorized: Missing secure session fingerprint" };
+
     try {
         // Delete all security events for this fingerprint
         await db.delete(securityEvents).where(eq(securityEvents.fingerprint, fingerprint));

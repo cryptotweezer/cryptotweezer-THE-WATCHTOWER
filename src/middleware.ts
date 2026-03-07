@@ -16,7 +16,6 @@ const isPublicRoute = createRouteMatcher([
     "/api/sentinel",
     "/api/sentinel/external",
     "/api/sentinel/sync",
-    "/api/security/log",
     "/api/arcjet",
     "/api/global-intel",
     "/api/__debug/session"
@@ -55,12 +54,13 @@ function applyIdentityLayer(req: NextRequest, response: NextResponse) {
     let stableId = req.cookies.get("watchtower_node_id")?.value;
 
     if (!stableId) {
-        stableId = "node_dev_" + Math.random().toString(36).substring(2, 10);
+        stableId = "node_" + crypto.randomUUID();
         response.cookies.set("watchtower_node_id", stableId, {
             path: "/",
             maxAge: 60 * 60 * 24 * 365, // 1 Year
             sameSite: "lax",
-            secure: process.env.NODE_ENV === "production"
+            secure: process.env.NODE_ENV === "production",
+            httpOnly: true,
         });
     }
 

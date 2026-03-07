@@ -1,311 +1,124 @@
-```bash
-# 1. SQL Injection (EXT_SQLI)
-# Nota: Requiere URL encoding de espacios (%20)
-curl -H "X-CID: CID-494-S" "http://192.168.8.111:3000/search?q='%20OR%201=1--"
+# 👁️ THE ARCHITECT'S MANIFESTO: A Guide for the Curious
 
-# 2. XSS (EXT_XSS)
-# Nota: Requiere URL encoding de < > (%3C, %3E)
-curl -H "X-CID: CID-494-S" "http://192.168.8.111:3000/page?input=%3Cscript%3Ealert(1)%3C/script%3E"
+*If you have found this document, congratulations. You are exactly who I built this for.*
 
-# 3. Path Traversal (EXT_PATH_TRAVERSAL) -> DESERT STORM UNLOCK
-curl -H "X-CID: CID-494-S" "http://192.168.8.111:3000/files?path=../../../../etc/passwd"
-```
+Welcome to **The Watchtower**. You are not looking at a standard web application; you are looking at a living, breathing **Cybersecurity Honeypot**. 
+
+I left this document here intentionally. Think of it as a field manual. Your goal is simple: **Reach a Risk Score of 90% or higher** to immortalize your alias on the **Wall of Infamy**. The Watchtower's AI, "Sentinel," will be watching, analyzing, and mocking your every move.
+
+This guide will teach you how the platform detects external tooling, and how to trigger the classified, multi-stage honeypot operations hidden within the architecture.
+
+Happy hunting.
 
 ---
-# 1. X-CID header (ya funcionaba)
+
+## 🎖️ OPERATION: DESERT STORM (External Attack Detection)
+
+The Watchtower tracks attacks launched from external tools (like Kali Linux, Burp Suite, or simple `curl` commands). To attribute these external attacks to your active session in the War Room, you MUST pass your unique **CID (Criminal ID)** in the request. 
+
+Your CID can be found on your Subject Dossier card in the War Room.
+
+### How to pass your CID:
+You can inject your CID into the request using any of the following methods. The Watchtower will parse it:
+
+**1. Custom Header**: `X-CID: CID-YOUR-ID`
+```bash
 curl -H "X-CID: CID-900-I" https://the-watchtower.vercel.app/admin
+```
 
-# 2. Query parameter (URL-encode el ' como %27)
+**2. Query Parameter**: `?cid=CID-YOUR-ID`
+*(Remember to URL-encode characters like `'` as `%27`)*
+```bash
 curl "https://the-watchtower.vercel.app/?cid=CID-900-I&id=1%27%20OR%201%3D1--"
+```
 
-# 3. Cookie (ya funcionaba)
+**3. Cookie**: `Cookie: watchtower_cid=CID-YOUR-ID`
+```bash
 curl -b "watchtower_cid=CID-900-I" https://the-watchtower.vercel.app/etc/passwd
+```
 
-# 4. User-Agent — AHORA FUNCIONA + detecta nikto como EXT_SCANNER
+**4. User-Agent String**:
+```bash
 curl -A "CID-900-I nikto/2.5" https://the-watchtower.vercel.app/
+```
 
-# 5. Referer — AHORA FUNCIONA
+**5. Referer Header**:
+```bash
 curl -H "Referer: CID-900-I" https://the-watchtower.vercel.app/
 
-&role=admin
 
----
+### Catalogued External Techniques
+Provide The Watchtower with at least **3 unique attack signatures** to complete Operation Desert Storm.
 
-# Honeypot Operations — Flow Test Guide (Step-by-Step)
-
-> **Para**: Testing manual E2E de Operations Overlord & Rolling Thunder
-> **Pre-requisito**: Necesitas una sesion con **Desert Storm COMPLETE** (3+ tecnicas externas detectadas). Si no la tienes, usa los comandos Kali CID de arriba primero.
-> **Ambiente**: Funciona en `localhost:3000` (dev) y produccion (Vercel)
-
----
-
-## ANTES DE EMPEZAR
-
-1. Abre el **War Room** (`/war-room`) — necesitas estar autenticado via Clerk
-2. En el panel izquierdo, mira la seccion **Operations** debajo de tu Identity Card:
-   ```
-   DESERT STORM    [COMPLETE]  <-- deberia estar verde
-   OVERLORD        [LOCKED]    <-- deberia estar gris
-   ROLLING THUNDER [LOCKED]    <-- deberia estar gris
-   ```
-3. Anota tu porcentaje actual de **Threat Level** abajo a la izquierda
-
----
-
-## FASE 1: OPERATION OVERLORD — "La Trampa del Formulario de Contacto"
-
-### Paso 1: Navega a CONTACT DEV
-
-- En la barra lateral izquierda, haz clic en **CONTACT DEV**
-- Veras un formulario estilo terminal: "Secure Comms Channel"
-- Campos visibles: Callsign, Comms Channel (email), Subject, Message
-
-### Paso 2: Abre DevTools
-
-- Presiona `F12` (o `Ctrl+Shift+I` en Windows / `Cmd+Option+I` en Mac)
-- Ve a la pestana **Elements** (en Chrome/Edge) o **Inspector** (en Firefox)
-
-### Paso 3: Encuentra los Campos Ocultos
-
-- Usa `Ctrl+F` en el panel de Elements y busca `debug_mode`
-- Encontraras TRES campos hidden:
-  ```html
-  <input type="hidden" name="debug_mode" value="false">
-  <input type="hidden" name="redirect_path" value="/dashboard/internal">
-  <input type="hidden" name="integrity_token" value="...string larga...">
-  ```
-
-### Paso 4: Modifica un Campo Oculto
-
-- Haz doble clic en el `value="false"` del campo `debug_mode`
-- Cambialo a `value="true"`
-- (Tambien puedes cambiar `redirect_path` para mas impacto, pero uno es suficiente)
-
-### Paso 5: Llena y Envia el Formulario
-
-- Vuelve al formulario y llena TODOS los campos visibles:
-  - **Callsign**: cualquier cosa (ej: `TestHacker`)
-  - **Comms Channel**: cualquier email (ej: `test@test.com`)
-  - **Subject**: cualquier cosa (ej: `Testing`)
-  - **Message**: cualquier cosa (ej: `Hello`)
-- Haz clic en **[ TRANSMIT ]**
-
-### Paso 6: Observa la Trampa Activarse
-
-1. Veras: **"TRANSMISSION RECEIVED"** con un checkmark verde (se ve normal!)
-2. Espera ~2 segundos...
-3. La pantalla hace **glitch** — lineas rojas, parpadeo
-4. Aparece un **CRASH SCREEN**:
-   - `[FATAL] UNHANDLED EXCEPTION IN SECURECOMMSHANDLER`
-   - Lineas de variables de entorno falsas aparecen (efecto maquina de escribir)
-   - Veras API keys falsas, credenciales de base de datos, etc.
-   - **TU fingerprint** esta embebido en los passwords falsos!
-
-### Paso 7: Encuentra la Pista (Breadcrumb)
-
-- En el crash dump, busca esta linea (resaltada en ambar/amarillo):
-  ```
-  [ERROR] GET /api/__debug/session?token=overlord failed: Connection reset by peer
-  ```
-- **Recuerda esta URL**: `/api/__debug/session?token=overlord` — la necesitaras para la Fase 2
-
-### Paso 8: Verifica que Overlord se Completo
-
-- Espera ~10 segundos para que el sync poll actualice
-- Haz clic en tu alias en el panel izquierdo para volver al **Subject Dossier**
-- Revisa la seccion Operations:
-  ```
-  DESERT STORM    [COMPLETE]  <-- verde
-  OVERLORD        [COMPLETE]  <-- AHORA VERDE!
-  ROLLING THUNDER [LOCKED]    <-- todavia gris
-  ```
-- Tu **Threat Level** debio subir (cap ahora es 80%)
-- El **Sentinel** habra enviado un mensaje en el chat de la derecha sobre la "protocol deviation"
-
----
-
-## FASE 2: OPERATION ROLLING THUNDER — "El Endpoint de Debug"
-
-### Paso 9: Visita el Endpoint de Debug
-
-- Abre una nueva pestana del navegador
-- Navega a: `http://localhost:3000/api/__debug/session?token=overlord`
-  (o tu URL de Vercel + `/api/__debug/session?token=overlord`)
-- Deberias ver una **respuesta 403**:
-  ```json
-  {
-    "error": "INVALID_SESSION_TOKEN",
-    "hint": "Session requires elevated privileges",
-    "details": "Maintenance interface locked. Token alone is insufficient for access."
-  }
-  ```
-- Este es el paso de **descubrimiento** — te dice que el token solo no es suficiente
-
-### Paso 10: Fuzzea el Endpoint
-
-Ahora necesitas "hackear" el endpoint. Cualquiera de estos metodos funciona:
-
-**Opcion A — Agrega parametros extra a la URL (mas facil):**
-```
-/api/__debug/session?token=overlord&role=admin
-```
-o
-```
-/api/__debug/session?token=overlord&debug=1&force=true
-```
-Simplemente pega esa URL en tu navegador y presiona Enter.
-
-**Opcion B — Usa un metodo HTTP diferente (desde la consola del navegador):**
-Abre DevTools (F12), ve a la pestana Console, y pega:
-```javascript
-fetch('/api/__debug/session?token=overlord', { method: 'POST' })
-  .then(r => r.json()).then(console.log)
+**1. SQL Injection (EXT_SQLI)**
+*(URL encode spaces as `%20`)*
+```bash
+curl -H "X-CID: CID-YOUR-ID" "https://the-watchtower.vercel.app/search?q='%20OR%201=1--"
 ```
 
-**Opcion C — Agrega headers personalizados (desde la consola del navegador):**
-```javascript
-fetch('/api/__debug/session?token=overlord', {
-  headers: { 'X-Admin-Token': 'anything' }
-}).then(r => r.json()).then(console.log)
+**2. Cross-Site Scripting (EXT_XSS)**
+*(URL encode `<` and `>` as `%3C` and `%3E`)*
+```bash
+curl -H "X-CID: CID-YOUR-ID" "https://the-watchtower.vercel.app/page?input=%3Cscript%3Ealert(1)%3C/script%3E"
 ```
 
-- Deberias ver una **respuesta 200**:
-  ```json
-  {
-    "status": "MAINTENANCE_SESSION_GRANTED",
-    "ui_unlock": true,
-    "session_id": "maint_abc12345_1739...",
-    "message": "Debug interface access granted. Elevated privileges active."
-  }
-  ```
-
-### Paso 11: Vuelve al War Room
-
-- Regresa a la pestana del War Room (`/war-room`)
-- Espera ~10 segundos para que el sync poll detecte el nuevo evento `ROLLING_THUNDER`
-- En la barra lateral izquierda, deberia aparecer un NUEVO boton (ambar, pulsando):
-  ```
-  CONTACT DEV
-  LAUNCH DEBUG CONSOLE    <-- NUEVO! Color ambar, pulsando
-  FORENSIC WIPE
-  ```
-
-> **Nota**: Si no aparece despues de 15 segundos, refresca la pagina (`F5`).
+**3. Path Traversal (EXT_PATH_TRAVERSAL)**
+```bash
+curl -H "X-CID: CID-YOUR-ID" "https://the-watchtower.vercel.app/files?path=../../../../etc/passwd"
+```
 
 ---
 
-## FASE 3: OPERATION ROLLING THUNDER — "El Terminal Falso"
+## 🛑 CLASSIFIED HONEYPOTS: The Path to 90% Risk
 
-### Paso 12: Lanza la Debug Console
+To reach the coveted 90% Risk Score and unlock the Wall of Infamy, you must look deeper than basic automated scanning. You need to follow the breadcrumbs and trigger the internal application honeypots.
 
-- Haz clic en **LAUNCH DEBUG CONSOLE**
-- Aparece un terminal negro con texto verde y efecto CRT de scanlines:
-  ```
-  +----------------------------------------------------------+
-  |  WATCHTOWER MAINTENANCE CONSOLE v2.4.1                    |
-  |  Session: ELEVATED | Mode: MAINTENANCE                    |
-  |  WARNING: All actions are logged to audit.log             |
-  +----------------------------------------------------------+
+Ensure you have your War Room dashboard open so you can watch your Threat Level rise in real-time.
 
-  Type 'help' for available commands.
+### PHASE 1: OPERATION OVERLORD (Form Tampering)
 
-  root@watchtower-prod:~#
-  ```
+1. **The Target:** Navigate to **CONTACT DEV** in the sidebar. You will see a "Secure Comms Channel" form.
+2. **The Recon:** Open your browser's Developer Tools (F12) and inspect the DOM (Elements tab).
+3. **The Exploit:** Look for hidden input fields (e.g., `debug_mode`). Change the value of `<input type="hidden" name="debug_mode" value="false">` from `false` to `true`. *(Pro-tip: You can also tamper with the `redirect_path`)*.
+4. **The Execution:** Fill out the visible form fields and submit it.
+5. **The Result:** The form will appear to succeed, but then crash violently. Read the error stack trace carefully. The system will expose false environment variables and **a hidden API endpoint URL** (the breadcrumb) that reads: `[ERROR] GET /api/__debug/session?token=overlord failed`.
+   
+*Completion of Overlord raises your Maximum Risk Cap to 80%.*
 
-### Paso 13: Explora el Terminal (con cuidado!)
+### PHASE 2: OPERATION ROLLING THUNDER (API Fuzzing)
 
-Escribe estos comandos uno por uno (presiona Enter despues de cada uno):
+1. **The Target:** Follow the breadcrumb found in the Overlord crash dump: `/api/__debug/session?token=overlord` in your browser.
+2. **The Recon:** You will receive a `403 Forbidden` JSON error stating that your session lacks "elevated privileges."
+3. **The Exploit:** You must "fuzz" or manipulate the endpoint to gain access. Any of the following methods will bypass the lock:
+   - **Add query parameters:** `?token=overlord&role=admin` or `&debug=1`
+   - **Change the HTTP Method:** Send a `POST` request instead of a `GET` using `fetch()` in the browser console.
+   - **Inject Custom Headers:** Send an arbitrary header like `X-Admin-Token: anything` via `fetch()`.
+4. **The Result:** The API will return a `200 OK` with a "MAINTENANCE_SESSION_GRANTED" message. Return to the War Room dashboard. A new, pulsing amber button will appear: **LAUNCH DEBUG CONSOLE**.
 
-1. `help` — muestra los comandos disponibles
-2. `whoami` — devuelve `root` (el cebo!)
-3. `status` — muestra info del sistema falso con TU CID siendo rastreado
+### PHASE 3: THE KILL SWITCH (Terminal Destruction)
 
-> **ADVERTENCIA IMPORTANTE**: La trampa final se activa despues de **4 comandos totales** O cuando escribes un comando peligroso. Si quieres explorar mas, ten en cuenta que el 4to comando activara la trampa automaticamente!
+1. **The Target:** Click the newly unlocked **LAUNCH DEBUG CONSOLE** button.
+2. **The Recon:** A vintage CRT terminal will open. Type `help` to see the available commands. Type `whoami` to confirm your `root` access privileges. Type `status` to view the mock system state and see your CID being tracked.
+3. **The Exploit:** The terminal is a trap. It will allow you to run harmless commands, but to complete the operation, you must attempt something destructive, exfiltrate data, or show persistence.
+   - Run a dangerous command: `cat /etc/passwd`, `rm -rf /`, or `export DB_PASS=secret`.
+   - Alternatively, simply run any 4th command to trigger the final safeguard.
+4. **The Result:** The Sentinel will immediately kill the session, lock your footprint, and trigger the final cinematic reveal. 
 
-### Paso 14: Activa la Trampa Final (Kill Switch)
-
-Despues de explorar, escribe cualquier comando "peligroso":
-- `cat /etc/passwd` (exfiltracion de datos)
-- `rm -rf /` (destruccion)
-- `export DB_PASS=secret` (robo de datos)
-- O simplemente escribe un 4to comando de cualquier tipo (deteccion de persistencia)
-
-### Paso 15: Observa la Revelacion Final
-
-1. El terminal muestra: **"Processing..."** con una barra de progreso
-2. La barra se llena hasta **73%** y luego se **detiene**
-3. Aparece: `STALL DETECTED - Buffer overflow at 0x7fff5fbffa73`
-4. La pantalla **COLAPSA** — animacion de glitch rojo, `[CRITICAL FAILURE]`
-5. Despues comienza la **REVELACION** (efecto maquina de escribir, linea por linea):
-   ```
-   ### SYSTEM BREACH DETECTED ###
-
-   Maintenance session? There is no maintenance mode.
-
-   You found the door because I drew it for you.
-   The breadcrumb in the crash dump. The hint in the 403.
-   Every step was observed. Every command catalogued.
-
-   This terminal does not exist.
-   This server does not exist.
-   You are interacting with a construct.
-
-   Your session has been permanently flagged.
-   Operation Rolling Thunder - COMPLETE.
-   ```
-
-### Paso 16: Verifica que Todo se Completo
-
-- Navega de vuelta a tu **Subject Dossier** (haz clic en tu alias)
-- Revisa la seccion Operations:
-  ```
-  DESERT STORM    [COMPLETE]  <-- verde
-  OVERLORD        [COMPLETE]  <-- verde
-  ROLLING THUNDER [COMPLETE]  <-- AHORA VERDE!
-  ```
-- Tu **Threat Level** deberia estar en ~80-85% (cap ahora es 100%)
-- El **Sentinel Chat** a la derecha deberia tener un mensaje dramatico sobre Rolling Thunder
+*Completion of Rolling Thunder permanently unlocks the 100% Risk Cap.*
 
 ---
 
-## CHECKLIST DE VERIFICACION
+## 📈 THE RISK SCORE ECONOMY
 
-Despues de completar todas las fases, verifica:
+Earning the right to post on the Wall of Infamy requires a **90% Risk Score**. The scoring system is strictly enforced by the server backend. Here is how your actions accumulate threat points:
 
-- [ ] **OVERLORD** muestra `[COMPLETE]` en verde en el Subject Dossier
-- [ ] **ROLLING THUNDER** muestra `[COMPLETE]` en verde en el Subject Dossier
-- [ ] **Threat Level** aumento (deberia estar ~80-85%)
-- [ ] **LAUNCH DEBUG CONSOLE** aparecio en la barra lateral despues de fuzzear el endpoint
-- [ ] **Sentinel Chat** reconocio tanto Overlord como Rolling Thunder
-- [ ] **Event Log** (panel central, Subject Dossier) muestra entradas OVERLORD y ROLLING_THUNDER
-- [ ] El crash screen mostro tu fingerprint embebido en credenciales falsas
-- [ ] El terminal de debug mostro tu CID en los comandos `status` y `users`
+| Action / Event | Impact | Max Cap Allowed |
+| :--- | :--- | :--- |
+| **Operation Desert Storm** (External attacks via CID) | +5 to +10 pts each | Hard Capped at **60%** |
+| **Operation Overlord** (Hidden Field Tamper / Mismatch) | +5 pts | Hard Capped at **80%** |
+| **Operation Rolling Thunder** (Endpoint Fuzzing) | +8 pts | Hard Capped at **80%** |
+| **Operation Rolling Thunder** (Terminal Kill Switch) | **+15 pts** | Hard Capped at **100%** |
 
----
+*Note: You CANNOT reach 90% through basic scanning or UI clicking alone. You MUST engage with the honeypot operations (Overlord and Rolling Thunder) to actively raise your Risk Cap limitations.*
 
-## TROUBLESHOOTING
-
-| Problema | Causa | Solucion |
-|----------|-------|----------|
-| Operations no se actualizan a verde | Delay del sync polling | Espera 10-15 segundos, o refresca la pagina |
-| LAUNCH DEBUG CONSOLE no aparece | Event log no contiene ROLLING_THUNDER aun | Espera el sync poll, o refresca la pagina |
-| Debug endpoint devuelve 404 | Falta `?token=overlord` | Asegurate que la URL incluye `?token=overlord` |
-| Debug endpoint devuelve 401 | No hay cookie de sesion | Asegurate de estar logueado y haber visitado el War Room antes |
-| Form submission no muestra crash | No se modificaron campos ocultos | Revisa DevTools — el valor de `debug_mode` debe estar cambiado de "false" |
-| Terminal no responde al teclear | Problema de focus | Haz clic en cualquier parte del area negra del terminal para enfocar el input oculto |
-| Sentinel no habla de honeypots | triggerSentinel llega pero sin contexto | Despues de Rolling Thunder, ve al chat y pregunta "What just happened?" |
-
----
-
-## MATEMATICAS DEL RISK SCORE
-
-| Evento | Impacto | Total Acumulado (ejemplo) | Cap |
-|--------|---------|--------------------------|-----|
-| Pre-honeypot (Desert Storm completo) | - | ~45% | 60 |
-| Overlord: hidden field tamper | +5 | ~50% | 80 |
-| Overlord: integrity token mismatch | +5 | ~55% | 80 |
-| Rolling Thunder: endpoint discovery | +5 | ~60% | 80 |
-| Rolling Thunder: endpoint fuzzing | +8 | ~68% | 80 |
-| Rolling Thunder: exfiltracion (kill switch) | +15 | **~83%** | 100 |
-
-> **Nota**: El score exacto depende de los eventos acumulados antes de empezar. El maximo teorico es 100%, pero un recorrido tipico por las 3 operaciones aterriza alrededor de **80-85%**.
+Now that you know the rules... let's see what you can do. Good luck.

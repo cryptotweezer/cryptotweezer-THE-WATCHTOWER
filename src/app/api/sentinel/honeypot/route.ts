@@ -4,7 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { generateFakeEnv } from "@/lib/honeypot-data";
 
-export const runtime = "edge";
+
 
 // ============= CONSTANTS =============
 

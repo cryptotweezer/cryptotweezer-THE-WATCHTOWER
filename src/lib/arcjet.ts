@@ -1,4 +1,4 @@
-import arcjet, { detectBot, shield, slidingWindow, ArcjetDecision } from "@arcjet/next";
+import arcjet, { detectBot, shield, slidingWindow, fixedWindow, ArcjetDecision } from "@arcjet/next";
 import { headers } from "next/headers";
 
 export interface ArcjetResult {
@@ -90,3 +90,44 @@ export async function runArcjetSecurity(): Promise<ArcjetResult> {
         };
     }
 }
+
+/**
+ * Specifically protects the Sentinel Chat to 50 messages per 24 hours.
+ */
+export async function runArcjetChatSecurity(): Promise<ArcjetResult> {
+    const ajKey = process.env.ARCJET_KEY;
+
+    if (!ajKey || ajKey === "aj_mock_key" || ajKey.length < 10) {
+        return { fingerprint: null, isDenied: false, threatType: null, isBot: false, isRateLimited: false, isShieldTriggered: false };
+    }
+
+    // 10 requests every 24 hours (1d). fixedWindow resets exactly at the end of the interval.
+    const ajChat = arcjet({
+        key: ajKey,
+        rules: [
+            fixedWindow({ mode: "LIVE", window: "1d", max: 10 }),
+        ],
+    });
+
+    const headersList = await headers();
+    const req = {
+        headers: headersList,
+        ip: headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1",
+    };
+
+    try {
+        const decision = await ajChat.protect(req as Parameters<typeof ajChat.protect>[0]);
+        return {
+            fingerprint: (decision as ArcjetDecision & { fingerprint?: string }).fingerprint || null,
+            isDenied: decision.isDenied(),
+            threatType: decision.isDenied() && decision.reason.isRateLimit() ? "CHAT_RATE_LIMITED" : null,
+            isBot: false,
+            isRateLimited: decision.isDenied() && decision.reason.isRateLimit(),
+            isShieldTriggered: false,
+        };
+    } catch (error) {
+        console.error("[ARCJET CHAT] Security check failed:", error);
+        return { fingerprint: null, isDenied: false, threatType: null, isBot: false, isRateLimited: false, isShieldTriggered: false };
+    }
+}
+

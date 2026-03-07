@@ -30,9 +30,16 @@ export default function Gatekeeper({ fingerprint, clerkId, onAccess }: Gatekeepe
         try {
             // Real handshake — creates session in DB
             const result = await performHandshake(fingerprint, clerkId);
+
+            if (!result.identity) {
+                console.error("[GATEKEEPER] Handshake failed or rate limited:", result.error);
+                setIsUnlocking(false);
+                return;
+            }
+
             // Brief visual delay then pass identity back
             setTimeout(() => {
-                onAccess(result.identity, result.initialLogs);
+                onAccess(result.identity!, result.initialLogs);
             }, 1200);
         } catch (error) {
             console.error("[GATEKEEPER] Handshake failed:", error);

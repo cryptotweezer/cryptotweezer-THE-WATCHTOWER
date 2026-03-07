@@ -1,8 +1,9 @@
 import { db } from "@/db";
 import { securityEvents, userSessions } from "@/db/schema";
 import { sql, desc, gte, inArray, like } from "drizzle-orm";
+import { runArcjetSecurity } from "@/lib/arcjet";
 
-export const runtime = "edge";
+
 
 // Stress state thresholds (events per hour, GLOBAL across all users)
 // A single user generates ~10-15 events/hour normally.
@@ -56,6 +57,11 @@ interface GlobalIntelResponse {
 }
 
 export async function GET() {
+    const ajResult = await runArcjetSecurity();
+    if (ajResult.isDenied) {
+        return Response.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
     try {
         const now = new Date();
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
