@@ -327,7 +327,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
         : "[SCANNING...]";
 
     return (
-        <div className="h-screen w-screen bg-black text-white font-mono overflow-hidden flex flex-col">
+        <div className="h-[100dvh] w-full bg-black text-white font-mono overflow-hidden flex flex-col">
             {/* Header */}
             <header className="h-12 border-b border-neutral-800 flex items-center justify-between px-4 shrink-0">
                 <div className="flex items-center gap-4">
@@ -546,8 +546,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                                                             onChange={(e) => setAliasInput(e.target.value)}
                                                             onKeyDown={handleAliasKeyDown}
                                                             onBlur={handleAliasSave}
-                                                            maxLength={24}
-                                                            className="bg-neutral-900 border border-blue-500/50 text-white font-bold text-lg px-2 py-0 rounded focus:outline-none focus:border-blue-500 w-full tracking-tight"
+                                                            className="bg-neutral-900 border border-blue-500/50 text-white font-bold text-[16px] lg:text-lg px-2 py-0 rounded focus:outline-none focus:border-blue-500 w-full tracking-tight"
                                                         />
                                                     </div>
                                                     {aliasError && (
@@ -711,7 +710,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                 </section>
 
                 {/* RIGHT: Sentinel Uplink Chat */}
-                <section className="bg-black p-4 overflow-hidden flex flex-col h-[500px] lg:h-auto lg:min-h-0 border-t lg:border-t-0 border-neutral-800 shrink-0">
+                <section className="bg-black p-4 overflow-hidden flex flex-col min-h-[300px] lg:h-auto lg:min-h-0 border-t lg:border-t-0 border-neutral-800 shrink-0">
                     <div className="flex items-center justify-between mb-4 border-b border-neutral-800 pb-2">
                         <h2 className="text-[10px] text-blue-500 tracking-[0.2em] uppercase animate-pulse flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
@@ -795,8 +794,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                                 onChange={(e) => setChatInput(e.target.value)}
                                 placeholder={isStreaming ? "Transmitting..." : "Enter message..."}
                                 disabled={isStreaming}
-                                autoFocus
-                                className="flex-1 bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-cyan-500/50 disabled:opacity-40"
+                                className="flex-1 bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-[16px] lg:text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-cyan-500/50 disabled:opacity-40"
                             />
                             <button
                                 type="submit"
