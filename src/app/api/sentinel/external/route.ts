@@ -7,6 +7,8 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { runArcjetHoneypotSecurity } from "@/lib/arcjet";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 
 // ============= A1: ASCII BANNER =============
