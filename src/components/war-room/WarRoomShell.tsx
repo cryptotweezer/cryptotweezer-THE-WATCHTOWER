@@ -5,7 +5,7 @@ import { useUser, useClerk } from "@clerk/nextjs";
 import { useSentinel } from "@/contexts/SentinelContext";
 import Link from "next/link";
 import Image from "next/image";
-import { Shield, Network, Monitor, Globe, Clock, Send, AlertTriangle } from "lucide-react";
+import { Shield, Network, Monitor, Globe, Clock, Send, AlertTriangle, Menu, X } from "lucide-react";
 import GlobalIntelPanel from "./GlobalIntelPanel";
 import GeoTrackerPanel from "./GeoTrackerPanel";
 import ContactFormPanel from "./ContactFormPanel";
@@ -59,6 +59,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
     const [deepScan, setDeepScan] = useState<DeepScanData | null>(null);
     const [activeView, setActiveView] = useState<ActiveView>("subject");
     const [isWiping, setIsWiping] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Alias editing state
     const [isEditingAlias, setIsEditingAlias] = useState(false);
@@ -352,16 +353,21 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
             {/* Responsive Layout */}
             <main className="flex-1 flex flex-col lg:grid lg:grid-cols-[240px_1fr_320px] gap-px bg-neutral-900 overflow-y-auto lg:overflow-hidden">
                 {/* LEFT: Control Panel */}
-                <section className="bg-black p-4 overflow-hidden flex flex-col">
-                    <h2 className="text-[10px] text-neutral-600 mb-4 tracking-[0.2em] uppercase border-b border-neutral-800 pb-2">
-                        Control
-                    </h2>
+                <section className="bg-black p-4 flex flex-col shrink-0 lg:overflow-hidden">
+                    <div className="flex justify-between items-center mb-4 border-b border-neutral-800 pb-2">
+                        <h2 className="text-[10px] text-neutral-600 tracking-[0.2em] uppercase">
+                            Control
+                        </h2>
+                        <button className="lg:hidden text-white p-1 hover:bg-neutral-800 rounded transition" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                            {isMobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+                        </button>
+                    </div>
 
                     {/* Navigation Links */}
-                    <nav className="flex flex-row lg:flex-col gap-4 lg:gap-2 text-sm overflow-x-auto whitespace-nowrap cyber-scrollbar pb-2 lg:pb-0 mb-4 lg:mb-0">
+                    <nav className={`${isMobileMenuOpen ? "flex" : "hidden"} lg:flex flex-col gap-4 lg:gap-2 text-sm mb-6 lg:mb-0`}>
                         <button
-                            onClick={() => setActiveView("subject")}
-                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "subject"
+                            onClick={() => { setActiveView("subject"); setIsMobileMenuOpen(false); }}
+                            className={`text-left transition-colors py-2 lg:py-1 lg:border-l-2 lg:pl-2 px-2 lg:px-0 shrink-0 ${activeView === "subject"
                                 ? "text-blue-500 border-blue-500"
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
@@ -369,8 +375,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                             [{isFullyReady ? displayAlias : "SYNCING..."}]
                         </button>
                         <button
-                            onClick={() => setActiveView("global-intel")}
-                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "global-intel"
+                            onClick={() => { setActiveView("global-intel"); setIsMobileMenuOpen(false); }}
+                            className={`text-left transition-colors py-2 lg:py-1 lg:border-l-2 lg:pl-2 px-2 lg:px-0 shrink-0 ${activeView === "global-intel"
                                 ? "text-blue-500 border-blue-500"
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
@@ -378,8 +384,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                             GLOBAL INTELLIGENCE
                         </button>
                         <button
-                            onClick={() => setActiveView("geo-tracker")}
-                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "geo-tracker"
+                            onClick={() => { setActiveView("geo-tracker"); setIsMobileMenuOpen(false); }}
+                            className={`text-left transition-colors py-2 lg:py-1 lg:border-l-2 lg:pl-2 px-2 lg:px-0 shrink-0 ${activeView === "geo-tracker"
                                 ? "text-blue-500 border-blue-500"
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
@@ -387,8 +393,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                             GEO TRACKER
                         </button>
                         <button
-                            onClick={() => setActiveView("contact")}
-                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "contact"
+                            onClick={() => { setActiveView("contact"); setIsMobileMenuOpen(false); }}
+                            className={`text-left transition-colors py-2 lg:py-1 lg:border-l-2 lg:pl-2 px-2 lg:px-0 shrink-0 ${activeView === "contact"
                                 ? "text-blue-500 border-blue-500"
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
@@ -396,8 +402,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                             CONTACT DEV
                         </button>
                         <button
-                            onClick={() => setActiveView("wall-of-infamy")}
-                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "wall-of-infamy"
+                            onClick={() => { setActiveView("wall-of-infamy"); setIsMobileMenuOpen(false); }}
+                            className={`text-left transition-colors py-2 lg:py-1 lg:border-l-2 lg:pl-2 px-2 lg:px-0 shrink-0 ${activeView === "wall-of-infamy"
                                 ? "text-red-500 border-red-500"
                                 : "text-red-900 hover:text-red-500 border-transparent hover:border-red-500"
                                 }`}
@@ -407,8 +413,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         {/* Debug Console — appears after Rolling Thunder endpoint discovery */}
                         {state.eventLog.some(log => log.includes("ROLLING_THUNDER")) && (
                             <button
-                                onClick={() => setActiveView("debug-console")}
-                                className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "debug-console"
+                                onClick={() => { setActiveView("debug-console"); setIsMobileMenuOpen(false); }}
+                                className={`text-left transition-colors py-2 lg:py-1 lg:border-l-2 lg:pl-2 px-2 lg:px-0 shrink-0 ${activeView === "debug-console"
                                     ? "text-amber-400 border-amber-400"
                                     : "text-amber-700 hover:text-amber-400 border-transparent hover:border-amber-400 animate-pulse"
                                     }`}
@@ -417,8 +423,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                             </button>
                         )}
                         <button
-                            onClick={() => setActiveView("forensic-wipe")}
-                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "forensic-wipe"
+                            onClick={() => { setActiveView("forensic-wipe"); setIsMobileMenuOpen(false); }}
+                            className={`text-left transition-colors py-2 lg:py-1 lg:border-l-2 lg:pl-2 px-2 lg:px-0 shrink-0 ${activeView === "forensic-wipe"
                                 ? "text-red-500 border-red-500"
                                 : "text-red-900 hover:text-red-500 border-transparent hover:border-red-500"
                                 }`}
@@ -448,7 +454,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                 </section>
 
                 {/* CENTER: Dynamic Content based on activeView */}
-                <section className={`bg-black p-4 flex flex-col min-h-[500px] lg:min-h-0 ${activeView === "global-intel" || activeView === "wall-of-infamy" ? "overflow-y-auto cyber-scrollbar" : "overflow-hidden"}`}>
+                <section className={`bg-black p-4 flex flex-col shrink-0 lg:shrink lg:min-h-0 ${activeView === "global-intel" || activeView === "wall-of-infamy" ? "overflow-y-auto cyber-scrollbar" : "lg:overflow-hidden overflow-visible"}`}>
                     {activeView === "geo-tracker" ? (
                         <GeoTrackerPanel />
                     ) : activeView === "global-intel" ? (
@@ -675,7 +681,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                             </div>
 
                             {/* Event Log */}
-                            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                            <div className="lg:flex-1 lg:overflow-hidden flex flex-col min-h-[250px] lg:min-h-0 mt-4 lg:mt-0">
                                 <div className="text-[10px] text-neutral-600 uppercase tracking-[0.2em] border-b border-neutral-800 pb-2 mb-3 shrink-0">
                                     Security Events
                                 </div>
@@ -705,7 +711,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                 </section>
 
                 {/* RIGHT: Sentinel Uplink Chat */}
-                <section className="bg-black p-4 overflow-hidden flex flex-col min-h-[400px] lg:min-h-0 border-t lg:border-t-0 border-neutral-800">
+                <section className="bg-black p-4 overflow-hidden flex flex-col h-[500px] lg:h-auto lg:min-h-0 border-t lg:border-t-0 border-neutral-800 shrink-0">
                     <div className="flex items-center justify-between mb-4 border-b border-neutral-800 pb-2">
                         <h2 className="text-[10px] text-blue-500 tracking-[0.2em] uppercase animate-pulse flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
