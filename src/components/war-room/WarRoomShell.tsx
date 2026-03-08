@@ -349,8 +349,8 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                 </div>
             </header>
 
-            {/* 3-Column Grid */}
-            <main className="flex-1 grid grid-cols-[240px_1fr_320px] gap-px bg-neutral-900 overflow-hidden">
+            {/* Responsive Layout */}
+            <main className="flex-1 flex flex-col lg:grid lg:grid-cols-[240px_1fr_320px] gap-px bg-neutral-900 overflow-y-auto lg:overflow-hidden">
                 {/* LEFT: Control Panel */}
                 <section className="bg-black p-4 overflow-hidden flex flex-col">
                     <h2 className="text-[10px] text-neutral-600 mb-4 tracking-[0.2em] uppercase border-b border-neutral-800 pb-2">
@@ -358,10 +358,10 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                     </h2>
 
                     {/* Navigation Links */}
-                    <nav className="flex flex-col gap-2 text-sm">
+                    <nav className="flex flex-row lg:flex-col gap-4 lg:gap-2 text-sm overflow-x-auto whitespace-nowrap cyber-scrollbar pb-2 lg:pb-0 mb-4 lg:mb-0">
                         <button
                             onClick={() => setActiveView("subject")}
-                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "subject"
+                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "subject"
                                 ? "text-blue-500 border-blue-500"
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
@@ -370,7 +370,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         </button>
                         <button
                             onClick={() => setActiveView("global-intel")}
-                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "global-intel"
+                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "global-intel"
                                 ? "text-blue-500 border-blue-500"
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
@@ -379,7 +379,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         </button>
                         <button
                             onClick={() => setActiveView("geo-tracker")}
-                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "geo-tracker"
+                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "geo-tracker"
                                 ? "text-blue-500 border-blue-500"
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
@@ -388,7 +388,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         </button>
                         <button
                             onClick={() => setActiveView("contact")}
-                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "contact"
+                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "contact"
                                 ? "text-blue-500 border-blue-500"
                                 : "text-neutral-600 hover:text-blue-500 border-transparent hover:border-blue-500"
                                 }`}
@@ -397,7 +397,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         </button>
                         <button
                             onClick={() => setActiveView("wall-of-infamy")}
-                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "wall-of-infamy"
+                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "wall-of-infamy"
                                 ? "text-red-500 border-red-500"
                                 : "text-red-900 hover:text-red-500 border-transparent hover:border-red-500"
                                 }`}
@@ -408,7 +408,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         {state.eventLog.some(log => log.includes("ROLLING_THUNDER")) && (
                             <button
                                 onClick={() => setActiveView("debug-console")}
-                                className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "debug-console"
+                                className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "debug-console"
                                     ? "text-amber-400 border-amber-400"
                                     : "text-amber-700 hover:text-amber-400 border-transparent hover:border-amber-400 animate-pulse"
                                     }`}
@@ -418,7 +418,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                         )}
                         <button
                             onClick={() => setActiveView("forensic-wipe")}
-                            className={`text-left transition-colors py-1 border-l-2 pl-2 ${activeView === "forensic-wipe"
+                            className={`text-left transition-colors py-1 lg:border-l-2 lg:pl-2 border-b-2 pb-2 lg:border-b-0 px-2 lg:px-0 shrink-0 ${activeView === "forensic-wipe"
                                 ? "text-red-500 border-red-500"
                                 : "text-red-900 hover:text-red-500 border-transparent hover:border-red-500"
                                 }`}
@@ -448,7 +448,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                 </section>
 
                 {/* CENTER: Dynamic Content based on activeView */}
-                <section className={`bg-black p-4 flex flex-col ${activeView === "global-intel" || activeView === "wall-of-infamy" ? "overflow-y-auto cyber-scrollbar" : "overflow-hidden"}`}>
+                <section className={`bg-black p-4 flex flex-col min-h-[500px] lg:min-h-0 ${activeView === "global-intel" || activeView === "wall-of-infamy" ? "overflow-y-auto cyber-scrollbar" : "overflow-hidden"}`}>
                     {activeView === "geo-tracker" ? (
                         <GeoTrackerPanel />
                     ) : activeView === "global-intel" ? (
@@ -525,7 +525,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-0">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 md:gap-y-0">
                                     {/* Left: Core Identity */}
                                     <div className="space-y-3">
                                         <div className="grid grid-cols-[90px_1fr] items-baseline gap-2">
@@ -705,7 +705,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
                 </section>
 
                 {/* RIGHT: Sentinel Uplink Chat */}
-                <section className="bg-black p-4 overflow-hidden flex flex-col">
+                <section className="bg-black p-4 overflow-hidden flex flex-col min-h-[400px] lg:min-h-0 border-t lg:border-t-0 border-neutral-800">
                     <div className="flex items-center justify-between mb-4 border-b border-neutral-800 pb-2">
                         <h2 className="text-[10px] text-blue-500 tracking-[0.2em] uppercase animate-pulse flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>

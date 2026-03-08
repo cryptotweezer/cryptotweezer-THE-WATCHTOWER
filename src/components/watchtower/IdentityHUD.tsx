@@ -154,7 +154,7 @@ export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint }: 
     }, [revealPhase]);
 
     return (
-        <div draggable="true" className={`rounded-xl border ${borderColor} ${bgColor} ${glow} p-6 max-w-3xl mx-auto backdrop-blur-md transition-all duration-500`}>
+        <div draggable="true" className={`rounded-xl border ${borderColor} ${bgColor} ${glow} p-4 lg:p-6 max-w-3xl mx-auto backdrop-blur-md transition-all duration-500`}>
             {/* Header */}
             <div className="flex justify-between items-center mb-6 border-b border-gray-800/50 pb-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -169,23 +169,23 @@ export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint }: 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
                 {/* Left Column: Core Identity */}
                 <div className="space-y-6">
-                    <div className="grid grid-cols-[100px_1fr] items-baseline gap-2">
+                    <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[100px_1fr] items-baseline gap-2">
                         <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Cyber Alias</span>
-                        <span className="text-2xl font-mono font-bold text-white tracking-tighter truncate">{alias}</span>
+                        <span className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tighter truncate">{alias}</span>
                     </div>
 
                     {/* NODE ID (Fingerprint) - Static */}
-                    <div className="grid grid-cols-[100px_1fr] items-baseline gap-2">
+                    <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[100px_1fr] items-baseline gap-2">
                         <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Node ID</span>
-                        <span className="font-mono text-xs text-gray-500 tracking-tight">
+                        <span className="font-mono text-[10px] sm:text-xs text-gray-500 tracking-tight truncate">
                             {fingerprint || "UNKNOWN_NODE"}
                         </span>
                     </div>
 
                     {/* CRIMINAL ID (CID) */}
-                    <div className="grid grid-cols-[100px_1fr] items-baseline gap-2">
+                    <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[100px_1fr] items-baseline gap-2">
                         <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Criminal ID</span>
-                        <div className="font-mono text-sm flex items-center gap-2 h-5 w-full"> {/* Fixed height to prevent layout shift */}
+                        <div className="font-mono text-xs sm:text-sm flex items-center gap-2 h-5 w-full"> {/* Fixed height to prevent layout shift */}
                             <span className={`
                                 ${revealPhase === 'DONE' ? "text-white" : "text-gray-500 animate-pulse"}
                                 ${revealPhase === 'TYPING' ? "text-white" : ""}
@@ -203,9 +203,9 @@ export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint }: 
                             )}
                         </div>
                     </div>
-                    <div className="grid grid-cols-[100px_1fr] items-center gap-2 pt-2">
+                    <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[100px_1fr] items-center gap-2 pt-2">
                         <span className="text-[10px] uppercase text-gray-600 font-mono tracking-wider">Net Address</span>
-                        <span className="text-sm font-mono text-blue-300 flex items-center gap-2">
+                        <span className="text-xs sm:text-sm font-mono text-blue-300 flex items-center gap-2 truncate">
                             <Network size={12} /> {ip}
                         </span>
                     </div>
@@ -213,7 +213,7 @@ export default function IdentityHUD({ alias, riskScore, ip, cid, fingerprint }: 
                     {/* Risk Score */}
                     <div className="mt-4 pt-4 border-t border-gray-800/50 flex justify-between items-center">
                         <span className="text-[10px] text-gray-500 uppercase tracking-widest">Threat Assessment</span>
-                        <span className={`text-3xl font-mono font-bold ${riskColor}`}>{riskScore}%</span>
+                        <span className={`text-2xl sm:text-3xl font-mono font-bold ${riskColor}`}>{riskScore}%</span>
                     </div>
                 </div>
 
