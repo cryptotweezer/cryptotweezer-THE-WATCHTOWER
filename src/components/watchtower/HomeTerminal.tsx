@@ -75,7 +75,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                 />
             )}
 
-            <main data-shield="protected" className={`flex min-h-screen flex-col items-center justify-between p-24 bg-neutral-950 text-neutral-200 transition-all duration-1000 ${state.accessGranted ? "blur-none opacity-100 scale-100" : "blur-lg opacity-50 scale-95 overflow-hidden h-screen"}`}>
+            <main data-shield="protected" className={`flex min-h-screen flex-col items-center justify-between p-4 sm:p-8 lg:p-24 bg-neutral-950 text-neutral-200 transition-all duration-1000 ${state.accessGranted ? "blur-none opacity-100 scale-100" : "blur-lg opacity-50 scale-95 overflow-hidden h-screen"}`}>
 
                 {/* Header Section */}
                 <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
@@ -100,7 +100,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                             <SignedIn>
                                 <Link
                                     href="/war-room"
-                                    className="font-mono text-white text-sm tracking-widest transition-all duration-300 hover:text-blue-500 p-8 lg:p-0"
+                                    className="font-mono text-white text-sm tracking-widest transition-all duration-300 hover:text-blue-500 p-4 lg:p-0"
                                 >
                                     WAR ROOM
                                 </Link>
@@ -125,7 +125,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                 {/* Title & Identity */}
                 <div className="relative flex flex-col items-center place-items-center z-0 mt-16">
                     <div className="before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]"></div>
-                    <h1 className="text-6xl font-bold text-center tracking-tighter">
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-center tracking-tighter">
                         THE WATCHTOWER
                     </h1>
 
@@ -184,7 +184,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                         </h2>
 
                         {/* Terminal Window */}
-                        <div className="flex flex-col gap-1 overflow-y-auto pr-2 font-mono text-sm leading-relaxed h-[500px] dark-scrollbar">
+                        <div className="flex flex-col gap-1 overflow-y-auto pr-2 font-mono text-sm leading-relaxed h-[300px] lg:h-[500px] dark-scrollbar">
                             <style jsx global>{`
                                 .dark-scrollbar::-webkit-scrollbar {
                                     width: 4px;
