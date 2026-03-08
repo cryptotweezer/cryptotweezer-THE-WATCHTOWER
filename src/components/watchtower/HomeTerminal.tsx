@@ -158,7 +158,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                         <SignedOut>
                             <SignInButton mode="modal" forceRedirectUrl="/war-room">
                                 <button className="font-mono bg-blue-600 text-white px-8 py-3 rounded text-sm font-bold tracking-widest flex items-center gap-2 transition-all duration-300 hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.5)] uppercase w-full sm:w-auto justify-center">
-                                    ENTER WAR ROOM
+                                    INITIALIZE HANDSHAKE
                                 </button>
                             </SignInButton>
                         </SignedOut>
