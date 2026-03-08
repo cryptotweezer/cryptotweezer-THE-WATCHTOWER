@@ -537,7 +537,7 @@ export default function DebugConsolePanel({ fingerprint, cid, alias }: DebugCons
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="absolute opacity-0 w-0 h-0"
+                className="absolute opacity-0 w-0 h-0 text-[16px]"
                 autoFocus
                 aria-label="Terminal input"
             />

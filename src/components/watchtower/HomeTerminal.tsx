@@ -90,7 +90,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                                 priority
                             />
                         </div>
-                        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30 ml-2">
+                        <p className="fixed left-0 top-0 flex w-full justify-center pb-6 pt-8 dark:from-inherit lg:static lg:w-auto lg:p-0 ml-2 text-xs text-neutral-500 font-mono tracking-widest">
                             SecOps Platform v3.0
                         </p>
                     </div>
@@ -158,7 +158,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                         <SignedOut>
                             <SignInButton mode="modal" forceRedirectUrl="/war-room">
                                 <button className="font-mono bg-blue-600 text-white px-8 py-3 rounded text-sm font-bold tracking-widest flex items-center gap-2 transition-all duration-300 hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.5)] uppercase w-full sm:w-auto justify-center">
-                                    INITIALIZE HANDSHAKE
+                                    ENTER WAR ROOM
                                 </button>
                             </SignInButton>
                         </SignedOut>

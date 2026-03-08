@@ -267,7 +267,7 @@ export default function ContactFormPanel({ integrityToken }: { integrityToken: s
                         onChange={(e) => setName(e.target.value)}
                         required
                         placeholder="Your identifier"
-                        className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-xs px-3 py-2 rounded focus:border-green-500/50 focus:outline-none transition-colors placeholder:text-neutral-800"
+                        className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-[16px] lg:text-xs px-3 py-2 rounded focus:border-green-500/50 focus:outline-none transition-colors placeholder:text-neutral-800"
                     />
                 </div>
 
@@ -282,7 +282,7 @@ export default function ContactFormPanel({ integrityToken }: { integrityToken: s
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="secure@relay.net"
-                        className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-xs px-3 py-2 rounded focus:border-green-500/50 focus:outline-none transition-colors placeholder:text-neutral-800"
+                        className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-[16px] lg:text-xs px-3 py-2 rounded focus:border-green-500/50 focus:outline-none transition-colors placeholder:text-neutral-800"
                     />
                 </div>
 
@@ -297,7 +297,7 @@ export default function ContactFormPanel({ integrityToken }: { integrityToken: s
                         onChange={(e) => setSubject(e.target.value)}
                         required
                         placeholder="Transmission subject"
-                        className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-xs px-3 py-2 rounded focus:border-green-500/50 focus:outline-none transition-colors placeholder:text-neutral-800"
+                        className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-[16px] lg:text-xs px-3 py-2 rounded focus:border-green-500/50 focus:outline-none transition-colors placeholder:text-neutral-800"
                     />
                 </div>
 
@@ -312,7 +312,7 @@ export default function ContactFormPanel({ integrityToken }: { integrityToken: s
                         required
                         placeholder="Enter your transmission..."
                         rows={4}
-                        className="flex-1 min-h-[80px] w-full bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-xs px-3 py-2 rounded focus:border-green-500/50 focus:outline-none transition-colors resize-none placeholder:text-neutral-800"
+                        className="flex-1 min-h-[80px] w-full bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-[16px] lg:text-xs px-3 py-2 rounded focus:border-green-500/50 focus:outline-none transition-colors resize-none placeholder:text-neutral-800"
                     />
                 </div>
 
