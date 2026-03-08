@@ -40,7 +40,7 @@ interface ChatRequestBody {
 }
 
 export async function POST(req: Request) {
-    const { messages, fingerprint: _clientFingerprint, identity } =
+    const { messages, identity } =
         (await req.json()) as ChatRequestBody;
 
     const cookieStore = await cookies();

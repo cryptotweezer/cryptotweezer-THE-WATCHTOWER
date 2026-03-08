@@ -29,7 +29,7 @@ export default function Gatekeeper({ fingerprint, clerkId, onAccess }: Gatekeepe
 
         try {
             // Real handshake — creates session in DB
-            const result = await performHandshake(fingerprint, clerkId);
+            const result = await performHandshake(clerkId);
 
             if (!result.identity) {
                 console.error("[GATEKEEPER] Handshake failed or rate limited:", result.error);

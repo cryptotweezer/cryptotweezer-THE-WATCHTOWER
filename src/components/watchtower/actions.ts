@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { runArcjetSecurity } from "@/lib/arcjet";
 import { cookies } from "next/headers";
 
-export async function performHandshake(_clientFingerprint: string) {
+export async function performHandshake() {
     const ajResult = await runArcjetSecurity();
     if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
 
@@ -62,7 +62,7 @@ export async function performHandshake(_clientFingerprint: string) {
     }
 }
 
-export async function syncUserIdentity(clerkId: string, _clientFingerprint: string) {
+export async function syncUserIdentity(clerkId: string) {
     const ajResult = await runArcjetSecurity();
     if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
 

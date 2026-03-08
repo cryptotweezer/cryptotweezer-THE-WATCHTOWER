@@ -238,7 +238,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
 
         try {
             // 1. Server: Purge DB records
-            await forensicWipe(identity.fingerprint);
+            await forensicWipe();
 
             // 2. Client: Clear all Watchtower localStorage keys
             for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -276,7 +276,7 @@ export default function WarRoomShell({ identity, operations, initialLogs, invoke
 
     const handleAliasSave = async () => {
         if (!identity.fingerprint) return;
-        const result = await updateAlias(identity.fingerprint, aliasInput);
+        const result = await updateAlias(aliasInput);
         if (result.success && result.alias) {
             setDisplayAlias(result.alias);
             setIsEditingAlias(false);
