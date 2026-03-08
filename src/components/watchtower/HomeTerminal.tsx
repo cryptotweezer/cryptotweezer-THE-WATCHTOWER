@@ -75,7 +75,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                 />
             )}
 
-            <main data-shield="protected" className={`flex min-h-screen flex-col items-center justify-between p-4 sm:p-8 lg:p-24 bg-neutral-950 text-neutral-200 transition-all duration-1000 ${state.accessGranted ? "blur-none opacity-100 scale-100" : "blur-lg opacity-50 scale-95 overflow-hidden h-screen"}`}>
+            <main data-shield="protected" className={`flex min-h-screen flex-col items-center justify-between p-4 sm:p-8 lg:p-24 bg-neutral-950 text-neutral-200 transition-all duration-1000 max-w-[100vw] overflow-x-hidden ${state.accessGranted ? "blur-none opacity-100 scale-100" : "blur-lg opacity-50 scale-95 h-screen overflow-hidden"}`}>
 
                 {/* Header Section */}
                 <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
@@ -94,7 +94,7 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                             SecOps Platform v3.0
                         </p>
                     </div>
-                    <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
+                    <div className="hidden lg:flex fixed bottom-0 left-0 h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
 
                         <div className="flex gap-4 items-center">
                             <SignedIn>
@@ -138,10 +138,35 @@ export default function HomeTerminal({ identity, invokePath, initialLogs, needsH
                             fingerprint={activeIdentity.fingerprint || "Scanning..."}
                         />
                     </div>
+
+                    {/* Mobile Auth Buttons (Below Identity HUD, Above Dashboard Grid) */}
+                    <div className="flex lg:hidden gap-4 items-center mt-8 w-full justify-center">
+                        <SignedIn>
+                            <Link
+                                href="/war-room"
+                                className="font-mono bg-blue-600 text-white px-8 py-3 rounded text-sm font-bold tracking-widest transition-all duration-300 hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+                            >
+                                ENTER WAR ROOM
+                            </Link>
+                            <SignOutButton>
+                                <button className="text-xs text-red-500 hover:text-red-400 uppercase tracking-widest border border-red-900/50 px-4 py-3 rounded hover:bg-red-900/20 transition-all">
+                                    Logout
+                                </button>
+                            </SignOutButton>
+                        </SignedIn>
+
+                        <SignedOut>
+                            <SignInButton mode="modal" forceRedirectUrl="/war-room">
+                                <button className="font-mono bg-blue-600 text-white px-8 py-3 rounded text-sm font-bold tracking-widest flex items-center gap-2 transition-all duration-300 hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(37,99,235,0.5)] uppercase w-full sm:w-auto justify-center">
+                                    INITIALIZE HANDSHAKE
+                                </button>
+                            </SignInButton>
+                        </SignedOut>
+                    </div>
                 </div>
 
                 {/* Dashboard Grid */}
-                <div className="mb-32 mt-16 flex flex-col lg:flex-row lg:max-w-5xl lg:w-full lg:mb-0 lg:items-stretch gap-8">
+                <div className="mb-32 mt-12 lg:mt-16 flex flex-col lg:flex-row lg:max-w-5xl lg:w-full lg:mb-0 lg:items-stretch gap-8 w-full max-w-[100vw] px-2 sm:px-0">
 
                     {/* Left Column (A): Metrics & Signal Log */}
                     <div className="flex flex-col gap-4 w-full lg:w-1/2">
