@@ -1,5 +1,5 @@
 import arcjet, { detectBot, shield, slidingWindow, fixedWindow, ArcjetDecision } from "@arcjet/next";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 export interface ArcjetResult {
     fingerprint: string | null;
@@ -36,21 +36,27 @@ export async function runArcjetSecurity(): Promise<ArcjetResult> {
         rules: [
             shield({ mode: "LIVE" }),
             detectBot({ mode: "LIVE", allow: ["CATEGORY:SEARCH_ENGINE"] }),
-            slidingWindow({ mode: "LIVE", interval: "1m", max: 60 }),
+            slidingWindow({ mode: "LIVE", interval: "1m", max: 60, characteristics: ["userId"] }),
         ],
     });
 
-    // Get headers for the request
+    // Get headers and determine robust identity footprint
     const headersList = await headers();
+    const cookieStore = await cookies();
+    const nodeId = cookieStore.get("watchtower_node_id")?.value;
+
+    // Vercel populates x-real-ip accurately. Fallback to x-forwarded-for or localhost.
+    const clientIp = headersList.get("x-real-ip") || headersList.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+    const fingerprint = nodeId || clientIp;
 
     // Create a minimal request object for Arcjet
     const req = {
         headers: headersList,
-        ip: headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1",
+        ip: clientIp,
     };
 
     try {
-        const decision = await aj.protect(req as Parameters<typeof aj.protect>[0]);
+        const decision = await aj.protect(req as Parameters<typeof aj.protect>[0], { userId: fingerprint });
 
         let threatType: string | null = null;
         const isBot = decision.isDenied() && decision.reason.isBot();
@@ -105,18 +111,23 @@ export async function runArcjetChatSecurity(): Promise<ArcjetResult> {
     const ajChat = arcjet({
         key: ajKey,
         rules: [
-            fixedWindow({ mode: "LIVE", window: "1d", max: 10 }),
+            fixedWindow({ mode: "LIVE", window: "1d", max: 10, characteristics: ["userId"] }),
         ],
     });
 
     const headersList = await headers();
+    const cookieStore = await cookies();
+    const nodeId = cookieStore.get("watchtower_node_id")?.value;
+    const clientIp = headersList.get("x-real-ip") || headersList.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+    const fingerprint = nodeId || clientIp;
+
     const req = {
         headers: headersList,
-        ip: headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1",
+        ip: clientIp,
     };
 
     try {
-        const decision = await ajChat.protect(req as Parameters<typeof ajChat.protect>[0]);
+        const decision = await ajChat.protect(req as Parameters<typeof ajChat.protect>[0], { userId: fingerprint });
         return {
             fingerprint: (decision as ArcjetDecision & { fingerprint?: string }).fingerprint || null,
             isDenied: decision.isDenied(),
@@ -146,18 +157,23 @@ export async function runArcjetHoneypotSecurity(): Promise<ArcjetResult> {
     const ajHoneypot = arcjet({
         key: ajKey,
         rules: [
-            slidingWindow({ mode: "LIVE", interval: "1m", max: 60 }),
+            slidingWindow({ mode: "LIVE", interval: "1m", max: 60, characteristics: ["userId"] }),
         ],
     });
 
     const headersList = await headers();
+    const cookieStore = await cookies();
+    const nodeId = cookieStore.get("watchtower_node_id")?.value;
+    const clientIp = headersList.get("x-real-ip") || headersList.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+    const fingerprint = nodeId || clientIp;
+
     const req = {
         headers: headersList,
-        ip: headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1",
+        ip: clientIp,
     };
 
     try {
-        const decision = await ajHoneypot.protect(req as Parameters<typeof ajHoneypot.protect>[0]);
+        const decision = await ajHoneypot.protect(req as Parameters<typeof ajHoneypot.protect>[0], { userId: fingerprint });
         return {
             fingerprint: (decision as ArcjetDecision & { fingerprint?: string }).fingerprint || null,
             isDenied: decision.isDenied(),

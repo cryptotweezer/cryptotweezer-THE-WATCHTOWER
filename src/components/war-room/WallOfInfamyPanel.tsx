@@ -43,7 +43,7 @@ export default function WallOfInfamyPanel({ fingerprint }: { fingerprint: string
         setIsPosting(true);
         setError("");
 
-        const result = await postInfamyMessage(fingerprint, message);
+        const result = await postInfamyMessage(message);
         if (result.success) {
             setHasPosted(true);
             setMessage("");

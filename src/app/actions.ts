@@ -11,7 +11,7 @@ import { cookies } from "next/headers";
  * Real handshake — creates the session in DB when the user clicks the Gatekeeper.
  * Returns the full identity object for client hydration.
  */
-export async function performHandshake(_clientFingerprint: string, clerkId?: string | null) {
+export async function performHandshake(clerkId?: string | null) {
     const ajResult = await runArcjetSecurity();
     if (ajResult.isDenied) return { identity: null, initialLogs: [], error: "Rate limit exceeded" };
 
@@ -41,7 +41,7 @@ export async function performHandshake(_clientFingerprint: string, clerkId?: str
  * Update Alias — allows user to customize their identity.
  * Validates: 2-24 chars, alphanumeric + spaces/hyphens/underscores only.
  */
-export async function updateAlias(_clientFingerprint: string, newAlias: string) {
+export async function updateAlias(newAlias: string) {
     const ajResult = await runArcjetSecurity();
     if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
 
@@ -74,7 +74,7 @@ export async function updateAlias(_clientFingerprint: string, newAlias: string) 
  * Post to Wall of Infamy — permanent legacy that survives Forensic Wipe.
  * Requires risk score >= 90. One message per fingerprint.
  */
-export async function postInfamyMessage(_clientFingerprint: string, message: string) {
+export async function postInfamyMessage(message: string) {
     const ajResult = await runArcjetSecurity();
     if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
 
@@ -152,7 +152,7 @@ export async function getInfamyMessages() {
  * Deletes security events first (FK constraint), then the session itself.
  * NOTE: infamy_wall entries are NOT deleted (no FK — permanent legacy).
  */
-export async function forensicWipe(_clientFingerprint: string) {
+export async function forensicWipe() {
     const ajResult = await runArcjetSecurity();
     if (ajResult.isDenied) return { success: false, error: "Rate limit exceeded" };
 
