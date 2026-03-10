@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const baseUrl = 'https://www.andreshenao.com.au';
+    const baseUrl = 'https://www.cv.andreshenao.com.au';
 
     const routes = [
         '',

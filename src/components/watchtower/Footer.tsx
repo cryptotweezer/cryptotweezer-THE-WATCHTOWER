@@ -16,15 +16,15 @@ export default function Footer() {
                         SecOps | SOC | <span className="text-blue-500">THE WATCHTOWER</span>
                     </h2>
                     <a
-                        href="https://www.andreshenao.com.au/"
+                        href="https://www.cv.andreshenao.com.au/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-blue-400 text-xs tracking-wider uppercase font-mono transition-colors block mt-2"
                     >
-                        www.andreshenao.com.au
+                        www.cv.andreshenao.com.au
                     </a>
                     <a
-                        href="https://www.linkedin.com/in/andres-henao-2b185318a/"
+                        href="https://www.linkedin.com/in/andreshenao/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-blue-400 text-xs tracking-wider uppercase font-mono transition-colors block mt-2"

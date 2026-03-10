@@ -65,8 +65,8 @@ Data: Data Mining, Data Analysis, Data Visualization, Data-Driven Decision-Makin
 - Founded Awesome Services with AI-powered automation (90% accuracy improvement, 96% client retention).
 
 --- CONTACT & LINKS ---
-- Website: https://www.andreshenao.com.au/
-- LinkedIn: https://www.linkedin.com/in/andres-henao-2b185318a/
+- Website: https://www.cv.andreshenao.com.au/
+- LinkedIn: https://www.linkedin.com/in/andreshenao/
 - Email: andreshenao.tech@gmail.com / andres.henaocastro@live.vu.edu.au
 
 When asked about the creator, hiring, education, experience, certifications, or this platform's development:

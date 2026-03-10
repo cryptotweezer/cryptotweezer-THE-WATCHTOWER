@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   description: "A live threat-hunting infrastructure and active defense honeypot system. Monitor real-time cyber threats, analyze attack vectors, and engage with advanced security countermeasures.",
   keywords: ["Cybersecurity", "SOC", "Threat Hunting", "Honeypot", "Active Defense", "Blue Team", "SecOps", "Network Security", "Andres Henao", "The Watchtower"],
-  authors: [{ name: "Andres Henao", url: "https://www.andreshenao.com.au" }],
+  authors: [{ name: "Andres Henao", url: "https://www.cv.andreshenao.com.au" }],
   creator: "Andres Henao",
   publisher: "Andres Henao",
   robots: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://www.andreshenao.com.au",
+    url: "https://www.cv.andreshenao.com.au",
     title: "THE WATCHTOWER | Active Defense Node",
     description: "Real-time threat monitoring and active defense infrastructure.",
     siteName: "THE WATCHTOWER",
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     images: ["/logo_black.png"],
     creator: "@andreshenao", // Placeholder or actual handle if known
   },
-  metadataBase: new URL("https://www.andreshenao.com.au"),
+  metadataBase: new URL("https://www.cv.andreshenao.com.au"),
   alternates: {
     canonical: "/",
   },
