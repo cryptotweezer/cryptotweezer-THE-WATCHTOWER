@@ -43,16 +43,19 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://www.cv.andreshenao.com.au",
+    url: "/",
     title: "THE WATCHTOWER | Active Defense Node",
     description: "Real-time threat monitoring and active defense infrastructure.",
     siteName: "THE WATCHTOWER",
     images: [
       {
-        url: "/logo_black.png", // Ideally a larger OG image, using logo for now
+        // 1200x630 shot of the access gate. Scrapers cache by URL, so a new
+        // card needs a new filename here, not a replaced file.
+        url: "/og-cover.png",
         width: 1200,
         height: 630,
-        alt: "The Watchtower System Interface",
+        alt: "The Watchtower access gate: perimeter monitoring active",
+        type: "image/png",
       },
     ],
   },
@@ -60,10 +63,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "THE WATCHTOWER | Active Defense Node",
     description: "Real-time threat monitoring and active defense infrastructure.",
-    images: ["/logo_black.png"],
+    images: ["/og-cover.png"],
     creator: "@andreshenao", // Placeholder or actual handle if known
   },
-  metadataBase: new URL("https://www.cv.andreshenao.com.au"),
+  metadataBase: new URL("https://sentinel.andreshenao.com.au"),
   alternates: {
     canonical: "/",
   },
